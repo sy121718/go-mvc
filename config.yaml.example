@@ -1,0 +1,40 @@
+# 服务配置
+server:
+  port: 8080
+  mode: debug  # debug, release, test
+  app_name: go-mvc
+
+# 数据库配置
+database:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  password: "your-database-password"
+  dbname: go_mvc
+  max_idle_conns: 10
+  max_open_conns: 100
+  lazy_init: false  # 是否懒加载
+
+# Redis配置
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 0
+  lazy_init: false  # 是否懒加载
+
+# JWT配置
+jwt:
+  secret: your-jwt-secret-key-change-this
+  expire_time: 24  # 过期时间（小时）
+  issuer: go-mvc
+  lazy_init: false  # 是否懒加载
+
+# 日志配置
+log:
+  level: info  # debug, info, warn, error
+  filename: logs/app.log
+  max_size: 100  # 日志文件最大大小（MB）
+  max_backups: 10  # 最多保留旧文件数
+  max_age: 30  # 最多保留天数
+  compress: false  # 是否压缩
