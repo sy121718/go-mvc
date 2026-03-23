@@ -6,7 +6,15 @@
       "Bash(\"c:\\\\Users\\\\sy1217\\\\Desktop\\\\DeskTop\\\\project\\\\go\\\\go-mvc\\\\CLAUDE.md\")",
       "Bash(tree //F //A)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "mcp__mysql-local__list_tables",
+      "mcp__mysql-local__describe_table",
+      "mcp__mysql-local__connect_db",
+      "mcp__mysql-local__query",
+      "mcp__mysql-local__execute"
     ]
   }
 }
