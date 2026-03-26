@@ -2,104 +2,72 @@ package config
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/spf13/viper"
 	"sync"
 )
 
+/*
+配置管理
+===========================================
+职责：
+- 读取 config.yaml 文件
+- 提供原始配置访问（通过 viper）
+- 不定义具体业务配置结构体
+
+配置结构体由各个 pkg 自己定义
+*/
+
 var (
-	cfg     *Config
-	once    sync.Once
+	v    *viper.Viper
+	once sync.Once
 )
 
-// Config 总配置结构
-type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Redis    RedisConfig    `mapstructure:"redis"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	Log      LogConfig      `mapstructure:"log"`
-}
-
-// ServerConfig 服务配置
+// ServerConfig 服务配置（核心配置，启动时加载）
 type ServerConfig struct {
 	Port    int    `mapstructure:"port"`
-	Mode    string `mapstructure:"mode"` // debug, release, test
+	Mode    string `mapstructure:"mode"`
 	AppName string `mapstructure:"app_name"`
 }
 
-// DatabaseConfig 数据库配置
-type DatabaseConfig struct {
-	Host         string `mapstructure:"host"`
-	Port         int    `mapstructure:"port"`
-	User         string `mapstructure:"user"`
-	Password     string `mapstructure:"password"`
-	DBName       string `mapstructure:"dbname"`
-	MaxIdleConns int    `mapstructure:"max_idle_conns"`
-	MaxOpenConns int    `mapstructure:"max_open_conns"`
-	LazyInit     bool   `mapstructure:"lazy_init"` // 是否懒加载
-}
-
-// RedisConfig Redis配置
-type RedisConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Password string `mapstructure:"password"`
-	DB       int    `mapstructure:"db"`
-	LazyInit bool   `mapstructure:"lazy_init"` // 是否懒加载
-}
-
-// JWTConfig JWT配置
-type JWTConfig struct {
-	Secret     string `mapstructure:"secret"`
-	ExpireTime int    `mapstructure:"expire_time"` // 过期时间（小时）
-	Issuer     string `mapstructure:"issuer"`
-	LazyInit   bool   `mapstructure:"lazy_init"` // 是否懒加载
-}
-
-// LogConfig 日志配置
-type LogConfig struct {
-	Level      string `mapstructure:"level"`       // debug, info, warn, error
-	Filename   string `mapstructure:"filename"`    // 日志文件路径
-	MaxSize    int    `mapstructure:"max_size"`    // 日志文件最大大小（MB）
-	MaxBackups int    `mapstructure:"max_backups"` // 最多保留旧文件数
-	MaxAge     int    `mapstructure:"max_age"`     // 最多保留天数
-	Compress   bool   `mapstructure:"compress"`    // 是否压缩
-}
-
-// Init 初始化配置
+// Init 初始化配置文件
 func Init(configPath string) error {
 	var err error
 	once.Do(func() {
-		err = initConfig(configPath)
+		v = viper.New()
+		v.SetConfigFile(configPath)
+
+		// 设置默认值
+		setDefaults()
+
+		// 读取配置文件
+		if err = v.ReadInConfig(); err != nil {
+			err = fmt.Errorf("读取配置文件失败: %v", err)
+			return
+		}
+
+		log.Printf("配置加载成功: %s", configPath)
 	})
 	return err
 }
 
-func initConfig(configPath string) error {
-	v := viper.New()
+// GetViper 获取 viper 实例（供 pkg 使用）
+func GetViper() *viper.Viper {
+	return v
+}
 
-	// 设置默认值
-	setDefaults(v)
-
-	// 设置配置文件
-	v.SetConfigFile(configPath)
-
-	// 尝试读取配置文件
-	if err := v.ReadInConfig(); err != nil {
-		return fmt.Errorf("读取配置文件失败: %v", err)
+// GetServer 获取服务配置
+func GetServer() ServerConfig {
+	var cfg ServerConfig
+	if err := v.UnmarshalKey("server", &cfg); err != nil {
+		log.Fatalf("解析 Server 配置失败: %v", err)
 	}
-
-	// 解析到结构体
-	cfg = &Config{}
-	if err := v.Unmarshal(cfg); err != nil {
-		return fmt.Errorf("解析配置失败: %v", err)
-	}
-
-	return nil
+	return cfg
 }
 
 // setDefaults 设置默认值
-func setDefaults(v *viper.Viper) {
+func setDefaults() {
 	// 服务默认配置
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.mode", "debug")
@@ -127,42 +95,4 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("jwt.expire_time", 24)
 	v.SetDefault("jwt.issuer", "go-mvc")
 	v.SetDefault("jwt.lazy_init", false)
-
-	// 日志默认配置
-	v.SetDefault("log.level", "info")
-	v.SetDefault("log.filename", "logs/app.log")
-	v.SetDefault("log.max_size", 100)
-	v.SetDefault("log.max_backups", 10)
-	v.SetDefault("log.max_age", 30)
-	v.SetDefault("log.compress", false)
-}
-
-// Get 获取完整配置
-func Get() *Config {
-	return cfg
-}
-
-// GetServer 获取服务配置
-func GetServer() ServerConfig {
-	return cfg.Server
-}
-
-// GetDatabase 获取数据库配置
-func GetDatabase() DatabaseConfig {
-	return cfg.Database
-}
-
-// GetRedis 获取Redis配置
-func GetRedis() RedisConfig {
-	return cfg.Redis
-}
-
-// GetJWT 获取JWT配置
-func GetJWT() JWTConfig {
-	return cfg.JWT
-}
-
-// GetLog 获取日志配置
-func GetLog() LogConfig {
-	return cfg.Log
 }

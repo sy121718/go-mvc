@@ -1,24 +1,45 @@
+// Package database /*
 package database
 
 import (
 	"fmt"
-	"go-mvc/config"
+	"log"
+	"time"
+
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"sync"
-	"time"
 )
 
+/*
+数据库组件
+===========================================
+配置结构体定义在这里，自己解析配置
+*/
+
+// Config 数据库配置
+type Config struct {
+	Host         string `mapstructure:"host"`     //地址
+	Port         int    `mapstructure:"port"`     //端口
+	User         string `mapstructure:"user"`     //用户名
+	Password     string `mapstructure:"password"` //密码
+	DBName       string `mapstructure:"dbname"`   //数据库名称
+	MaxIdleConns int    `mapstructure:"max_idle_conns"`
+	MaxOpenConns int    `mapstructure:"max_open_conns"`
+	LazyInit     bool   `mapstructure:"lazy_init"` //是否懒加载
+}
+
 var (
-	db   *gorm.DB
-	once sync.Once
+	db   *gorm.DB  // 数据库连接实例（全局单例）
+	once sync.Once // 确保只初始化一次（并发安全）
 )
 
 // GetDB 获取数据库实例（懒加载）
-func GetDB() *gorm.DB {
+func GetDB(v *viper.Viper) *gorm.DB {
 	once.Do(func() {
-		if err := initDB(); err != nil {
+		if err := initDB(v); err != nil {
 			panic(fmt.Sprintf("数据库初始化失败: %v", err))
 		}
 	})
@@ -26,8 +47,12 @@ func GetDB() *gorm.DB {
 }
 
 // initDB 初始化数据库
-func initDB() error {
-	cfg := config.GetDatabase()
+func initDB(v *viper.Viper) error {
+	// 自己解析配置
+	var cfg Config
+	if err := v.UnmarshalKey("database", &cfg); err != nil {
+		return fmt.Errorf("解析数据库配置失败: %v", err)
+	}
 
 	// 检查是否懒加载
 	if cfg.LazyInit {
@@ -66,10 +91,11 @@ func initDB() error {
 		return fmt.Errorf("数据库连接测试失败: %v", err)
 	}
 
+	log.Println("数据库初始化成功")
 	return nil
 }
 
-// InitDB 手动初始化数据库（用于懒加载场景）
-func InitDB() error {
-	return initDB()
+// InitDB 手动初始化数据库（用于非懒加载场景）
+func InitDB(v *viper.Viper) error {
+	return initDB(v)
 }
