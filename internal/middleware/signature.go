@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"github.com/gin-gonic/gin"
 	"go-mvc/pkg/crypto"
 	"go-mvc/pkg/response"
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"time"
 )

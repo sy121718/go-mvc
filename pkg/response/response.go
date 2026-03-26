@@ -1,3 +1,4 @@
+// Package response /*
 package response
 
 import (
@@ -7,9 +8,9 @@ import (
 
 // Response 统一响应结构
 type Response struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code    int         `json:"code"`           //状态码
+	Message string      `json:"message"`        //提示
+	Data    interface{} `json:"data,omitempty"` //内容
 }
 
 // Success 成功响应

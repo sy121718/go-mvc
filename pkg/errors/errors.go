@@ -1,3 +1,4 @@
+// Package errors /*
 package errors
 
 // 错误码定义
@@ -16,14 +17,14 @@ const (
 	ParamFormatError = 1002
 
 	// 用户相关 2000-2999
-	UserNotFound       = 2000
-	UserPasswordError  = 2001
-	UserDisabled       = 2002
-	UserAlreadyExists  = 2003
-	UserNotLogin       = 2004
-	TokenInvalid       = 2005
-	TokenExpired       = 2006
-	TokenMissing       = 2007
+	UserNotFound      = 2000
+	UserPasswordError = 2001
+	UserDisabled      = 2002
+	UserAlreadyExists = 2003
+	UserNotLogin      = 2004
+	TokenInvalid      = 2005
+	TokenExpired      = 2006
+	TokenMissing      = 2007
 
 	// 数据库相关 3000-3999
 	DBError       = 3000
@@ -33,7 +34,7 @@ const (
 	DBQueryError  = 3004
 
 	// 缓存相关 4000-4999
-	CacheError   = 4000
+	CacheError    = 4000
 	CacheSetError = 4001
 	CacheGetError = 4002
 	CacheDelError = 4003
@@ -55,14 +56,14 @@ var errorMsg = map[int]string{
 	ParamMissing:     "参数缺失",
 	ParamFormatError: "参数格式错误",
 
-	UserNotFound:       "用户不存在",
-	UserPasswordError:  "密码错误",
-	UserDisabled:       "用户已被禁用",
-	UserAlreadyExists:  "用户已存在",
-	UserNotLogin:       "用户未登录",
-	TokenInvalid:       "Token 无效",
-	TokenExpired:       "Token 已过期",
-	TokenMissing:       "Token 缺失",
+	UserNotFound:      "用户不存在",
+	UserPasswordError: "密码错误",
+	UserDisabled:      "用户已被禁用",
+	UserAlreadyExists: "用户已存在",
+	UserNotLogin:      "用户未登录",
+	TokenInvalid:      "Token 无效",
+	TokenExpired:      "Token 已过期",
+	TokenMissing:      "Token 缺失",
 
 	DBError:       "数据库错误",
 	DBInsertError: "数据插入失败",

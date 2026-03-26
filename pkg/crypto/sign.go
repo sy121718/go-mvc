@@ -1,3 +1,4 @@
+// Package crypto /*
 package crypto
 
 import (
@@ -11,7 +12,7 @@ import (
 )
 
 var (
-	secretKey = "your-secret-key" // 签名密钥
+	secretKey          = "your-secret-key" // 签名密钥
 	timestampTolerance = 300 * time.Second // 时间戳容差（5分钟）
 )
 
