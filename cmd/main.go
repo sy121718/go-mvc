@@ -6,6 +6,7 @@ import (
 	"go-mvc/internal/routers"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
+	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/database"
 	"log"
 
@@ -77,6 +78,12 @@ func initComponents(v *viper.Viper) {
 		log.Println("初始化数据库...")
 		if err := database.InitDB(v); err != nil {
 			log.Fatalf("数据库初始化失败: %v", err)
+		}
+
+		// 数据库初始化后，初始化 Casbin（依赖 DB 连接）
+		log.Println("初始化 Casbin...")
+		if err := casbin.InitCasbin(database.GetDB(v)); err != nil {
+			log.Fatalf("Casbin 初始化失败: %v", err)
 		}
 	}
 

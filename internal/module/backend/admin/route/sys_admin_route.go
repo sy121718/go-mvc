@@ -27,9 +27,7 @@ func SetupAdminRoutes(rg *gin.RouterGroup) {
 	admin := rg.Group("/admin")
 	{
 		// 测试接口 - GET 请求
-		// 完整路径：GET /api/admin/test
-		admin.GET("/test", adminhandle.Test)
-		admin.GET("/test2", adminhandle.Test2)
-
+		// 完整路径：GET /api/admin/a
+		admin.GET("/a", adminhandle.TestGet)
 	}
 }
