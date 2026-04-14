@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"go-mvc/pkg/crypto"
+	"go-mvc/pkg/errors"
 	"go-mvc/pkg/response"
 	"strconv"
 	"time"
@@ -18,14 +19,14 @@ func SignatureMiddleware() gin.HandlerFunc {
 		}
 
 		if timestampStr == "" {
-			response.Error(c, 400, "缺少时间戳")
+			response.ErrorCode(c, errors.ParamMissing)
 			c.Abort()
 			return
 		}
 
 		timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
 		if err != nil {
-			response.Error(c, 400, "时间戳格式错误")
+			response.ErrorCode(c, errors.ParamFormatError)
 			c.Abort()
 			return
 		}
@@ -33,7 +34,7 @@ func SignatureMiddleware() gin.HandlerFunc {
 		// 2. 验证时间戳（防重放）
 		now := time.Now().Unix()
 		if now-timestamp > 300 || timestamp-now > 300 { // 5分钟容差
-			response.Error(c, 400, "请求已过期")
+			response.Error(c, errors.BadRequest, "请求已过期")
 			c.Abort()
 			return
 		}
@@ -45,7 +46,7 @@ func SignatureMiddleware() gin.HandlerFunc {
 		}
 
 		if signature == "" {
-			response.Error(c, 400, "缺少签名")
+			response.ErrorCode(c, errors.ParamMissing)
 			c.Abort()
 			return
 		}
@@ -75,7 +76,7 @@ func SignatureMiddleware() gin.HandlerFunc {
 
 		// 5. 验证签名
 		if err := crypto.VerifySignature(params, timestamp, signature); err != nil {
-			response.Error(c, 400, "签名验证失败")
+			response.Error(c, errors.BadRequest, "签名验证失败")
 			c.Abort()
 			return
 		}

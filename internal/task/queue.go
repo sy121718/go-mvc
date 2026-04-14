@@ -1,19 +1,21 @@
 package task
 
 import (
+	"fmt"
 	"go-mvc/config"
 	"go-mvc/pkg/queue"
 )
 
 // Init 初始化任务队列
 func Init() error {
-	cfg := config.GetRedis()
+	v := config.GetViper()
+	addr := fmt.Sprintf("%s:%d", v.GetString("redis.host"), v.GetInt("redis.port"))
 
 	// 一行搞定初始化
 	queue.Init(
-		cfg.Host+":6379",
-		cfg.Password,
-		cfg.DB,
+		addr,
+		v.GetString("redis.password"),
+		v.GetInt("redis.db"),
 		10, // 并发数
 	)
 

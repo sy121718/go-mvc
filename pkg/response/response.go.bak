@@ -1,0 +1,125 @@
+// Package response 统一响应格式
+package response
+
+import (
+	"github.com/gin-gonic/gin"
+	"go-mvc/pkg/errors"
+	"net/http"
+)
+
+// Response 统一响应结构
+type Response struct {
+	Code    int         `json:"code"`           //状态码
+	Message string      `json:"message"`        //提示
+	Data    interface{} `json:"data,omitempty"` //内容
+}
+
+// Success 成功响应
+func Success(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusOK, Response{
+		Code:    errors.Success,
+		Message: errors.GetMessage(errors.Success),
+		Data:    data,
+	})
+}
+
+// SuccessWithMessage 成功响应（自定义消息）
+func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
+	c.JSON(http.StatusOK, Response{
+		Code:    errors.Success,
+		Message: message,
+		Data:    data,
+	})
+}
+
+// Error 错误响应（使用 pkg/errors 错误码）
+func Error(c *gin.Context, code int, message string) {
+	c.JSON(http.StatusOK, Response{
+		Code:    code,
+		Message: message,
+	})
+}
+
+// ErrorWithData 错误响应（带数据）
+func ErrorWithData(c *gin.Context, code int, message string, data interface{}) {
+	c.JSON(http.StatusOK, Response{
+		Code:    code,
+		Message: message,
+		Data:    data,
+	})
+}
+
+// ErrorCode 使用错误码响应（自动获取消息）
+func ErrorCode(c *gin.Context, code int) {
+	c.JSON(http.StatusOK, Response{
+		Code:    code,
+		Message: errors.GetMessage(code),
+	})
+}
+
+// ParamError 参数错误
+func ParamError(c *gin.Context, msg ...string) {
+	m := errors.GetMessage(errors.ParamInvalid)
+	if len(msg) > 0 {
+		m = msg[0]
+	}
+	Error(c, errors.ParamInvalid, m)
+}
+
+// Unauthorized 未授权
+func Unauthorized(c *gin.Context, msg ...string) {
+	m := errors.GetMessage(errors.Unauthorized)
+	if len(msg) > 0 {
+		m = msg[0]
+	}
+	c.JSON(http.StatusUnauthorized, Response{
+		Code:    errors.Unauthorized,
+		Message: m,
+	})
+	c.Abort()
+}
+
+// Forbidden 禁止访问
+func Forbidden(c *gin.Context, msg ...string) {
+	m := errors.GetMessage(errors.Forbidden)
+	if len(msg) > 0 {
+		m = msg[0]
+	}
+	c.JSON(http.StatusForbidden, Response{
+		Code:    errors.Forbidden,
+		Message: m,
+	})
+	c.Abort()
+}
+
+// NotFound 未找到
+func NotFound(c *gin.Context, msg ...string) {
+	m := errors.GetMessage(errors.NotFound)
+	if len(msg) > 0 {
+		m = msg[0]
+	}
+	c.JSON(http.StatusNotFound, Response{
+		Code:    errors.NotFound,
+		Message: m,
+	})
+}
+
+// ServerError 服务器错误
+func ServerError(c *gin.Context, msg ...string) {
+	m := errors.GetMessage(errors.ServerError)
+	if len(msg) > 0 {
+		m = msg[0]
+	}
+	c.JSON(http.StatusInternalServerError, Response{
+		Code:    errors.ServerError,
+		Message: m,
+	})
+}
+
+// Fail 业务失败（通用）
+func Fail(c *gin.Context, message string) {
+	c.JSON(http.StatusOK, Response{
+		Code:    errors.BadRequest,
+		Message: message,
+	})
+}

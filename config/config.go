@@ -2,6 +2,11 @@ package config
 
 import (
 	"fmt"
+	"go-mvc/pkg/auth"
+	"go-mvc/pkg/cache"
+	"go-mvc/pkg/casbin"
+	"go-mvc/pkg/database"
+	"go-mvc/pkg/i18n"
 	"log"
 
 	"github.com/spf13/viper"
@@ -20,8 +25,9 @@ import (
 */
 
 var (
-	v    *viper.Viper
-	once sync.Once
+	v      *viper.Viper
+	mu     sync.Mutex
+	inited bool
 )
 
 // ServerConfig 服务配置（核心配置，启动时加载）
@@ -33,27 +39,30 @@ type ServerConfig struct {
 
 // Init 初始化配置文件
 func Init(configPath string) error {
-	var err error
-	once.Do(func() {
-		v = viper.New()
-		v.SetConfigFile(configPath)
+	mu.Lock()
+	defer mu.Unlock()
 
-		// 设置默认值
-		setDefaults()
+	if inited {
+		return nil
+	}
 
-		// 读取配置文件
-		if err = v.ReadInConfig(); err != nil {
-			err = fmt.Errorf("读取配置文件失败: %v", err)
-			return
-		}
+	v = viper.New()
+	v.SetConfigFile(configPath)
 
-		log.Printf("配置加载成功: %s", configPath)
-	})
-	return err
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("读取配置文件失败: %v", err)
+	}
+
+	inited = true
+	log.Printf("配置加载成功: %s", configPath)
+	return nil
 }
 
 // GetViper 获取 viper 实例（供 pkg 使用）
 func GetViper() *viper.Viper {
+	if v == nil {
+		panic("配置未初始化，请先调用 config.Init()")
+	}
 	return v
 }
 
@@ -66,33 +75,52 @@ func GetServer() ServerConfig {
 	return cfg
 }
 
-// setDefaults 设置默认值
-func setDefaults() {
-	// 服务默认配置
-	v.SetDefault("server.port", 8080)
-	v.SetDefault("server.mode", "debug")
-	v.SetDefault("server.app_name", "go-mvc")
+// InitComponents 初始化所有组件
+// 这是配置启动器，负责驱动 pkg 组件初始化
+// pkg 内部会处理错误，致命错误会直接退出程序
+func InitComponents(v *viper.Viper) {
+	log.Println("开始初始化组件...")
 
-	// 数据库默认配置
-	v.SetDefault("database.host", "127.0.0.1")
-	v.SetDefault("database.port", 3306)
-	v.SetDefault("database.user", "root")
-	v.SetDefault("database.password", "")
-	v.SetDefault("database.dbname", "go_mvc")
-	v.SetDefault("database.max_idle_conns", 10)
-	v.SetDefault("database.max_open_conns", 100)
-	v.SetDefault("database.lazy_init", false)
+	// 初始化数据库（内部处理错误）
+	database.InitDB(v)
 
-	// Redis 默认配置
-	v.SetDefault("redis.host", "127.0.0.1")
-	v.SetDefault("redis.port", 6379)
-	v.SetDefault("redis.password", "")
-	v.SetDefault("redis.db", 0)
-	v.SetDefault("redis.lazy_init", false)
+	// 数据库初始化后，初始化多语言配置中心（依赖 DB 连接）
+	if database.IsInited() {
+		log.Println("初始化多语言配置中心...")
+		i18n.Init()
+		// 启动自动刷新（每10秒）
+		i18n.StartAutoRefresh()
+	}
 
-	// JWT 默认配置
-	v.SetDefault("jwt.secret", "your-secret-key")
-	v.SetDefault("jwt.expire_time", 24)
-	v.SetDefault("jwt.issuer", "go-mvc")
-	v.SetDefault("jwt.lazy_init", false)
+	// 数据库初始化后，初始化 Casbin（依赖 DB 连接）
+	if database.IsInited() {
+		log.Println("初始化 Casbin...")
+		casbin.InitCasbin(database.GetDB())
+	}
+
+	// 初始化 Redis（内部处理错误）
+	cache.InitRedis(v)
+
+	// 初始化 JWT（内部处理错误）
+	auth.InitJWT(v)
+
+	log.Println("组件初始化完成")
+}
+
+// CloseComponents 关闭所有组件
+func CloseComponents() {
+	log.Println("开始关闭组件...")
+
+	// 只关闭已初始化的组件
+	if database.IsInited() {
+		if err := database.Close(); err != nil {
+			log.Printf("关闭数据库失败: %v", err)
+		}
+	}
+
+	if err := cache.Close(); err != nil {
+		log.Printf("关闭 Redis 失败: %v", err)
+	}
+
+	log.Println("组件关闭完成")
 }

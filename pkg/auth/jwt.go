@@ -49,7 +49,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"time"
 
@@ -65,7 +64,7 @@ JWT 组件
 
 // Config JWT配置
 type Config struct {
-	Secret     string `destructure:"secret"`
+	Secret     string `mapstructure:"secret"`
 	ExpireTime int    `mapstructure:"expire_time"`
 	Issuer     string `mapstructure:"issuer"`
 	LazyInit   bool   `mapstructure:"lazy_init"`
@@ -83,25 +82,45 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// getDefaultConfig 获取默认配置
+func getDefaultConfig() Config {
+	return Config{
+		Secret:     "default-secret-key-please-change-in-production",
+		ExpireTime: 24,
+		Issuer:     "go-mvc",
+		LazyInit:   false,
+	}
+}
+
 // InitJWT 初始化 JWT
-func InitJWT(v *viper.Viper) error {
+// 内部处理错误，致命错误会直接退出程序
+func InitJWT(v *viper.Viper) {
 	// 自己解析配置
 	if err := v.UnmarshalKey("jwt", &jwtConfig); err != nil {
-		return fmt.Errorf("解析 JWT 配置失败: %v", err)
+		log.Printf("解析 JWT 配置失败，使用默认配置: %v", err)
+		jwtConfig = getDefaultConfig()
+	}
+
+	// 配置兜底：如果关键字段为空，使用默认值
+	defaultCfg := getDefaultConfig()
+	if jwtConfig.Secret == "" {
+		jwtConfig.Secret = defaultCfg.Secret
+		log.Println("警告: JWT secret 未配置，使用默认值（生产环境请修改）")
+	}
+	if jwtConfig.ExpireTime == 0 {
+		jwtConfig.ExpireTime = defaultCfg.ExpireTime
+	}
+	if jwtConfig.Issuer == "" {
+		jwtConfig.Issuer = defaultCfg.Issuer
 	}
 
 	// 检查是否懒加载
 	if jwtConfig.LazyInit {
-		return nil
-	}
-
-	if jwtConfig.Secret == "" {
-		return errors.New("JWT secret 不能为空")
+		return
 	}
 
 	jwtSecret = []byte(jwtConfig.Secret)
 	log.Println("JWT 初始化成功")
-	return nil
 }
 
 // GenerateToken 生成 Token

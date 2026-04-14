@@ -83,17 +83,54 @@ db.Find(&users)
 
 ### 5. errors - 错误码
 
-**主要功能：**
-- 标准化错误码
-- 统一错误消息
+**职责范围：**
+- 系统级错误码（HTTP、参数、数据库、缓存、认证）
+- 业务错误码由各模块自行定义
+
+**错误码分配：**
+- 0-4999：系统级错误（pkg/errors）
+- 5000-5999：Admin 模块
+- 6000-6999：User 模块
+- 7000-7999：Order 模块
+- 8000+：其他模块
 
 **使用示例：**
 ```go
-// 创建错误
-err := errors.NewError(errors.UserNotFound)
+// 系统级错误
+err := errors.NewError(errors.ParamInvalid)
+err := errors.NewError(errors.DBQueryError)
 
-// 自定义消息
-err := errors.NewErrorWithMessage(errors.UserNotFound, "用户不存在")
+// 业务错误（在模块内定义）
+// internal/module/backend/user/errors/errors.go
+const (
+    UserNotFound = 6000
+    UserPasswordError = 6001
+)
+```
+
+**业务模块错误码定义：**
+```go
+// internal/module/backend/user/errors/errors.go
+package errors
+
+const (
+    UserNotFound      = 6000
+    UserPasswordError = 6001
+    UserDisabled      = 6002
+)
+
+var errorMsg = map[int]string{
+    UserNotFound:      "用户不存在",
+    UserPasswordError: "密码错误",
+    UserDisabled:      "用户已被禁用",
+}
+
+func GetMessage(code int) string {
+    if msg, ok := errorMsg[code]; ok {
+        return msg
+    }
+    return "未知错误"
+}
 ```
 
 ---
@@ -223,12 +260,12 @@ touch pkg/newpkg/newpkg.go
 ### 2. 定义配置结构体
 
 ```go
-// pkg/newpkg/newpkg.go
+// Package newpkg pkg/newpkg/newpkg.go
 package newpkg
 
 type Config struct {
-    Host string `mapstructure:"host"`
-    Port int    `mapstructure:"port"`
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
 }
 ```
 

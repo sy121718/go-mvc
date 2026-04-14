@@ -63,17 +63,36 @@ type Config struct {
 }
 
 var (
-	rdb  *redis.Client
-	once sync.Once
+	rdb    *redis.Client
+	mu     sync.Mutex
+	inited bool
 )
+
+// getDefaultConfig 获取默认配置
+func getDefaultConfig() Config {
+	return Config{
+		Host:     "127.0.0.1",
+		Port:     6379,
+		Password: "",
+		DB:       0,
+		LazyInit: false,
+	}
+}
 
 // GetRedis 获取 Redis 客户端实例（懒加载）
 func GetRedis(v *viper.Viper) *redis.Client {
-	once.Do(func() {
-		if err := initRedis(v); err != nil {
-			panic(fmt.Sprintf("Redis 初始化失败: %v", err))
-		}
-	})
+	mu.Lock()
+	defer mu.Unlock()
+
+	if inited {
+		return rdb
+	}
+
+	if err := initRedis(v); err != nil {
+		panic(fmt.Sprintf("Redis 初始化失败: %v", err))
+	}
+
+	inited = true
 	return rdb
 }
 
@@ -82,12 +101,17 @@ func initRedis(v *viper.Viper) error {
 	// 自己解析配置
 	var cfg Config
 	if err := v.UnmarshalKey("redis", &cfg); err != nil {
-		return fmt.Errorf("解析 Redis 配置失败: %v", err)
+		log.Printf("解析 Redis 配置失败，使用默认配置: %v", err)
+		cfg = getDefaultConfig()
 	}
 
-	// 检查是否懒加载
-	if cfg.LazyInit {
-		return nil
+	// 配置兜底：如果关键字段为空，使用默认值
+	defaultCfg := getDefaultConfig()
+	if cfg.Host == "" {
+		cfg.Host = defaultCfg.Host
+	}
+	if cfg.Port == 0 {
+		cfg.Port = defaultCfg.Port
 	}
 
 	rdb = redis.NewClient(&redis.Options{
@@ -107,6 +131,26 @@ func initRedis(v *viper.Viper) error {
 }
 
 // InitRedis 手动初始化 Redis（用于非懒加载场景）
-func InitRedis(v *viper.Viper) error {
-	return initRedis(v)
+// 内部处理错误，致命错误会直接退出程序
+func InitRedis(v *viper.Viper) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if inited {
+		return
+	}
+
+	if err := initRedis(v); err != nil {
+		log.Fatalf("Redis 初始化失败: %v", err)
+	}
+
+	inited = true
+}
+
+// Close 关闭 Redis 连接
+func Close() error {
+	if rdb == nil {
+		return nil
+	}
+	return rdb.Close()
 }

@@ -1,88 +1,124 @@
-// Package response /*
 package response
 
 import (
-	"github.com/gin-gonic/gin"
+	"go-mvc/pkg/i18n"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Response 统一响应结构
 type Response struct {
-	Code    int         `json:"code"`           //状态码
-	Message string      `json:"message"`        //提示
-	Data    interface{} `json:"data,omitempty"` //内容
+	Code    string      `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+// getLang 获取客户端语言
+func getLang(c *gin.Context) string {
+	// 优先从 Header 获取
+	lang := c.GetHeader("Accept-Language")
+	if lang != "" {
+		return lang
+	}
+	// 其次从 Query 参数获取
+	lang = c.Query("lang")
+	if lang != "" {
+		return lang
+	}
+	// 默认中文
+	return "zh-CN"
 }
 
 // Success 成功响应
-func Success(c *gin.Context, data interface{}) {
+func Success(c *gin.Context, data ...interface{}) {
+	lang := getLang(c)
+	result := i18n.Get("msg_operation_success", lang)
+
+	var responseData interface{}
+	if len(data) > 0 {
+		responseData = data[0]
+	}
+
 	c.JSON(http.StatusOK, Response{
-		Code:    200,
-		Message: "success",
-		Data:    data,
+		Code:    "0",
+		Message: result.Value,
+		Data:    responseData,
 	})
 }
 
-// SuccessWithMessage 成功响应（自定义消息）
-func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
+// SuccessWithMessage 成功响应（自定义消息码）
+func SuccessWithMessage(c *gin.Context, msgCode string, data ...interface{}) {
+	lang := getLang(c)
+	result := i18n.Get(msgCode, lang)
+
+	var responseData interface{}
+	if len(data) > 0 {
+		responseData = data[0]
+	}
+
 	c.JSON(http.StatusOK, Response{
-		Code:    200,
-		Message: message,
-		Data:    data,
+		Code:    "0",
+		Message: result.Value,
+		Data:    responseData,
 	})
 }
 
-// Error 错误响应
-func Error(c *gin.Context, code int, message string) {
-	c.JSON(http.StatusOK, Response{
-		Code:    code,
-		Message: message,
+// Error 错误响应（自动获取多语言消息和HTTP状态码）
+func Error(c *gin.Context, errCode string) {
+	lang := getLang(c)
+	result := i18n.Get(errCode, lang)
+
+	c.JSON(result.HttpCode, Response{
+		Code:    errCode,
+		Message: result.Value,
 	})
 }
 
-// ErrorWithData 错误响应（带数据）
-func ErrorWithData(c *gin.Context, code int, message string, data interface{}) {
-	c.JSON(http.StatusOK, Response{
-		Code:    code,
+// ErrorWithMessage 错误响应（自定义消息）
+func ErrorWithMessage(c *gin.Context, errCode string, message string) {
+	lang := getLang(c)
+	result := i18n.Get(errCode, lang)
+
+	c.JSON(result.HttpCode, Response{
+		Code:    errCode,
 		Message: message,
-		Data:    data,
 	})
 }
 
 // ParamError 参数错误
-func ParamError(c *gin.Context, message string) {
-	Error(c, 400, message)
-}
+func ParamError(c *gin.Context, msg ...string) {
+	lang := getLang(c)
+	result := i18n.Get("ErrInvalidParams", lang)
 
-// Unauthorized 未授权
-func Unauthorized(c *gin.Context, message string) {
-	c.JSON(http.StatusUnauthorized, Response{
-		Code:    401,
-		Message: message,
-	})
-	c.Abort()
-}
+	message := result.Value
+	if len(msg) > 0 {
+		message = msg[0]
+	}
 
-// Forbidden 禁止访问
-func Forbidden(c *gin.Context, message string) {
-	c.JSON(http.StatusForbidden, Response{
-		Code:    403,
-		Message: message,
-	})
-	c.Abort()
-}
-
-// NotFound 未找到
-func NotFound(c *gin.Context, message string) {
-	c.JSON(http.StatusNotFound, Response{
-		Code:    404,
+	c.JSON(result.HttpCode, Response{
+		Code:    "ErrInvalidParams",
 		Message: message,
 	})
 }
 
-// ServerError 服务器错误
-func ServerError(c *gin.Context, message string) {
-	c.JSON(http.StatusInternalServerError, Response{
-		Code:    500,
+// NotFound 404响应
+func NotFound(c *gin.Context, msg ...string) {
+	lang := getLang(c)
+	result := i18n.Get("ErrNotFound", lang)
+
+	message := result.Value
+	if len(msg) > 0 {
+		message = msg[0]
+	}
+
+	c.JSON(result.HttpCode, Response{
+		Code:    "ErrNotFound",
 		Message: message,
 	})
+}
+
+// SuccessWithData 成功响应（兼容旧代码）
+func SuccessWithData(c *gin.Context, data interface{}) {
+	Success(c, data)
 }
