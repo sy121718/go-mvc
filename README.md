@@ -54,8 +54,10 @@ go-mvc/
 │   ├── cache/              # Redis
 │   ├── auth/               # JWT
 │   └── crypto/             # 签名
-├── storage/                # 文件存储
-├── docs/                   # 项目文档
+├── public/                 # 公共资源目录
+│   ├── docs/               # 项目文档
+│   ├── storage/            # 静态文件目录
+│   └── test/               # 单元测试与用例测试目录
 └── config.yaml             # 配置文件
 ```
 
