@@ -20,10 +20,12 @@ pkg/
 ### 1. auth - JWT 认证
 
 **主要功能：**
+
 - Token 生成、解析、刷新
 - 用户身份验证
 
 **使用示例：**
+
 ```go
 // 生成 Token
 token, _ := auth.GenerateToken(userID, username)
@@ -37,10 +39,12 @@ claims, _ := auth.ParseToken(token)
 ### 2. cache - Redis 缓存
 
 **主要功能：**
+
 - Redis 连接管理
 - 缓存操作
 
 **使用示例：**
+
 ```go
 rdb := cache.GetRedis(viper)
 rdb.Set(ctx, "key", "value", time.Hour)
