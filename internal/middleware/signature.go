@@ -1,12 +1,13 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
+	"go-mvc/internal/common/enums"
 	"go-mvc/pkg/crypto"
-	"go-mvc/pkg/errors"
 	"go-mvc/pkg/response"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // SignatureMiddleware 签名验证中间件
@@ -19,14 +20,14 @@ func SignatureMiddleware() gin.HandlerFunc {
 		}
 
 		if timestampStr == "" {
-			response.ErrorCode(c, errors.ParamMissing)
+			response.ParamError(c, "缺少时间戳参数")
 			c.Abort()
 			return
 		}
 
 		timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
 		if err != nil {
-			response.ErrorCode(c, errors.ParamFormatError)
+			response.ParamError(c, "时间戳格式错误")
 			c.Abort()
 			return
 		}
@@ -34,7 +35,7 @@ func SignatureMiddleware() gin.HandlerFunc {
 		// 2. 验证时间戳（防重放）
 		now := time.Now().Unix()
 		if now-timestamp > 300 || timestamp-now > 300 { // 5分钟容差
-			response.Error(c, errors.BadRequest, "请求已过期")
+			response.ErrorWithMessage(c, enums.ErrInvalidParams, "请求已过期")
 			c.Abort()
 			return
 		}
@@ -46,7 +47,7 @@ func SignatureMiddleware() gin.HandlerFunc {
 		}
 
 		if signature == "" {
-			response.ErrorCode(c, errors.ParamMissing)
+			response.ParamError(c, "缺少签名参数")
 			c.Abort()
 			return
 		}
@@ -76,7 +77,7 @@ func SignatureMiddleware() gin.HandlerFunc {
 
 		// 5. 验证签名
 		if err := crypto.VerifySignature(params, timestamp, signature); err != nil {
-			response.Error(c, errors.BadRequest, "签名验证失败")
+			response.ErrorWithMessage(c, enums.ErrInvalidParams, "签名验证失败")
 			c.Abort()
 			return
 		}

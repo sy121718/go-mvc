@@ -4,7 +4,7 @@
 
 ## 目录结构
 
-```
+```text
 module/
 ├── backend/           # 后台管理模块
 │   ├── admin/        # 管理员模块
@@ -23,7 +23,7 @@ module/
 
 每个模块必须包含以下目录：
 
-```
+```text
 module_name/
 ├── router.go         # 路由定义
 ├── handle/          # 控制器层
@@ -52,7 +52,8 @@ module_name/
 ### 2. 常量定义位置
 
 **系统级常量**（所有模块通用）：
-```
+
+```text
 internal/common/enums/
 ├── errors.go      # 错误码（ErrSystemError, ErrInvalidParams...）
 ├── messages.go    # 操作消息（MsgSaveSuccess, MsgDeleteSuccess...）
@@ -61,7 +62,8 @@ internal/common/enums/
 ```
 
 **模块级常量**（模块私有）：
-```
+
+```text
 internal/module/backend/admin/enums/
 ├── admin_error.go    # 管理员模块错误码
 ├── admin_msg.go      # 管理员模块消息
@@ -221,14 +223,16 @@ response.ParamError(c)
 
 客户端可通过以下方式指定语言：
 
-**方式1：HTTP Header（推荐）**
-```
+- 方式1：HTTP Header（推荐）
+
+```text
 Accept-Language: en-US
 Accept-Language: zh-CN
 ```
 
-**方式2：Query 参数**
-```
+- 方式2：Query 参数
+
+```text
 GET /api/admin/list?lang=en-US
 GET /api/admin/list?lang=zh-CN
 ```

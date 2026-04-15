@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
+	"go-mvc/internal/common/enums"
 	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/response"
 	"strconv"
@@ -15,7 +16,7 @@ func CasbinMiddleware() gin.HandlerFunc {
 		// 1. 从 Context 获取用户 ID（由 JWT 中间件存入）
 		userID, exists := c.Get("user_id")
 		if !exists {
-			response.Unauthorized(c, "未获取到用户信息")
+			response.ErrorWithMessage(c, enums.ErrUnauthorized, "未获取到用户信息")
 			return
 		}
 
@@ -29,19 +30,19 @@ func CasbinMiddleware() gin.HandlerFunc {
 		// 4. 调用 Casbin 验证权限
 		enforcer := casbin.GetEnforcer()
 		if enforcer == nil {
-			response.ServerError(c, "权限系统未初始化")
+			response.ErrorWithMessage(c, enums.ErrSystemError, "权限系统未初始化")
 			return
 		}
 
 		// Enforce(sub, obj, act) 返回 true 表示有权限
 		ok, err := enforcer.Enforce(sub, obj, act)
 		if err != nil {
-			response.ServerError(c, "权限验证失败")
+			response.ErrorWithMessage(c, enums.ErrSystemError, "权限验证失败")
 			return
 		}
 
 		if !ok {
-			response.Forbidden(c, "无权限访问")
+			response.ErrorWithMessage(c, enums.ErrPermissionDenied, "无权限访问")
 			return
 		}
 

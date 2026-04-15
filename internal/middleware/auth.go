@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go-mvc/internal/common/enums"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/response"
 )
@@ -15,7 +16,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// 1. 从 Header 获取 Token
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			response.Unauthorized(c, "缺少认证信息")
+			response.ErrorWithMessage(c, enums.ErrUnauthorized, "缺少认证信息")
 			return
 		}
 
@@ -23,7 +24,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// 格式：Bearer <token>
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			response.Unauthorized(c, "认证格式错误")
+			response.ErrorWithMessage(c, enums.ErrUnauthorized, "认证格式错误")
 			return
 		}
 
@@ -32,7 +33,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// 3. 解析 Token
 		claims, err := auth.ParseToken(tokenString)
 		if err != nil {
-			response.Unauthorized(c, "Token 无效或已过期")
+			response.ErrorWithMessage(c, enums.ErrInvalidToken, "Token 无效或已过期")
 			return
 		}
 

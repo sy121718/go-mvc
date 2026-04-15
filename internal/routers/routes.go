@@ -1,10 +1,10 @@
 package routers
 
 import (
-	"github.com/gin-gonic/gin"
 	admin_route "go-mvc/internal/module/backend/admin/route"
-	"go-mvc/internal/module/test/handle"
 	r "go-mvc/pkg/response"
+
+	"github.com/gin-gonic/gin"
 )
 
 /*
@@ -41,11 +41,6 @@ func SetupRoutes(router *gin.Engine) {
 
 	api := router.Group("/api")
 	{
-		// 测试多语言接口
-		testI18n := handle.NewTestI18nHandle()
-		api.GET("/test/success", testI18n.TestSuccess)
-		api.GET("/test/error", testI18n.TestError)
-		api.GET("/test/data", testI18n.TestData)
 
 		// 注册 admin 模块路由
 		admin_route.SetupAdminRoutes(api)
