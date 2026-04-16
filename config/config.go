@@ -1,16 +1,19 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
 	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/database"
 	"go-mvc/pkg/i18n"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/spf13/viper"
-	"sync"
 )
 
 /*
@@ -19,15 +22,12 @@ import (
 职责：
 - 读取 config.yaml 文件
 - 提供原始配置访问（通过 viper）
-- 不定义具体业务配置结构体
-
-配置结构体由各个 pkg 自己定义
+- 提供组件生命周期编排入口
 */
 
 var (
-	v      *viper.Viper
-	mu     sync.Mutex
-	inited bool
+	v  *viper.Viper
+	mu sync.Mutex
 )
 
 // ServerConfig 服务配置（核心配置，启动时加载）
@@ -42,20 +42,68 @@ func Init(configPath string) error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if inited {
+	if v != nil {
 		return nil
 	}
 
-	v = viper.New()
-	v.SetConfigFile(configPath)
+	cfg := viper.New()
+	setDefaults(cfg)
+	cfg.SetConfigFile(configPath)
 
-	if err := v.ReadInConfig(); err != nil {
-		return fmt.Errorf("读取配置文件失败: %v", err)
+	if err := cfg.ReadInConfig(); err != nil {
+		return fmt.Errorf("读取配置文件失败: %w", err)
 	}
 
-	inited = true
+	v = cfg
 	log.Printf("配置加载成功: %s", configPath)
 	return nil
+}
+
+func setDefaults(v *viper.Viper) {
+	v.SetDefault("server.port", 8080)
+	v.SetDefault("server.mode", "debug")
+	v.SetDefault("server.app_name", "go-mvc")
+
+	v.SetDefault("database.driver", "mysql")
+	v.SetDefault("database.host", "127.0.0.1")
+	v.SetDefault("database.port", 3306)
+	v.SetDefault("database.user", "root")
+	v.SetDefault("database.password", "")
+	v.SetDefault("database.dbname", "test")
+	v.SetDefault("database.max_idle_conns", 10)
+	v.SetDefault("database.max_open_conns", 100)
+	v.SetDefault("database.log_level", "")
+
+	v.SetDefault("redis.host", "127.0.0.1")
+	v.SetDefault("redis.port", 6379)
+	v.SetDefault("redis.password", "")
+	v.SetDefault("redis.db", 0)
+	v.SetDefault("redis.enabled", true)
+	v.SetDefault("redis.provider", "redis")
+	v.SetDefault("redis.addrs", []string{})
+
+	v.SetDefault("jwt.secret", "default-secret-key-please-change-in-production")
+	v.SetDefault("jwt.expire_time", 24)
+	v.SetDefault("jwt.issuer", "go-mvc")
+
+	v.SetDefault("casbin.enabled", true)
+	v.SetDefault("i18n.default_lang", "zh-CN")
+	v.SetDefault("i18n.auto_refresh", true)
+	v.SetDefault("i18n.refresh_interval", "20s")
+	v.SetDefault("queue.enabled", false)
+	v.SetDefault("queue.provider", "asynq")
+	v.SetDefault("queue.run_worker", false)
+	v.SetDefault("queue.concurrency", 10)
+	v.SetDefault("queue.redis.host", "")
+	v.SetDefault("queue.redis.port", 0)
+	v.SetDefault("queue.redis.password", "")
+	v.SetDefault("queue.redis.db", 0)
+	v.SetDefault("log.level", "info")
+	v.SetDefault("log.filename", "public/logs/app.log")
+	v.SetDefault("log.max_size", 100)
+	v.SetDefault("log.max_backups", 10)
+	v.SetDefault("log.max_age", 30)
+	v.SetDefault("log.compress", false)
 }
 
 // GetViper 获取 viper 实例（供 pkg 使用）
@@ -67,60 +115,97 @@ func GetViper() *viper.Viper {
 }
 
 // GetServer 获取服务配置
-func GetServer() ServerConfig {
+func GetServer() (ServerConfig, error) {
 	var cfg ServerConfig
-	if err := v.UnmarshalKey("server", &cfg); err != nil {
-		log.Fatalf("解析 Server 配置失败: %v", err)
+	if err := GetViper().UnmarshalKey("server", &cfg); err != nil {
+		return ServerConfig{}, fmt.Errorf("解析 Server 配置失败: %w", err)
 	}
-	return cfg
+	return cfg, nil
 }
 
 // InitComponents 初始化所有组件
-// 这是配置启动器，负责驱动 pkg 组件初始化
-// pkg 内部会处理错误，致命错误会直接退出程序
-func InitComponents(v *viper.Viper) {
+func InitComponents() error {
+	cfg := GetViper()
 	log.Println("开始初始化组件...")
 
-	// 初始化数据库（内部处理错误）
-	database.InitDB(v)
-
-	// 数据库初始化后，初始化多语言配置中心（依赖 DB 连接）
-	if database.IsInited() {
-		log.Println("初始化多语言配置中心...")
-		i18n.Init()
-		// 启动自动刷新（每10秒）
-		i18n.StartAutoRefresh()
+	if err := database.InitDB(cfg); err != nil {
+		return err
 	}
 
-	// 数据库初始化后，初始化 Casbin（依赖 DB 连接）
-	if database.IsInited() {
+	log.Println("初始化多语言配置中心...")
+	i18n.SetDefaultLang(cfg.GetString("i18n.default_lang"))
+	if err := i18n.Init(); err != nil {
+		return fmt.Errorf("初始化多语言配置中心失败: %w", err)
+	}
+
+	if cfg.GetBool("i18n.auto_refresh") {
+		refreshInterval, err := time.ParseDuration(cfg.GetString("i18n.refresh_interval"))
+		if err != nil {
+			return fmt.Errorf("解析 i18n.refresh_interval 失败: %w", err)
+		}
+		i18n.StartAutoRefresh(refreshInterval)
+	}
+
+	if cfg.GetBool("casbin.enabled") {
 		log.Println("初始化 Casbin...")
-		casbin.InitCasbin(database.GetDB())
-	}
-
-	// 初始化 Redis（内部处理错误）
-	cache.InitRedis(v)
-
-	// 初始化 JWT（内部处理错误）
-	auth.InitJWT(v)
-
-	log.Println("组件初始化完成")
-}
-
-// CloseComponents 关闭所有组件
-func CloseComponents() {
-	log.Println("开始关闭组件...")
-
-	// 只关闭已初始化的组件
-	if database.IsInited() {
-		if err := database.Close(); err != nil {
-			log.Printf("关闭数据库失败: %v", err)
+		if err := casbin.InitCasbin(database.GetDB()); err != nil {
+			return fmt.Errorf("初始化 Casbin 失败: %w", err)
 		}
 	}
 
-	if err := cache.Close(); err != nil {
-		log.Printf("关闭 Redis 失败: %v", err)
+	if cfg.GetBool("redis.enabled") {
+		if err := cache.InitRedis(cfg); err != nil {
+			return err
+		}
+	}
+
+	if err := auth.InitJWT(cfg); err != nil {
+		return err
+	}
+
+	if cfg.GetBool("queue.enabled") {
+		if err := task.Init(cfg); err != nil {
+			return fmt.Errorf("初始化任务队列失败: %w", err)
+		}
+		if cfg.GetBool("queue.run_worker") {
+			if err := task.StartQueue(); err != nil {
+				return fmt.Errorf("启动任务队列失败: %w", err)
+			}
+		}
+	}
+
+	log.Println("组件初始化完成")
+	return nil
+}
+
+// CloseComponents 关闭所有组件
+func CloseComponents() error {
+	log.Println("开始关闭组件...")
+
+	var closeErr error
+
+	i18n.StopAutoRefresh()
+
+	if err := task.ShutdownQueue(); err != nil {
+		closeErr = errors.Join(closeErr, err)
+	}
+
+	if cache.IsInited() {
+		if err := cache.Close(); err != nil {
+			closeErr = errors.Join(closeErr, err)
+		}
+	}
+
+	if database.IsInited() {
+		if err := database.Close(); err != nil {
+			closeErr = errors.Join(closeErr, err)
+		}
+	}
+
+	if closeErr != nil {
+		return closeErr
 	}
 
 	log.Println("组件关闭完成")
+	return nil
 }

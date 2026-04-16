@@ -1,18 +1,21 @@
 # pkg 组件包说明
 
-本目录包含项目的公共组件，提供可复用的功能模块。
+本目录包含项目的公共组件，提供可复用的基础能力模块，统一由 `config/config.go` 进行生命周期编排。
 
 ## 目录结构
 
-```
+```text
 pkg/
 ├── auth/         # JWT 认证组件
-├── cache/        # Redis 缓存组件
+├── cache/        # 缓存组件（根入口 + provider 实现）
+├── casbin/       # 权限组件
 ├── crypto/       # 加密签名组件
-├── database/     # MySQL 数据库组件
-├── errors/       # 错误码定义
-├── queue/        # 异步任务队列
-└── response/     # 统一响应格式
+├── database/     # 数据库组件（根入口 + driver 实现）
+├── errors/       # 通用错误定义
+├── i18n/         # 多语言配置中心（数据库驱动）
+├── queue/        # 异步任务队列（根入口 + provider 实现）
+├── response/     # 统一响应格式
+└── validate/     # 通用校验能力
 ```
 
 ## 组件列表
@@ -23,299 +26,278 @@ pkg/
 
 - Token 生成、解析、刷新
 - 用户身份验证
+- 启动时完成配置装配
 
 **使用示例：**
 
 ```go
 // 生成 Token
-token, _ := auth.GenerateToken(userID, username)
+token, err := auth.GenerateToken(userID, username)
 
 // 解析 Token
-claims, _ := auth.ParseToken(token)
+claims, err := auth.ParseToken(token)
 ```
 
 ---
 
-### 2. cache - Redis 缓存
+### 2. cache - 缓存组件
 
 **主要功能：**
 
-- Redis 连接管理
-- 缓存操作
+- 根入口位于 `pkg/cache/cache.go`
+- 具体实现位于 `pkg/cache/provider/`
+- 当前默认实现为 Redis provider
+- 由 `redis.enabled` 控制是否启用
+- 通过 `redis.provider` 选择具体 provider
 
 **使用示例：**
 
 ```go
-rdb := cache.GetRedis(viper)
+rdb := cache.GetRedis()
 rdb.Set(ctx, "key", "value", time.Hour)
 rdb.Get(ctx, "key")
 ```
 
 ---
 
-### 3. crypto - 加密签名
+### 3. casbin - 权限管理
 
 **主要功能：**
+
+- 基于数据库策略表加载权限规则
+- 提供运行期权限校验入口
+- 启用时在服务启动阶段完成初始化
+
+**使用示例：**
+
+```go
+enforcer := casbin.GetEnforcer()
+ok, err := enforcer.Enforce(sub, obj, act)
+```
+
+---
+
+### 4. crypto - 加密签名
+
+**主要功能：**
+
 - API 签名验证
 - HMAC-SHA256 加密
 
 **使用示例：**
-```go
-// 生成签名
-sign := crypto.GenerateSign(params, timestamp)
 
-// 验证签名
+```go
+sign := crypto.GenerateSign(params, timestamp)
 crypto.VerifySign(params, sign, timestamp)
 ```
 
 ---
 
-### 4. database - MySQL 数据库
+### 5. database - 数据库组件
 
 **主要功能：**
-- 数据库连接管理
+
+- 根入口位于 `pkg/database/database.go`
+- 具体驱动实现位于 `pkg/database/driver/`
+- 连接管理
 - 连接池配置
 - GORM 集成
+- 启动时完成连接检查
+- 通过 `database.driver` 选择具体数据库驱动
 
 **使用示例：**
+
 ```go
-db := database.GetDB(viper)
+db := database.GetDB()
 db.Find(&users)
 ```
 
 ---
 
-### 5. errors - 错误码
+### 6. errors - 通用错误定义
 
 **职责范围：**
-- 系统级错误码（HTTP、参数、数据库、缓存、认证）
-- 业务错误码由各模块自行定义
 
-**错误码分配：**
-- 0-4999：系统级错误（pkg/errors）
-- 5000-5999：Admin 模块
-- 6000-6999：User 模块
-- 7000-7999：Order 模块
-- 8000+：其他模块
+- 存放 pkg 层通用错误定义
+- 业务错误码与业务提示优先放模块或 i18n 配置中心
+
+---
+
+### 7. i18n - 多语言配置中心
+
+**主要功能：**
+
+- 从数据库 `sys_i18n` 预热多语言缓存
+- 统一查询消息文本与 HTTP 状态码
+- 支持自动刷新与显式停止
+- 默认语言优先读取 `config.yaml` 的 `i18n.default_lang`
+- pkg 内部保留默认语言兜底
 
 **使用示例：**
+
 ```go
-// 系统级错误
-err := errors.NewError(errors.ParamInvalid)
-err := errors.NewError(errors.DBQueryError)
-
-// 业务错误（在模块内定义）
-// internal/module/backend/user/errors/errors.go
-const (
-    UserNotFound = 6000
-    UserPasswordError = 6001
-)
-```
-
-**业务模块错误码定义：**
-```go
-// internal/module/backend/user/errors/errors.go
-package errors
-
-const (
-    UserNotFound      = 6000
-    UserPasswordError = 6001
-    UserDisabled      = 6002
-)
-
-var errorMsg = map[int]string{
-    UserNotFound:      "用户不存在",
-    UserPasswordError: "密码错误",
-    UserDisabled:      "用户已被禁用",
-}
-
-func GetMessage(code int) string {
-    if msg, ok := errorMsg[code]; ok {
-        return msg
-    }
-    return "未知错误"
-}
+result := i18n.Get("msg_operation_success", "zh-CN")
+text := result.Value
+code := result.HttpCode
 ```
 
 ---
 
-### 6. queue - 异步队列
+### 8. queue - 异步队列
 
 **主要功能：**
-- 异步任务调度
-- 定时任务
-- 任务重试
+
+- 根入口位于 `pkg/queue/queue.go`
+- 具体实现位于 `pkg/queue/provider/`
+- 异步任务投递
+- 延迟任务
+- 可选 worker 启动
+- 通过 `queue.provider` 选择具体 provider
 
 **使用示例：**
-```go
-// 注册任务
-queue.RegisterTask("email:send", HandleEmailTask)
 
-// 投递任务
-task := asynq.NewTask("email:send", payload)
-queue.Enqueue(task)
+```go
+queue.Register("email:send", HandleEmailSend)
+err := queue.Enqueue("email:send", payload)
+err = queue.EnqueueIn("email:send", time.Minute, payload)
 ```
 
 ---
 
-### 7. response - 统一响应
+### 9. response - 统一响应
 
 **主要功能：**
+
 - 标准化 API 响应格式
-- 简化 Controller 代码
+- 统一依赖 i18n 输出文案与状态码
 
 **使用示例：**
+
 ```go
-// 成功响应
 response.Success(c, user)
-
-// 失败响应
-response.Fail(c, "用户名已存在")
-
-// 错误响应
-response.Error(c, "服务器错误")
+response.SuccessWithMessage(c, "msg_operation_success", user)
+response.Error(c, "ErrSystemError")
 ```
 
 ---
 
-## 设计原则
+### 10. validate - 通用校验
 
-### 1. 懒加载（Lazy Init）
+**主要功能：**
 
-所有组件支持懒加载，通过配置控制：
+- 提供通用校验辅助能力
+- 供业务层按需复用
 
-```yaml
-database:
-  lazy_init: false  # false=启动时连接，true=用时连接
-```
+---
 
-### 2. 单例模式
+## 生命周期规范
 
-使用 `sync.Once` 确保只初始化一次：
+### 1. 统一启动入口
 
-```go
-var once sync.Once
-
-once.Do(func() {
-    // 只执行一次
-})
-```
-
-### 3. 依赖注入
-
-通过传递 `viper.Viper` 实例，pkg 自己解析配置：
+所有基础组件统一由 `config.InitComponents()` 编排初始化，而不是在 `main.go` 中逐个直接调用。
 
 ```go
-// main.go
-v := config.GetViper()
-database.InitDB(v)
+if err := config.Init("config.yaml"); err != nil {
+    return err
+}
 
-// pkg/database/mysql.go
-func InitDB(v *viper.Viper) error {
-    var cfg Config
-    v.UnmarshalKey("database", &cfg)
+if err := config.InitComponents(); err != nil {
+    return err
 }
 ```
+
+### 2. 统一关闭入口
+
+所有需要释放的组件统一由 `config.CloseComponents()` 逆序关闭。
+
+```go
+if err := config.CloseComponents(); err != nil {
+    log.Printf("组件关闭失败: %v", err)
+}
+```
+
+### 3. 组件初始化规则
+
+- **强制启动初始化**：`database`、`auth`、`i18n`
+- **按配置启用，启用后启动初始化**：`casbin`、`cache`、`queue`
+- 不再以 `lazy_init` 作为通用设计原则
+- 组件内部只负责初始化自身，不决定退出进程
+
+### 4. 配置读取规则
+
+- 配置默认值统一放在 `config/config.go`
+- 各 pkg 自己定义 `Config` 结构体并解析对应配置段
+- pkg 不导入 `config` 包，避免循环依赖
 
 ---
 
 ## 使用流程
 
-### 1. 在 main.go 中初始化
+### 1. 在启动链中初始化
 
 ```go
-// 加载配置
-config.Init("config.yaml")
-v := config.GetViper()
+if err := config.Init("config.yaml"); err != nil {
+    return err
+}
 
-// 初始化组件
-database.InitDB(v)
-cache.InitRedis(v)
-auth.InitJWT(v)
+serverCfg, err := config.GetServer()
+if err != nil {
+    return err
+}
+
+gin.SetMode(serverCfg.Mode)
+
+if err := config.InitComponents(); err != nil {
+    return err
+}
 ```
 
 ### 2. 在业务代码中使用
 
 ```go
-// 获取数据库连接
-db := database.GetDB(viper)
-
-// 获取 Redis 连接
-rdb := cache.GetRedis(viper)
-
-// 生成 Token
-token, _ := auth.GenerateToken(userID, username)
-
-// 返回响应
-response.Success(c, user)
+db := database.GetDB()
+rdb := cache.GetRedis()
+token, err := auth.GenerateToken(userID, username)
+response.Success(c, data)
 ```
 
 ---
 
 ## 扩展新组件
 
-### 1. 创建目录
+### 1. 创建组件目录
 
-```bash
-mkdir pkg/newpkg
-touch pkg/newpkg/newpkg.go
-```
+新增组件放在 `pkg/<name>/` 下，并在组件内部定义自己的配置结构与初始化函数。
 
-### 2. 定义配置结构体
+### 2. 设计初始化接口
 
-```go
-// Package newpkg pkg/newpkg/newpkg.go
-package newpkg
-
-type Config struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
-}
-```
-
-### 3. 实现初始化函数
+推荐形式：
 
 ```go
-func InitNewPkg(v *viper.Viper) error {
+func Init(v *viper.Viper) error {
     var cfg Config
-    v.UnmarshalKey("newpkg", &cfg)
-    // 初始化逻辑
+    if err := v.UnmarshalKey("newpkg", &cfg); err != nil {
+        return err
+    }
     return nil
 }
 ```
 
-### 4. 在 config.yaml 添加配置
+### 3. 接入生命周期编排
 
-```yaml
-newpkg:
-  host: 127.0.0.1
-  port: 8080
-```
-
-### 5. 在 main.go 调用
-
-```go
-newpkg.InitNewPkg(v)
-```
+- 在 `config/config.go` 中设置默认值
+- 在 `config.InitComponents()` 中按依赖顺序接入初始化
+- 如需释放资源，在 `config.CloseComponents()` 中接入关闭逻辑
 
 ---
 
 ## 注意事项
 
-1. **配置结构体定义在各自的 pkg 中**
-2. **避免循环导入**：pkg 不导入 config 包
-3. **使用 viper 参数传递**：main.go 传递给 pkg
-4. **并发安全**：使用 `sync.Once` 确保线程安全
+1. **配置结构体定义在各自 pkg 中**
+2. **避免循环导入：pkg 不导入 config 包**
+3. **pkg 只返回 error，不决定退出进程**
+4. **生命周期由 config 统一编排**
+5. **`i18n` 继续以数据库为唯一数据源**
 
 ---
 
-## PHP 开发者对比
-
-| 功能 | PHP (Laravel) | Go (本项目) |
-|------|--------------|------------|
-| 数据库 | `DB::table()` | `database.GetDB(v)` |
-| 缓存 | `Cache::get()` | `cache.GetRedis(v).Get()` |
-| 认证 | `JWTAuth::fromUser()` | `auth.GenerateToken()` |
-| 响应 | `response()->json()` | `response.Success(c, data)` |
-| 错误码 | `define('ERROR_CODE', 1000)` | `const ErrorCode = 1000` |
-| 队列 | `dispatch(new Job())` | `queue.Enqueue(task)` |

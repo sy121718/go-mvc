@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"go-mvc/pkg/queue"
-
-	"github.com/hibiken/asynq"
 )
 
 // ========== 任务类型 ==========
@@ -23,10 +21,10 @@ type OrderPayload struct {
 
 // ========== 处理器 ==========
 
-func HandleOrderCancel(ctx context.Context, t *asynq.Task) error {
+func HandleOrderCancel(ctx context.Context, data []byte) error {
 	var payload OrderPayload
-	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-		return fmt.Errorf("解析订单载荷失败: %v", err)
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return fmt.Errorf("解析订单载荷失败: %w", err)
 	}
 
 	// 这里写订单取消的逻辑
@@ -46,7 +44,5 @@ func CancelOrder(orderID int64, delay time.Duration) error {
 // ========== 自动注册 ==========
 
 func init() {
-	queue.Register(func() {
-		queue.RegisterHandler(TypeOrderCancel, HandleOrderCancel)
-	})
+	queue.Register(TypeOrderCancel, HandleOrderCancel)
 }

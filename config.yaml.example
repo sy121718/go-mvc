@@ -6,6 +6,7 @@ server:
 
 # 数据库配置
 database:
+  driver: mysql  # mysql, postgres, sqlite, sqlserver
   host: 127.0.0.1
   port: 3306
   user: root
@@ -13,27 +14,45 @@ database:
   dbname: go_mvc
   max_idle_conns: 10
   max_open_conns: 100
-  lazy_init: false  # 是否懒加载
+  log_level: ""  # 留空时按 server.mode 推导
 
 # Redis配置
 redis:
+  provider: redis
   host: 127.0.0.1
   port: 6379
   password: ""
   db: 0
-  lazy_init: false  # 是否懒加载
+  addrs: []  # 集群/哨兵可填写多个地址，留空时使用 host:port
+  enabled: true
 
 # JWT配置
 jwt:
   secret: your-jwt-secret-key-change-this
   expire_time: 24  # 过期时间（小时）
   issuer: go-mvc
-  lazy_init: false  # 是否懒加载
+
+# Casbin 配置
+casbin:
+  enabled: true
+
+# i18n 配置（数据库为唯一数据源）
+i18n:
+  default_lang: zh-CN
+  auto_refresh: true
+  refresh_interval: 20s
+
+# 队列配置
+queue:
+  enabled: false
+  provider: asynq
+  run_worker: false
+  concurrency: 10
 
 # 日志配置
 log:
   level: info  # debug, info, warn, error
-  filename: logs/app.log
+  filename: public/logs/app.log
   max_size: 100  # 日志文件最大大小（MB）
   max_backups: 10  # 最多保留旧文件数
   max_age: 30  # 最多保留天数

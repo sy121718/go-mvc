@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"go-mvc/pkg/queue"
-
-	"github.com/hibiken/asynq"
 )
 
 // ========== 任务类型 ==========
@@ -25,10 +23,10 @@ type EmailPayload struct {
 
 // ========== 处理器 ==========
 
-func HandleEmailSend(ctx context.Context, t *asynq.Task) error {
+func HandleEmailSend(ctx context.Context, data []byte) error {
 	var payload EmailPayload
-	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-		return fmt.Errorf("解析邮件载荷失败: %v", err)
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return fmt.Errorf("解析邮件载荷失败: %w", err)
 	}
 
 	// 这里写发送邮件的逻辑
@@ -58,7 +56,5 @@ func SendEmailDelay(to, subject, body string, delay time.Duration) error {
 // ========== 自动注册 ==========
 
 func init() {
-	queue.Register(func() {
-		queue.RegisterHandler(TypeEmailSend, HandleEmailSend)
-	})
+	queue.Register(TypeEmailSend, HandleEmailSend)
 }
