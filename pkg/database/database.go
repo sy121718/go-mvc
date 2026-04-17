@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 /*
@@ -86,25 +86,25 @@ func getDefaultConfig() Config {
 	}
 }
 
-func resolveLogLevel(serverMode string, dbLogLevel string) logger.LogLevel {
+func resolveLogLevel(serverMode string, dbLogLevel string) gormlogger.LogLevel {
 	switch strings.ToLower(dbLogLevel) {
 	case "silent":
-		return logger.Silent
+		return gormlogger.Silent
 	case "error":
-		return logger.Error
+		return gormlogger.Error
 	case "warn", "warning":
-		return logger.Warn
+		return gormlogger.Warn
 	case "info":
-		return logger.Info
+		return gormlogger.Info
 	}
 
 	switch strings.ToLower(serverMode) {
 	case "release":
-		return logger.Warn
+		return gormlogger.Warn
 	case "test":
-		return logger.Error
+		return gormlogger.Error
 	default:
-		return logger.Info
+		return gormlogger.Info
 	}
 }
 
@@ -160,8 +160,14 @@ func initDB(v *viper.Viper) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	sqlScene := ""
+	if v.GetBool("log.capture.sql") {
+		sqlScene = "sql"
+	}
+
+	gormBaseLogger := gormlogger.Default.LogMode(resolveLogLevel(v.GetString("server.mode"), cfg.LogLevel))
 	gormDB, err := gorm.Open(dialector, &gorm.Config{
-		Logger: logger.Default.LogMode(resolveLogLevel(v.GetString("server.mode"), cfg.LogLevel)),
+		Logger: newSceneGormLogger(gormBaseLogger, sqlScene),
 		// 启用方言错误翻译，便于后续通过 gorm.ErrDuplicatedKey / gorm.ErrForeignKeyViolated 做统一判断。
 		TranslateError: true,
 	})

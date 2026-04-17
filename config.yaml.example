@@ -53,6 +53,10 @@ queue:
 log:
   level: info  # debug, info, warn, error
   filename: public/logs/app.log
+  base_dir: public/logs  # 日志基础目录
+  capture:
+    sql: false       # 是否开启 SQL 全局捕获（目录由入口传入）
+    http: false      # 是否开启 HTTP 全局捕获（目录由入口传入）
   max_size: 100  # 日志文件最大大小（MB）
   max_backups: 10  # 最多保留旧文件数
   max_age: 30  # 最多保留天数

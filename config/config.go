@@ -9,6 +9,7 @@ import (
 	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/database"
 	"go-mvc/pkg/i18n"
+	pkglogger "go-mvc/pkg/logger"
 	"go-mvc/pkg/upload"
 	"log"
 	"sync"
@@ -105,6 +106,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.filename", "public/logs/app.log")
+	v.SetDefault("log.base_dir", "public/logs")
 	v.SetDefault("log.max_size", 100)
 	v.SetDefault("log.max_backups", 10)
 	v.SetDefault("log.max_age", 30)
@@ -132,6 +134,10 @@ func GetServer() (ServerConfig, error) {
 func InitComponents() error {
 	cfg := GetViper()
 	log.Println("开始初始化组件...")
+
+	if err := pkglogger.Init(cfg); err != nil {
+		return fmt.Errorf("初始化日志组件失败: %w", err)
+	}
 
 	if err := database.InitDB(cfg); err != nil {
 		return err

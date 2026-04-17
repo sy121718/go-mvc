@@ -5,11 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"go-mvc/config"
+	"go-mvc/internal/middleware"
 	"go-mvc/internal/routers"
+	"go-mvc/pkg/utils"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -42,22 +45,34 @@ func main() {
 }
 
 func run() error {
+	// 1) 读取配置文件，包含 server/database/redis 等全局配置。
 	if err := config.Init("config.yaml"); err != nil {
 		return fmt.Errorf("配置加载失败: %w", err)
 	}
 
+	// 2) 解析服务配置并设置 Gin 运行模式（debug/release/test）。
 	serverCfg, err := config.GetServer()
 	if err != nil {
 		return err
 	}
 	gin.SetMode(serverCfg.Mode)
 
+	// 3) 初始化基础组件（DB、i18n、cache、auth、upload、queue...）。
 	if err := config.InitComponents(); err != nil {
 		return fmt.Errorf("组件初始化失败: %w", err)
 	}
 
+	// 4) 构建 HTTP 路由。
 	router := gin.Default()
+	router.Use(middleware.RequestLogCaptureMiddleware(config.GetViper().GetBool("log.capture.http")))
 	routers.SetupRoutes(router)
+
+	// 5) 启动前端口策略：
+	// - debug/test：自动尝试释放端口（仅白名单进程）
+	// - release：只提示占用进程与 kill 命令，不自动结束进程
+	if err := ensurePortReady(serverCfg.Mode, serverCfg.Port); err != nil {
+		return err
+	}
 
 	addr := fmt.Sprintf(":%d", serverCfg.Port)
 	log.Printf("服务启动: http://localhost%s", addr)
@@ -67,6 +82,9 @@ func run() error {
 		Handler: router,
 	}
 
+	// 6) 在 goroutine 里启动 HTTP 服务：
+	// - 正常关闭时 ListenAndServe 会返回 http.ErrServerClosed（不是错误）
+	// - 非预期错误（如端口冲突）通过 channel 回传到主协程统一处理
 	serverErrCh := make(chan error, 1)
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -75,6 +93,9 @@ func run() error {
 		close(serverErrCh)
 	}()
 
+	// 7) 等待两类信号：
+	// - 服务启动/运行期错误
+	// - 进程退出信号（Ctrl+C / kill）
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	defer signal.Stop(quit)
@@ -82,6 +103,7 @@ func run() error {
 	select {
 	case err := <-serverErrCh:
 		if err != nil {
+			// 启动失败时也要执行组件关闭，避免留下后台资源（连接、定时器等）。
 			if closeErr := config.CloseComponents(); closeErr != nil {
 				log.Printf("组件关闭失败: %v", closeErr)
 			}
@@ -95,14 +117,50 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// 8) 优雅关闭 HTTP：给在途请求最多 5 秒收尾时间。
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("HTTP Server 关闭失败: %v", err)
 	}
 
+	// 9) 统一关闭组件，释放数据库、缓存、队列等资源。
 	if err := config.CloseComponents(); err != nil {
 		log.Printf("组件关闭失败: %v", err)
 	}
 
 	log.Println("服务已退出")
 	return nil
+}
+
+func ensurePortReady(serverMode string, port int) error {
+	mode := strings.ToLower(strings.TrimSpace(serverMode))
+	allowKill := []string{"main.exe", "main", "go.exe", "go", "air.exe", "air"}
+
+	switch mode {
+	case "debug", "test":
+		if err := utils.ReleaseTCPPortIfOccupied(port, allowKill); err != nil {
+			return fmt.Errorf("启动前端口检查失败: %w", err)
+		}
+		return nil
+	default:
+		processes, err := utils.ListTCPListeningProcesses(port)
+		if err != nil {
+			return fmt.Errorf("启动前端口检查失败: %w", err)
+		}
+		if len(processes) == 0 {
+			return nil
+		}
+
+		commands := make([]string, 0, len(processes))
+		for _, proc := range processes {
+			commands = append(commands, fmt.Sprintf("%s(pid=%d): %s", proc.Name, proc.PID, utils.KillCommandByPID(proc.PID)))
+		}
+
+		return fmt.Errorf(
+			"端口 %d 已被占用（%s 模式不会自动结束进程）: %s；可手动执行：%s",
+			port,
+			mode,
+			utils.FormatProcesses(processes),
+			strings.Join(commands, " ; "),
+		)
+	}
 }
