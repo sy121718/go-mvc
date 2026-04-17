@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -70,7 +69,7 @@ func run() error {
 	// 5) 启动前端口策略：
 	// - debug/test：自动尝试释放端口（仅白名单进程）
 	// - release：只提示占用进程与 kill 命令，不自动结束进程
-	if err := ensurePortReady(serverCfg.Mode, serverCfg.Port); err != nil {
+	if err := utils.EnsurePortReady(serverCfg.Mode, serverCfg.Port); err != nil {
 		return err
 	}
 
@@ -129,38 +128,4 @@ func run() error {
 
 	log.Println("服务已退出")
 	return nil
-}
-
-func ensurePortReady(serverMode string, port int) error {
-	mode := strings.ToLower(strings.TrimSpace(serverMode))
-	allowKill := []string{"main.exe", "main", "go.exe", "go", "air.exe", "air"}
-
-	switch mode {
-	case "debug", "test":
-		if err := utils.ReleaseTCPPortIfOccupied(port, allowKill); err != nil {
-			return fmt.Errorf("启动前端口检查失败: %w", err)
-		}
-		return nil
-	default:
-		processes, err := utils.ListTCPListeningProcesses(port)
-		if err != nil {
-			return fmt.Errorf("启动前端口检查失败: %w", err)
-		}
-		if len(processes) == 0 {
-			return nil
-		}
-
-		commands := make([]string, 0, len(processes))
-		for _, proc := range processes {
-			commands = append(commands, fmt.Sprintf("%s(pid=%d): %s", proc.Name, proc.PID, utils.KillCommandByPID(proc.PID)))
-		}
-
-		return fmt.Errorf(
-			"端口 %d 已被占用（%s 模式不会自动结束进程）: %s；可手动执行：%s",
-			port,
-			mode,
-			utils.FormatProcesses(processes),
-			strings.Join(commands, " ; "),
-		)
-	}
 }

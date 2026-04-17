@@ -124,6 +124,44 @@ func ReleaseTCPPortIfOccupied(port int, allowedProcessNames []string) error {
 	return fmt.Errorf("端口 %d 释放失败，请手动检查占用进程", port)
 }
 
+// EnsurePortReady handles port occupancy strategy by server mode.
+//
+// debug/test: auto-release only allowlisted processes on the target port.
+// others: only report occupancy and provide manual kill commands.
+func EnsurePortReady(serverMode string, port int) error {
+	mode := strings.ToLower(strings.TrimSpace(serverMode))
+	allowKill := []string{"main.exe", "main", "go.exe", "go", "air.exe", "air"}
+
+	switch mode {
+	case "debug", "test":
+		if err := ReleaseTCPPortIfOccupied(port, allowKill); err != nil {
+			return fmt.Errorf("启动前端口检查失败: %w", err)
+		}
+		return nil
+	default:
+		processes, err := ListTCPListeningProcesses(port)
+		if err != nil {
+			return fmt.Errorf("启动前端口检查失败: %w", err)
+		}
+		if len(processes) == 0 {
+			return nil
+		}
+
+		commands := make([]string, 0, len(processes))
+		for _, proc := range processes {
+			commands = append(commands, fmt.Sprintf("%s(pid=%d): %s", proc.Name, proc.PID, KillCommandByPID(proc.PID)))
+		}
+
+		return fmt.Errorf(
+			"端口 %d 已被占用（%s 模式不会自动结束进程）: %s；可手动执行：%s",
+			port,
+			mode,
+			FormatProcesses(processes),
+			strings.Join(commands, " ; "),
+		)
+	}
+}
+
 func validatePort(port int) error {
 	if port <= 0 || port > 65535 {
 		return fmt.Errorf("非法端口: %d", port)
