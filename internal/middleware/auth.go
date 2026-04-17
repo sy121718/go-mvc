@@ -3,10 +3,11 @@ package middleware
 import (
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"go-mvc/pkg/enums"
 	"go-mvc/pkg/auth"
+	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
+
+	"github.com/gin-gonic/gin"
 )
 
 // JWTAuthMiddleware JWT 认证中间件
