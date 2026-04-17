@@ -36,60 +36,73 @@ PHP 对比：
 - 各个 pkg 定义自己的 Config 结构体和默认值
 */
 func main() {
-	// 1. 加载配置文件
+	if err := run(); err != nil {
+		log.Fatalf("服务启动失败: %v", err)
+	}
+}
+
+func run() error {
 	if err := config.Init("config.yaml"); err != nil {
-		log.Fatalf("配置加载失败: %v", err)
+		return fmt.Errorf("配置加载失败: %w", err)
 	}
 
-	// 获取 viper 实例
-	v := config.GetViper()
-
-	// 设置 Gin 模式
-	serverCfg := config.GetServer()
+	serverCfg, err := config.GetServer()
+	if err != nil {
+		return err
+	}
 	gin.SetMode(serverCfg.Mode)
 
-	// 2. 初始化组件（config 驱动 pkg 初始化，自动监听退出信号）
-	config.InitComponents(v)
+	if err := config.InitComponents(); err != nil {
+		return fmt.Errorf("组件初始化失败: %w", err)
+	}
 
-	// 3. 创建 Gin 引擎
 	router := gin.Default()
-
-	// 4. 注册路由
 	routers.SetupRoutes(router)
 
-	// 5. 启动服务
 	addr := fmt.Sprintf(":%d", serverCfg.Port)
 	log.Printf("服务启动: http://localhost%s", addr)
 
-	// 在 goroutine 中启动服务器
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: router,
 	}
 
+	serverErrCh := make(chan error, 1)
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("服务启动失败: %v", err)
+			serverErrCh <- err
 		}
+		close(serverErrCh)
 	}()
 
-	// 监听退出信号
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("收到退出信号，开始关闭...")
+	defer signal.Stop(quit)
 
-	// 优雅关闭
+	select {
+	case err := <-serverErrCh:
+		if err != nil {
+			if closeErr := config.CloseComponents(); closeErr != nil {
+				log.Printf("组件关闭失败: %v", closeErr)
+			}
+			return fmt.Errorf("HTTP 服务启动失败: %w", err)
+		}
+		return nil
+	case <-quit:
+		log.Println("收到退出信号，开始关闭...")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// 1. 先关闭 HTTP Server（停止接收新请求）
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("HTTP Server 关闭失败: %v", err)
 	}
 
-	// 2. 再关闭数据库和 Redis
-	config.CloseComponents()
+	if err := config.CloseComponents(); err != nil {
+		log.Printf("组件关闭失败: %v", err)
+	}
 
 	log.Println("服务已退出")
+	return nil
 }

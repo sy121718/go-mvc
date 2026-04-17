@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"go-mvc/internal/common/enums"
+	"go-mvc/pkg/enums"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/response"
 )

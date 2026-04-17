@@ -57,3 +57,8 @@ log:
   max_backups: 10  # 最多保留旧文件数
   max_age: 30  # 最多保留天数
   compress: false  # 是否压缩
+
+# 上传配置
+upload:
+  enabled: true
+  default_provider: local

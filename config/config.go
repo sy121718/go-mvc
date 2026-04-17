@@ -9,6 +9,7 @@ import (
 	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/database"
 	"go-mvc/pkg/i18n"
+	"go-mvc/pkg/upload"
 	"log"
 	"sync"
 	"time"
@@ -98,6 +99,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("queue.redis.port", 0)
 	v.SetDefault("queue.redis.password", "")
 	v.SetDefault("queue.redis.db", 0)
+
+	v.SetDefault("upload.enabled", true)
+	v.SetDefault("upload.default_provider", "local")
+
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.filename", "public/logs/app.log")
 	v.SetDefault("log.max_size", 100)
@@ -163,6 +168,12 @@ func InitComponents() error {
 		return err
 	}
 
+	if cfg.GetBool("upload.enabled") {
+		if err := upload.Init(cfg); err != nil {
+			return fmt.Errorf("初始化上传组件失败: %w", err)
+		}
+	}
+
 	if cfg.GetBool("queue.enabled") {
 		if err := task.Init(cfg); err != nil {
 			return fmt.Errorf("初始化任务队列失败: %w", err)
@@ -192,6 +203,12 @@ func CloseComponents() error {
 
 	if cache.IsInited() {
 		if err := cache.Close(); err != nil {
+			closeErr = errors.Join(closeErr, err)
+		}
+	}
+
+	if upload.IsInited() {
+		if err := upload.Close(); err != nil {
 			closeErr = errors.Join(closeErr, err)
 		}
 	}

@@ -40,7 +40,18 @@
       "Bash(find pkg/errors -name \"*.go\" -exec head -50 {} \\\\;)",
       "Bash(rm:*)",
       "Bash(curl:*)",
-      "Bash(taskkill //F //IM app.exe)"
+      "Bash(taskkill //F //IM app.exe)",
+      "Bash(git:*)",
+      "Skill(claude-md-management:revise-claude-md)",
+      "Skill(claude-md-management:revise-claude-md:*)",
+      "Bash(go test:*)",
+      "Bash(mkdir -p \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/user/router\" \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/user/handle\")",
+      "Bash(mv \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/route\" \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/router\")",
+      "Bash(mv \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/router/sys_admin_route.go\" \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/router/admin_router.go\")",
+      "Bash(mv \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/handle/sys_admin_handle.go\" \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/handle/admin_handle.go\")",
+      "Bash(mv \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/service/sys_admin_service.go\" \"c:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/module/backend/admin/service/admin_service.go\")",
+      "Bash(go env:*)",
+      "Bash(gofmt -w \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/cmd/main.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/config/config.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/database/mysql.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/cache/redis.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/auth/jwt.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/casbin/casbin.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/i18n/i18n.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/i18n/loader.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/queue/asynq.go\" \"C:/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/task/queue.go\")"
     ]
   }
 }

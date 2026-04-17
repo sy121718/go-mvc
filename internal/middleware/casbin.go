@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	"go-mvc/internal/common/enums"
 	"go-mvc/pkg/casbin"
+	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CasbinMiddleware Casbin 权限验证中间件

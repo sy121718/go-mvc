@@ -1,4 +1,4 @@
-package model
+package adminmodel
 
 import (
 	"errors"

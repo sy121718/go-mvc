@@ -6,34 +6,52 @@
 
 ```text
 module/
-├── backend/           # 后台管理模块
-│   ├── admin/        # 管理员模块
-│   ├── user/         # 用户管理模块
-│   └── ...
-├── frontend/         # 前台业务模块
-│   ├── user/        # 用户模块
-│   ├── order/       # 订单模块
-│   └── ...
-└── common/          # 公共模块
-    ├── enums/       # 系统级枚举和常量
+└── backend/                 # 当前已启用的后台业务模块
+    ├── admin/
+    ├── user/
     └── ...
 ```
 
 ## 模块结构规范
 
-每个模块必须包含以下目录：
+每个模块至少包含以下核心目录：
 
 ```text
 module_name/
-├── router.go         # 路由定义
-├── handle/          # 控制器层
-├── service/         # 业务逻辑层
-│   └── helper/      # 业务辅助工具
-├── model/           # 数据模型层
-├── dto/             # 数据传输对象
-├── enums/           # 模块级枚举和常量
-└── client/          # 对外接口（微服务迁移用）
+├── router/                  # 路由目录
+│   └── admin_router.go
+├── handle/                  # 控制器层
+│   └── admin_handle.go
+├── service/                 # 业务逻辑层
+│   └── admin_service.go
+├── model/                   # 数据模型层
+│   └── admin_model.go
+├── dto/                     # 请求/响应结构（按需启用，不用时不创建空目录）
+├── enums/                   # 模块级枚举和常量（按需启用，不用时不创建空目录）
+└── client/                  # 对外接口（按需启用，不用时不创建空目录）
 ```
+
+### 命名规范
+
+- 外部整合层目录可以使用复数，例如 `internal/routers`
+- 模块内部的小目录使用单数，例如 `router`、`handle`、`service`、`model`
+- 模块内文件统一使用“模块名 + 分层名”命名：
+  - `admin_router.go`
+  - `admin_handle.go`
+  - `admin_service.go`
+  - `admin_model.go`
+- 模块内包名也统一使用“模块名 + 分层名”命名，避免跨模块冲突：
+  - `package adminrouter`
+  - `package adminhandle`
+  - `package adminservice`
+  - `package adminmodel`
+- 扩展层沿用同一规则：
+  - `admin_dto.go` -> `package admindto`
+  - `admin_enum.go` / `admin_error.go` -> `package adminenums`
+  - `admin_client.go` -> `package adminclient`
+  - `admin_helper.go` -> `package adminhelper`
+- 不保留 `sys_` 前缀
+- 不使用 `router.go`、`user.go` 这类缺少模块语义的文件名
 
 ## 多语言配置中心使用
 
@@ -61,61 +79,60 @@ internal/common/enums/
 └── dict.go        # 字典数据（状态、类型等）
 ```
 
-**模块级常量**（模块私有）：
+**模块级常量**（模块私有，按需启用）：
 
 ```text
 internal/module/backend/admin/enums/
-├── admin_error.go    # 管理员模块错误码
-├── admin_msg.go      # 管理员模块消息
-└── admin_dict.go     # 管理员模块字典
+├── admin_error.go
+├── admin_msg.go
+└── admin_dict.go
 ```
 
 ### 3. 在 Handle 层使用
 
 ```go
-package handle
+package adminhandle
 
 import (
     "go-mvc/internal/common/enums"
     adminEnums "go-mvc/internal/module/backend/admin/enums"
-    "go-mvc/pkg/response"
     "go-mvc/pkg/i18n"
+    "go-mvc/pkg/response"
+
     "github.com/gin-gonic/gin"
 )
+
+type AdminHandle struct {
+    service *service.AdminService
+}
 
 func (h *AdminHandle) Create(c *gin.Context) {
     var req dto.CreateAdminReq
     if err := c.ShouldBindJSON(&req); err != nil {
-        // 使用系统级错误码
         response.Error(c, enums.ErrInvalidBody)
         return
     }
 
-    // Service 层返回错误码
     if err := h.service.Create(&req); err != nil {
-        // err 是错误码字符串，直接传给 response
         response.Error(c, err.Error())
         return
     }
 
-    // 使用系统级成功消息
     response.SuccessWithMessage(c, enums.MsgSaveSuccess, nil)
 }
 
-// 获取界面文本
 func (h *AdminHandle) GetUIText(c *gin.Context) {
     lang := c.GetHeader("Accept-Language")
     if lang == "" {
         lang = "zh-CN"
     }
-    
-    // 直接获取多语言文本
+
     buttonText := i18n.Get("ui_button_submit", lang)
     titleText := i18n.Get("ui_admin_title", lang)
-    
+
     response.Success(c, gin.H{
         "button": buttonText,
-        "title": titleText,
+        "title":  titleText,
     })
 }
 ```
@@ -125,7 +142,7 @@ func (h *AdminHandle) GetUIText(c *gin.Context) {
 Service 层返回错误码，不返回具体错误信息：
 
 ```go
-package service
+package adminservice
 
 import (
     "errors"
@@ -138,60 +155,15 @@ type AdminService struct {
 }
 
 func (s *AdminService) Create(req *dto.CreateAdminReq) error {
-    // 业务验证 - 检查用户名是否存在
     exists, err := s.model.ExistsByUsername(req.Username)
     if err != nil {
-        // 数据库错误，返回系统级错误码
         return errors.New(enums.ErrDBQueryError)
     }
     if exists {
-        // 业务错误，返回模块级错误码
         return errors.New(adminEnums.ErrAdminExists)
     }
 
-    // 执行创建
     if err := s.model.Insert(req); err != nil {
-        return errors.New(enums.ErrDBQueryError)
-    }
-
-    return nil
-}
-
-func (s *AdminService) GetByID(id int) (*dto.AdminResp, error) {
-    admin, err := s.model.FindByID(id)
-    if err != nil {
-        return nil, errors.New(enums.ErrDBQueryError)
-    }
-    if admin == nil {
-        // 数据不存在，返回模块级错误码
-        return nil, errors.New(adminEnums.ErrAdminNotFound)
-    }
-
-    return &dto.AdminResp{
-        ID:       admin.ID,
-        Username: admin.Username,
-    }, nil
-}
-
-// 复杂业务逻辑示例
-func (s *AdminService) UpdateStatus(id int, status int) error {
-    // 先检查是否存在
-    admin, err := s.model.FindByID(id)
-    if err != nil {
-        return errors.New(enums.ErrDBQueryError)
-    }
-    if admin == nil {
-        return errors.New(adminEnums.ErrAdminNotFound)
-    }
-
-    // 业务规则验证
-    if admin.IsSuper && status == 0 {
-        // 超级管理员不能禁用
-        return errors.New(adminEnums.ErrCannotDisableSuper)
-    }
-
-    // 执行更新
-    if err := s.model.UpdateStatus(id, status); err != nil {
         return errors.New(enums.ErrDBQueryError)
     }
 
@@ -202,20 +174,11 @@ func (s *AdminService) UpdateStatus(id int, status int) error {
 ### 5. 响应方法
 
 ```go
-// 成功响应（带数据）
 response.Success(c, data)
-
-// 成功响应（无数据）
 response.Success(c)
-
-// 成功响应（自定义消息码）
 response.SuccessWithMessage(c, enums.MsgSaveSuccess, data)
-
-// 错误响应（自动获取多语言消息和HTTP状态码）
 response.Error(c, enums.ErrSystemError)
 response.Error(c, adminEnums.ErrAdminNotFound)
-
-// 参数错误（快捷方法）
 response.ParamError(c)
 ```
 
@@ -239,74 +202,33 @@ GET /api/admin/list?lang=zh-CN
 
 优先级：`Accept-Language Header` > `Query 参数` > `默认 zh-CN`
 
-### 7. 数据库配置
-
-在 `sys_i18n` 表中添加新的配置：
-
-```sql
--- 错误码
-INSERT INTO sys_i18n (item_key, lang, item_value, http_code, category, status) VALUES
-('ErrAdminNotFound', 'zh-CN', '管理员不存在', 404, 'error', 1),
-('ErrAdminNotFound', 'en-US', 'Admin not found', 404, 'error', 1);
-
--- 操作消息
-INSERT INTO sys_i18n (item_key, lang, item_value, http_code, category, status) VALUES
-('MsgAdminCreated', 'zh-CN', '管理员创建成功', 200, 'msg', 1),
-('MsgAdminCreated', 'en-US', 'Admin created successfully', 200, 'msg', 1);
-
--- 界面文本
-INSERT INTO sys_i18n (item_key, lang, item_value, http_code, category, status) VALUES
-('ui_button_submit', 'zh-CN', '提交', 200, 'ui', 1),
-('ui_button_submit', 'en-US', 'Submit', 200, 'ui', 1);
-
--- 字典数据
-INSERT INTO sys_i18n (item_key, lang, item_value, http_code, category, status) VALUES
-('dict_status_active', 'zh-CN', '启用', 200, 'dict', 1),
-('dict_status_active', 'en-US', 'Active', 200, 'dict', 1);
-```
-
-系统会自动在 10 秒内刷新缓存，无需重启。
-
-### 8. 直接获取多语言文本
-
-除了通过 response 包自动处理，也可以直接获取多语言文本：
+### 7. 直接获取多语言文本
 
 ```go
 import "go-mvc/pkg/i18n"
 
-// 获取指定语言的文本
 text := i18n.Get("ui_button_submit", "zh-CN")
-
-// 获取HTTP状态码
 httpCode := i18n.GetHttpCode("ErrAdminNotFound")
-
-// 手动刷新缓存
-if err := i18n.Reload(); err != nil {
-    log.Printf("重新加载多语言配置失败: %v", err)
-}
 ```
 
 ## 开发规范
 
-### 1. 路由定义 (router.go)
+### 1. 路由定义
 
 - 只使用 GET 和 POST 两种请求方法
 - GET 用于查询操作
 - POST 用于数据变更操作
 
 ```go
-package admin
+package adminrouter
 
 import "github.com/gin-gonic/gin"
 
-func RegisterRoutes(r *gin.RouterGroup) {
-    admin := r.Group("/admin")
+func SetupAdminRoutes(rg *gin.RouterGroup) {
+    admin := rg.Group("/admin")
     {
-        // GET - 查询类
         admin.GET("/list", handle.List)
-        admin.GET("/detail", handle.GetDetail)
-        
-        // POST - 变更类
+        admin.GET("/detail", handle.Detail)
         admin.POST("/create", handle.Create)
         admin.POST("/update", handle.Update)
         admin.POST("/delete", handle.Delete)
@@ -321,37 +243,6 @@ func RegisterRoutes(r *gin.RouterGroup) {
 - 使用 response 包统一响应格式
 - Service 层返回的 error 直接传给 response.Error
 
-```go
-package handle
-
-import (
-    "go-mvc/internal/common/enums"
-    adminEnums "go-mvc/internal/module/backend/admin/enums"
-    "go-mvc/pkg/response"
-    "github.com/gin-gonic/gin"
-)
-
-type AdminHandle struct {
-    service *service.AdminService
-}
-
-func (h *AdminHandle) Create(c *gin.Context) {
-    var req dto.CreateAdminReq
-    if err := c.ShouldBindJSON(&req); err != nil {
-        response.Error(c, enums.ErrInvalidBody)
-        return
-    }
-    
-    // Service 返回错误码，直接传给 response
-    if err := h.service.Create(&req); err != nil {
-        response.Error(c, err.Error())
-        return
-    }
-    
-    response.SuccessWithMessage(c, enums.MsgSaveSuccess, nil)
-}
-```
-
 ### 3. Service 层
 
 - 处理业务逻辑
@@ -359,130 +250,18 @@ func (h *AdminHandle) Create(c *gin.Context) {
 - 返回错误码（使用 errors.New(错误码常量)）
 - 可以调用其他模块的 Client
 
-```go
-package service
-
-import (
-    "errors"
-    "go-mvc/internal/common/enums"
-    adminEnums "go-mvc/internal/module/backend/admin/enums"
-)
-
-type AdminService struct {
-    model *model.AdminModel
-}
-
-func (s *AdminService) Create(req *dto.CreateAdminReq) error {
-    // 业务验证
-    exists, err := s.model.ExistsByUsername(req.Username)
-    if err != nil {
-        return errors.New(enums.ErrDBQueryError)
-    }
-    if exists {
-        return errors.New(adminEnums.ErrAdminExists)
-    }
-
-    // 执行创建
-    if err := s.model.Insert(req); err != nil {
-        return errors.New(enums.ErrDBQueryError)
-    }
-
-    return nil
-}
-```
-
 ### 4. Model 层
 
 - 负责数据库操作
 - 定义数据结构
 - 不包含业务逻辑
 
-```go
-package model
-
-type Admin struct {
-    ID       int    `json:"id"`
-    Username string `json:"username"`
-    // ...
-}
-
-type AdminModel struct{}
-
-func (m *AdminModel) Insert(admin *Admin) error {
-    // 数据库操作
-    return nil
-}
-```
-
 ### 5. DTO 层
 
 - 定义请求和响应结构
 - 使用 Gin binding 标签做验证
 
-```go
-package dto
-
-type CreateAdminReq struct {
-    Username string `json:"username" binding:"required"`
-    Password string `json:"password" binding:"required,min=6"`
-}
-
-type AdminResp struct {
-    ID       int    `json:"id"`
-    Username string `json:"username"`
-}
-```
-
 ### 6. Helper 层
 
-Service 层的辅助工具，按功能分类：
-
-- **formatter** - 数据格式化
-- **validator** - 业务验证
-- **analyzer** - 数据分析
-- **matcher** - 数据匹配
-
-```go
-package helper
-
-// formatter.go
-func FormatPhone(phone string) string {
-    // 格式化手机号
-}
-
-// validator.go
-func ValidateIDCard(idCard string) bool {
-    // 验证身份证号
-}
-```
-
-## 模块间调用
-
-使用 Client 层实现模块间调用：
-
-```go
-// internal/client/user_client.go
-package client
-
-type UserClient struct {
-    service *user.UserService
-}
-
-func (c *UserClient) GetUserByID(id int) (*dto.UserResp, error) {
-    return c.service.GetByID(id)
-}
-
-// 在其他模块中使用
-import "go-mvc/internal/client"
-
-userInfo, err := client.User.GetUserByID(userID)
-```
-
-## 注意事项
-
-1. 每个模块完全独立，不直接依赖其他模块
-2. 跨模块调用必须通过 Client 层
-3. 模块内的 Model 是私有的，不对外暴露
-4. 所有响应使用 response 包统一格式
-5. 所有文本（错误、消息、界面、字典）使用多语言配置中心
-6. 常量定义：系统级放 internal/common/enums，模块级放模块的 enums 目录
+- Service 层的辅助工具按功能拆分到 `service/helper/`
+- 只有存在实际复用时再创建 helper，不做空目录占位

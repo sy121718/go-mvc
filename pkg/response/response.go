@@ -3,6 +3,7 @@ package response
 import (
 	"go-mvc/pkg/i18n"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,18 +17,17 @@ type Response struct {
 
 // getLang 获取客户端语言
 func getLang(c *gin.Context) string {
-	// 优先从 Header 获取
-	lang := c.GetHeader("Accept-Language")
+	lang := strings.TrimSpace(c.GetHeader("Accept-Language"))
 	if lang != "" {
 		return lang
 	}
-	// 其次从 Query 参数获取
-	lang = c.Query("lang")
+
+	lang = strings.TrimSpace(c.Query("lang"))
 	if lang != "" {
 		return lang
 	}
-	// 默认中文
-	return "zh-CN"
+
+	return i18n.GetDefaultLang()
 }
 
 // Success 成功响应

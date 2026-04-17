@@ -55,6 +55,13 @@ func (c *MemoryCache) Get(key, lang string) *I18nResult {
 			return result
 		}
 
+		defaultLang := GetDefaultLang()
+		if v, ok := m[defaultLang]; ok {
+			result.Value = v
+			result.Lang = defaultLang
+			return result
+		}
+
 		// 降级：遍历所有可用语言，返回第一个
 		for availLang, value := range m {
 			result.Value = value

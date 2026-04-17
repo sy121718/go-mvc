@@ -34,7 +34,7 @@ dist/
 Thumbs.db
 
 # Logs
-logs/
+public/logs/
 *.log
 
 # Environment and config

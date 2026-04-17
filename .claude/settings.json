@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gofmt -w \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/cmd/main.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/config/config.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/queue/asynq.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/task/queue.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/task/email.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/internal/task/order.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/database/mysql.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/cache/redis.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/auth/jwt.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/casbin/casbin.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/i18n/i18n.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/i18n/loader.go\")",
+      "Bash(gofmt -w \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/config/config.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/i18n/i18n.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/i18n/cache.go\" \"/c/Users/sy1217/Desktop/DeskTop/project/go/go-mvc/pkg/response/response.go\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\sy1217\\Desktop\\DeskTop\\project\\go\\go-mvc\\internal"
+    ]
+  }
+}

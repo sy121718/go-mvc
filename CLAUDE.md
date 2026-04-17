@@ -172,4 +172,80 @@ POST /api/user/delete     // 删除用户
 POST /api/user/status     // 修改状态
 ```
 
+
+
 **禁止使用 PUT、DELETE、PATCH 等其他 HTTP 方法。**
+
+### 测试要求（全局）
+
+- 每个接口开发完成后，必须补充并维护对应的用例测试。
+- 默认先执行用例测试验证接口行为与业务链路。
+- 单元测试不作为默认要求，仅在以下场景执行：
+  - 用例测试发现问题后，针对出问题的函数做定向单元测试定位原因。
+  - 用户明确要求测试某个函数时，才补充该函数的单元测试。
+
+### 错误码与错误信息获取规范（以此为准）
+
+- 通用错误码常量统一放在 pkg/enums/errors.go，禁止在模块内重复定义同名错误码，其余的放在moudule/xxx/enmus。
+- code 直接使用常量（例如：enums.ErrUploadConfigMissing）。
+- 文本与 HTTP 状态码统一从 sys_i18n（通过 pkg/i18n）获取。
+
+#### 1. 获取完整结果（推荐）
+
+`go
+import (
+    "go-mvc/pkg/enums"
+    "go-mvc/pkg/i18n"
+)
+
+result := i18n.Get(enums.ErrUploadConfigMissing, "zh-CN")
+// result.Key      => ErrUploadConfigMissing
+// result.Value    => 上传配置缺失
+// result.HttpCode => 400
+// result.Lang     => zh-CN
+`
+
+#### 2. 只获取错误码（code）
+
+`go
+import "go-mvc/pkg/enums"
+
+code := enums.ErrUploadConfigMissing
+`
+
+#### 3. 只获取文本 / HTTP 状态码
+
+`go
+import (
+    "go-mvc/pkg/enums"
+    "go-mvc/pkg/i18n"
+)
+
+msg := i18n.GetText(enums.ErrUploadConfigMissing, "zh-CN")
+httpCode := i18n.GetHttpCode(enums.ErrUploadConfigMissing)
+`
+
+#### 4. 接口返回规范
+
+- 返回错误时优先使用 pkg/response：
+esponse.Error(c, code)。
+- 语言优先级：Accept-Language Header > Query lang > 默认 zh-CN。
+- 只有在需要覆盖默认文案时，才使用 
+esponse.ErrorWithMessage(c, code, customMessage)。
+### 错误码与 i18n 最终规范（覆盖旧示例）
+
+- 错误码常量统一放在 `pkg/enums/errors.go`。
+- 业务代码拿 `code` 时，直接使用常量，例如：`enums.ErrUploadConfigMissing`。
+- 多语言文本和 HTTP 状态码统一由 `pkg/i18n` 从 `sys_i18n` 获取。
+
+获取方式：
+- 获取完整结构：`result := i18n.Get(code, lang)`，可拿到 `result.Key`、`result.Value`、`result.HttpCode`、`result.Lang`。
+- 只取文本：`msg := i18n.GetText(code, lang)`。
+- 只取 HTTP 状态码：`httpCode := i18n.GetHttpCode(code)`。
+
+接口返回约定：
+- 默认错误返回：`response.Error(c, code)`。
+- 仅在必须覆盖字典文案时：`response.ErrorWithMessage(c, code, customMessage)`。
+- 语言优先级：`Accept-Language` Header > `lang` Query 参数 > 默认 `zh-CN`。
+
+说明：上方历史示例若与本节冲突，一律以本节为准。

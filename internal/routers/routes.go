@@ -1,7 +1,7 @@
 package routers
 
 import (
-	admin_route "go-mvc/internal/module/backend/admin/route"
+	adminRouter "go-mvc/internal/module/backend/admin/router"
 	r "go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -34,16 +34,14 @@ func SetupRoutes(router *gin.Engine) {
 		});
 	*/
 	router.GET("/health", func(c *gin.Context) {
-		r.SuccessWithMessage(c, "服务运行正常", gin.H{
+		r.SuccessWithMessage(c, "msg_operation_success", gin.H{
 			"status": "ok",
 		})
 	})
 
 	api := router.Group("/api")
 	{
-
-		// 注册 admin 模块路由
-		admin_route.SetupAdminRoutes(api)
+		adminRouter.SetupAdminRoutes(api)
 	}
 
 	/*
