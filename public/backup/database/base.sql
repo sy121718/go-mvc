@@ -11,7 +11,7 @@
  Target Server Version : 80012
  File Encoding         : 65001
 
- Date: 17/04/2026 13:51:38
+ Date: 17/04/2026 14:01:46
 */
 
 SET NAMES utf8mb4;
@@ -34,7 +34,8 @@ CREATE TABLE `email_send_recipient`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `email_send_recipient_record_id_index`(`record_id` ASC) USING BTREE,
   INDEX `email_send_recipient_email_index`(`email` ASC) USING BTREE,
-  INDEX `email_send_recipient_status_index`(`status` ASC) USING BTREE
+  INDEX `email_send_recipient_status_index`(`status` ASC) USING BTREE,
+  CONSTRAINT `fk_email_send_recipient_record_id` FOREIGN KEY (`record_id`) REFERENCES `email_send_record` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '邮件发送收件人表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -62,7 +63,8 @@ CREATE TABLE `email_send_record`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `email_send_record_template_id_index`(`template_id` ASC) USING BTREE,
   INDEX `email_send_record_status_index`(`status` ASC) USING BTREE,
-  INDEX `email_send_record_sent_time_index`(`sent_time` ASC) USING BTREE
+  INDEX `email_send_record_sent_time_index`(`sent_time` ASC) USING BTREE,
+  CONSTRAINT `fk_email_send_record_template_id` FOREIGN KEY (`template_id`) REFERENCES `email_template` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '邮件发送记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -163,7 +165,9 @@ CREATE TABLE `notice_read`  (
   `read_time` datetime(3) NOT NULL COMMENT '阅读时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_notice_id`(`notice_id` ASC) USING BTREE,
-  INDEX `idx_user_id`(`user_id` ASC) USING BTREE
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  UNIQUE INDEX `uk_notice_read_notice_user`(`notice_id` ASC, `user_id` ASC) USING BTREE,
+  CONSTRAINT `fk_notice_read_notice_id` FOREIGN KEY (`notice_id`) REFERENCES `notice` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '通知阅读记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -181,7 +185,8 @@ CREATE TABLE `notice_target`  (
   `target_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '目标ID（根据target_type关联对应表）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_notice_id`(`notice_id` ASC) USING BTREE,
-  INDEX `idx_target_type`(`target_type` ASC) USING BTREE
+  INDEX `idx_target_type`(`target_type` ASC) USING BTREE,
+  CONSTRAINT `fk_notice_target_notice_id` FOREIGN KEY (`notice_id`) REFERENCES `notice` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '通知目标关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -250,7 +255,8 @@ CREATE TABLE `sys_admin_sessions`  (
   INDEX `idx_admin_id`(`admin_id` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE,
   INDEX `idx_expires_time`(`expires_time` ASC) USING BTREE,
-  INDEX `idx_admin_jwt`(`admin_id` ASC, `jwt_token`(100) ASC) USING BTREE
+  INDEX `idx_admin_jwt`(`admin_id` ASC, `jwt_token`(100) ASC) USING BTREE,
+  CONSTRAINT `fk_sys_admin_sessions_admin_id` FOREIGN KEY (`admin_id`) REFERENCES `sys_admin` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '管理员会话表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -275,7 +281,8 @@ CREATE TABLE `sys_admin_social`  (
   `status` tinyint(1) NULL DEFAULT 1 COMMENT '状态：1正常、0禁用',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_admin_provider`(`admin_id` ASC, `provider_code` ASC) USING BTREE COMMENT '同一管理员同一平台只能绑定一次',
-  INDEX `idx_provider_openid`(`provider_code` ASC, `open_id` ASC) USING BTREE COMMENT '通过平台+openid快速查询绑定关系'
+  INDEX `idx_provider_openid`(`provider_code` ASC, `open_id` ASC) USING BTREE COMMENT '通过平台+openid快速查询绑定关系',
+  CONSTRAINT `fk_sys_admin_social_admin_id` FOREIGN KEY (`admin_id`) REFERENCES `sys_admin` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '后台管理员第三方登录关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -314,7 +321,8 @@ CREATE TABLE `sys_attachment`  (
   INDEX `idx_update_time`(`update_time` ASC) USING BTREE,
   INDEX `idx_type_status`(`file_type` ASC, `status` ASC) USING BTREE,
   INDEX `idx_status_time`(`status` ASC, `create_time` ASC) USING BTREE,
-  FULLTEXT INDEX `ft_file_name`(`file_name`)
+  FULLTEXT INDEX `ft_file_name`(`file_name`),
+  CONSTRAINT `fk_sys_attachment_category_id` FOREIGN KEY (`category_id`) REFERENCES `sys_file_category` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统附件表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -327,16 +335,16 @@ CREATE TABLE `sys_attachment`  (
 DROP TABLE IF EXISTS `sys_casbin_rule`;
 CREATE TABLE `sys_casbin_rule`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `ptype` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `v0` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `v1` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `v2` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `v3` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `v4` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `v5` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `ptype` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `v0` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `v1` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `v2` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `v3` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `v4` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `v5` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `idx_sys_casbin_rule`(`ptype` ASC, `v0` ASC, `v1` ASC, `v2` ASC, `v3` ASC, `v4` ASC, `v5` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'Casbin 权限策略表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Casbin 权限策略表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_casbin_rule
@@ -400,7 +408,7 @@ CREATE TABLE `sys_file_category`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类名称',
   `category_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类编码',
-  `parent_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级ID',
+  `parent_id` bigint(20) UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级ID',
   `sort_order` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
   `icon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '图标',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态',
@@ -426,12 +434,12 @@ CREATE TABLE `sys_file_category`  (
 DROP TABLE IF EXISTS `sys_i18n`;
 CREATE TABLE `sys_i18n`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `item_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '键（错误码/UI文本/字典/提示等）',
-  `lang` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '语言（zh-CN/en-US/ja-JP等）',
-  `item_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '翻译文本',
+  `item_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '键（错误码/UI文本/字典/提示等）',
+  `lang` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '语言（zh-CN/en-US/ja-JP等）',
+  `item_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '翻译文本',
   `http_code` int(11) NULL DEFAULT 200 COMMENT '状态码',
-  `category` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '分类（error/ui/dict/msg，可选）',
-  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注说明',
+  `category` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类（error/ui/dict/msg，可选）',
+  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注说明',
   `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态',
   `create_time` datetime(3) NOT NULL,
   `update_time` datetime(3) NULL DEFAULT NULL,
@@ -440,7 +448,7 @@ CREATE TABLE `sys_i18n`  (
   INDEX `idx_lang`(`lang` ASC) USING BTREE,
   INDEX `idx_category`(`category` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 59 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '多语言文本表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 59 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '多语言文本表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_i18n
@@ -534,14 +542,14 @@ CREATE TABLE `sys_logs`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `log_type` tinyint(4) NOT NULL COMMENT '日志类型：1=登录 2=操作',
   `admin_id` bigint(20) UNSIGNED NOT NULL COMMENT '管理员ID',
-  `ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'IP地址',
+  `ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IP地址',
   `status` tinyint(4) NOT NULL COMMENT '状态：1=成功 0=失败',
-  `api_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '请求接口路径',
-  `http_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '请求方法：GET/POST',
-  `operation` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '操作名称：登录/登出/创建用户等',
-  `device_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '设备类型：desktop/mobile/tablet',
-  `location` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '地理位置',
-  `user_agent` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '浏览器信息',
+  `api_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请求接口路径',
+  `http_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请求方法：GET/POST',
+  `operation` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作名称：登录/登出/创建用户等',
+  `device_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '设备类型：desktop/mobile/tablet',
+  `location` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地理位置',
+  `user_agent` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '浏览器信息',
   `detail` json NULL COMMENT '日志详情',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`, `created_at`) USING BTREE,
@@ -549,7 +557,7 @@ CREATE TABLE `sys_logs`  (
   INDEX `idx_type_admin_time`(`log_type` ASC, `admin_id` ASC, `created_at` ASC) USING BTREE,
   INDEX `idx_ip_time`(`ip` ASC, `created_at` ASC) USING BTREE,
   INDEX `idx_created_at`(`created_at` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统日志表（分区）' ROW_FORMAT = DYNAMIC PARTITION BY RANGE COLUMNS (`created_at`)
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统日志表（分区）' ROW_FORMAT = DYNAMIC PARTITION BY RANGE COLUMNS (`created_at`)
 PARTITIONS 4
 (PARTITION `p202603` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
 PARTITION `p202604` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
@@ -567,21 +575,21 @@ PARTITION `p_future` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 )
 DROP TABLE IF EXISTS `sys_menus`;
 CREATE TABLE `sys_menus`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
-  `menu_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '菜单编码，唯一标识',
-  `permission_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '权限编码，对应 Casbin obj 字段',
-  `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '菜单标题',
+  `menu_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单编码，唯一标识',
+  `permission_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '权限编码，对应 Casbin obj 字段',
+  `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '菜单标题',
   `parent_id` bigint(20) NULL DEFAULT 0 COMMENT '父级ID，0为顶级',
   `type` tinyint(4) NOT NULL DEFAULT 2 COMMENT '类型：1=目录 2=菜单 3=按钮 4=iframe 5=外链',
-  `path` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '前端路由路径',
-  `component` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '前端组件路径',
-  `external_url` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '外链/iframe地址',
-  `icon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '菜单图标',
+  `path` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '前端路由路径',
+  `component` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '前端组件路径',
+  `external_url` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '外链/iframe地址',
+  `icon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '菜单图标',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态：0=禁用 1=启用',
   `is_hidden` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否隐藏：0=显示 1=隐藏',
   `is_public` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否公开：0=需权限 1=无需权限',
   `is_system` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否系统内置：0=否 1=是（不可删除）',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序',
-  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(3) NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
   `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人',
@@ -591,7 +599,7 @@ CREATE TABLE `sys_menus`  (
   UNIQUE INDEX `uk_menu_code`(`menu_code` ASC) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统菜单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统菜单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menus
