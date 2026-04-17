@@ -141,7 +141,7 @@ func buildRequestPath(path string, query map[string]string) (string, error) {
 
 func buildRequestBody(body interface{}, rawBody []byte) ([]byte, error) {
 	if body != nil && len(rawBody) > 0 {
-		return nil, fmt.Errorf("Body 与 RawBody 不能同时设置")
+		return nil, fmt.Errorf("body 与 rawBody 不能同时设置")
 	}
 
 	if len(rawBody) > 0 {

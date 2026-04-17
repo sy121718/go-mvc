@@ -1,0 +1,40 @@
+﻿name: quality-check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Run Unit And Functional Tests
+        run: go test ./...
+
+      - name: Run Vet
+        run: go vet ./...
+
+      - name: Run Race Tests
+        run: go test -race ./...
+
+      - name: Install Staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run Staticcheck
+        run: $(go env GOPATH)/bin/staticcheck ./...

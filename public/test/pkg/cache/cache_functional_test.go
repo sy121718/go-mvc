@@ -38,7 +38,11 @@ func TestCacheInitAndReadWriteWithMiniRedis(t *testing.T) {
 		t.Fatalf("缓存初始化状态错误: 期望=true 实际=false")
 	}
 
-	client := cache.GetRedis()
+	client, err := cache.GetRedis()
+	if err != nil {
+		t.Fatalf("获取缓存客户端失败: %v", err)
+	}
+
 	ctx := context.Background()
 	if err := client.Set(ctx, "k:feature", "v:ok", time.Minute).Err(); err != nil {
 		t.Fatalf("写入缓存失败: %v", err)

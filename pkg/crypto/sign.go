@@ -1,4 +1,4 @@
-// Package crypto /*
+// Package crypto 提供签名与哈希等基础能力。
 package crypto
 
 import (
@@ -8,49 +8,41 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 var (
-	secretKey          = "your-secret-key" // 签名密钥
-	timestampTolerance = 300 * time.Second // 时间戳容差（5分钟）
+	secretMu           sync.RWMutex
+	secretKey          = "your-secret-key"
+	timestampTolerance = 300 * time.Second
 )
 
-// SetSecretKey 设置签名密钥
+// SetSecretKey 设置签名密钥。
 func SetSecretKey(key string) {
+	secretMu.Lock()
 	secretKey = key
+	secretMu.Unlock()
 }
 
-// GenerateSignature 生成签名
-// params: 请求参数
-// timestamp: 时间戳（秒）
+// GenerateSignature 生成签名。
 func GenerateSignature(params map[string]interface{}, timestamp int64) string {
-	// 1. 参数排序
+	key := getSecretKey()
 	sortedParams := sortParams(params)
+	signStr := fmt.Sprintf("%s&timestamp=%d&key=%s", sortedParams, timestamp, key)
 
-	// 2. 拼接字符串
-	signStr := fmt.Sprintf("%s&timestamp=%d&key=%s", sortedParams, timestamp, secretKey)
-
-	// 3. HMAC-SHA256 签名
-	h := hmac.New(sha256.New, []byte(secretKey))
-	h.Write([]byte(signStr))
+	h := hmac.New(sha256.New, []byte(key))
+	_, _ = h.Write([]byte(signStr))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// VerifySignature 验证签名
-// params: 请求参数
-// timestamp: 时间戳（秒）
-// signature: 前端传来的签名
+// VerifySignature 验证签名。
 func VerifySignature(params map[string]interface{}, timestamp int64, signature string) error {
-	// 1. 验证时间戳（防重放）
 	if err := verifyTimestamp(timestamp); err != nil {
 		return err
 	}
 
-	// 2. 生成签名
 	expectedSign := GenerateSignature(params, timestamp)
-
-	// 3. 对比签名
 	if !hmac.Equal([]byte(expectedSign), []byte(signature)) {
 		return fmt.Errorf("签名验证失败")
 	}
@@ -58,34 +50,27 @@ func VerifySignature(params map[string]interface{}, timestamp int64, signature s
 	return nil
 }
 
-// verifyTimestamp 验证时间戳
 func verifyTimestamp(timestamp int64) error {
 	now := time.Now().Unix()
 	diff := now - timestamp
-
-	// 时间差超过容差
-	if diff > int64(timestampTolerance.Seconds()) || diff < -int64(timestampTolerance.Seconds()) {
+	tolerance := int64(timestampTolerance.Seconds())
+	if diff > tolerance || diff < -tolerance {
 		return fmt.Errorf("时间戳已过期")
 	}
-
 	return nil
 }
 
-// sortParams 参数排序
 func sortParams(params map[string]interface{}) string {
-	// 提取所有 key
 	keys := make([]string, 0, len(params))
 	for k := range params {
 		if k == "sign" || k == "signature" {
-			continue // 跳过签名字段
+			continue
 		}
 		keys = append(keys, k)
 	}
 
-	// 排序
 	sort.Strings(keys)
 
-	// 拼接
 	var builder strings.Builder
 	for i, k := range keys {
 		if i > 0 {
@@ -97,15 +82,22 @@ func sortParams(params map[string]interface{}) string {
 	return builder.String()
 }
 
-// GenerateSignatureWithString 字符串签名（简化版）
+// GenerateSignatureWithString 字符串签名（简化版）。
 func GenerateSignatureWithString(data string) string {
-	h := hmac.New(sha256.New, []byte(secretKey))
-	h.Write([]byte(data))
+	key := getSecretKey()
+	h := hmac.New(sha256.New, []byte(key))
+	_, _ = h.Write([]byte(data))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// VerifySignatureWithString 字符串签名验证（简化版）
+// VerifySignatureWithString 字符串签名验证（简化版）。
 func VerifySignatureWithString(data, signature string) bool {
 	expected := GenerateSignatureWithString(data)
 	return hmac.Equal([]byte(expected), []byte(signature))
+}
+
+func getSecretKey() string {
+	secretMu.RLock()
+	defer secretMu.RUnlock()
+	return secretKey
 }

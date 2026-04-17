@@ -1,40 +1,17 @@
-/*
-JWT 认证组件包
-===========================================
-提供 JWT Token 生成、解析、刷新功能
-
-主要功能：
-- Token 生成（登录时）
-- Token 解析（验证身份）
-- Token 刷新（续期）
-- 全局配置管理
-
-配置说明（config.yaml）：
-
-	jwt:
-	  secret: your-secret-key
-	  expire_time: 24
-	  issuer: go-mvc
-*/
 package auth
 
 import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 )
 
-/*
-JWT 组件
-===========================================
-配置结构体定义在这里，自己解析配置
-*/
-
-// Config JWT配置
+// Config JWT 配置。
 type Config struct {
 	Secret     string `mapstructure:"secret"`
 	ExpireTime int    `mapstructure:"expire_time"`
@@ -45,16 +22,16 @@ var (
 	jwtSecret []byte
 	jwtConfig Config
 	inited    bool
+	jwtMu     sync.RWMutex
 )
 
-// Claims 自定义 claims
+// Claims 自定义 claims。
 type Claims struct {
 	UserID   int64  `json:"user_id"`
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
-// getDefaultConfig 获取默认配置
 func getDefaultConfig() Config {
 	return Config{
 		Secret:     "default-secret-key-please-change-in-production",
@@ -63,71 +40,77 @@ func getDefaultConfig() Config {
 	}
 }
 
-// InitJWT 初始化 JWT
+// InitJWT 初始化 JWT。
 func InitJWT(v *viper.Viper) error {
+	jwtMu.Lock()
+	defer jwtMu.Unlock()
+
 	if inited {
 		return nil
 	}
 
-	if err := v.UnmarshalKey("jwt", &jwtConfig); err != nil {
-		log.Printf("解析 JWT 配置失败，使用默认配置: %v", err)
-		jwtConfig = getDefaultConfig()
+	cfg := getDefaultConfig()
+	if v != nil {
+		if err := v.UnmarshalKey("jwt", &cfg); err != nil {
+			log.Printf("解析 JWT 配置失败，使用默认配置: %v", err)
+			cfg = getDefaultConfig()
+		}
 	}
 
 	defaultCfg := getDefaultConfig()
-	if jwtConfig.Secret == "" {
-		jwtConfig.Secret = defaultCfg.Secret
+	if cfg.Secret == "" {
+		cfg.Secret = defaultCfg.Secret
 		log.Println("警告: JWT secret 未配置，使用默认值（生产环境请修改）")
 	}
-	if jwtConfig.ExpireTime <= 0 {
-		jwtConfig.ExpireTime = defaultCfg.ExpireTime
+	if cfg.ExpireTime <= 0 {
+		cfg.ExpireTime = defaultCfg.ExpireTime
 	}
-	if jwtConfig.Issuer == "" {
-		jwtConfig.Issuer = defaultCfg.Issuer
+	if cfg.Issuer == "" {
+		cfg.Issuer = defaultCfg.Issuer
 	}
 
-	jwtSecret = []byte(jwtConfig.Secret)
+	jwtConfig = cfg
+	jwtSecret = []byte(cfg.Secret)
 	inited = true
 	log.Println("JWT 初始化成功")
 	return nil
 }
 
-func ensureInitialized() error {
-	if !inited || len(jwtSecret) == 0 {
-		return errors.New("JWT 未初始化")
-	}
-	return nil
-}
-
-// GenerateToken 生成 Token
+// GenerateToken 生成 Token。
 func GenerateToken(userID int64, username string) (string, error) {
-	if err := ensureInitialized(); err != nil {
+	secret, cfg, err := snapshotState()
+	if err != nil {
 		return "", err
 	}
 
+	now := time.Now()
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(jwtConfig.ExpireTime) * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    jwtConfig.Issuer,
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(cfg.ExpireTime) * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    cfg.Issuer,
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	return token.SignedString(secret)
 }
 
-// ParseToken 解析 Token
+// ParseToken 解析 Token。
 func ParseToken(tokenString string) (*Claims, error) {
-	if err := ensureInitialized(); err != nil {
+	secret, _, err := snapshotState()
+	if err != nil {
 		return nil, err
 	}
 
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
+		if token.Method == nil || token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("不支持的签名算法: %v", token.Header["alg"])
+		}
+		return secret, nil
 	})
 	if err != nil {
 		return nil, err
@@ -140,7 +123,7 @@ func ParseToken(tokenString string) (*Claims, error) {
 	return nil, errors.New("invalid token")
 }
 
-// RefreshToken 刷新 Token
+// RefreshToken 刷新 Token。
 func RefreshToken(tokenString string) (string, error) {
 	claims, err := ParseToken(tokenString)
 	if err != nil {
@@ -150,15 +133,34 @@ func RefreshToken(tokenString string) (string, error) {
 	return GenerateToken(claims.UserID, claims.Username)
 }
 
-// GetExpireTime 获取过期时间（小时）
+// GetExpireTime 获取过期时间（小时）。
 func GetExpireTime() int {
+	jwtMu.RLock()
+	defer jwtMu.RUnlock()
+
+	if !inited {
+		return getDefaultConfig().ExpireTime
+	}
 	return jwtConfig.ExpireTime
 }
 
-// MustBeReady 检查 JWT 是否已完成初始化
+// MustBeReady 检查 JWT 是否可用。
 func MustBeReady() error {
-	if err := ensureInitialized(); err != nil {
+	if _, _, err := snapshotState(); err != nil {
 		return fmt.Errorf("JWT 组件不可用: %w", err)
 	}
 	return nil
+}
+
+func snapshotState() ([]byte, Config, error) {
+	jwtMu.RLock()
+	defer jwtMu.RUnlock()
+
+	if !inited || len(jwtSecret) == 0 {
+		return nil, Config{}, errors.New("JWT 未初始化")
+	}
+
+	secret := make([]byte, len(jwtSecret))
+	copy(secret, jwtSecret)
+	return secret, jwtConfig, nil
 }

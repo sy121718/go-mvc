@@ -1,4 +1,4 @@
-// Package database /*
+// Package database 提供数据库初始化、连接获取与生命周期管理。
 package database
 
 import (
@@ -15,13 +15,7 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
-/*
-数据库组件
-===========================================
-配置结构体定义在这里，自己解析配置
-*/
-
-// Config 数据库配置
+// Config 数据库配置。
 type Config struct {
 	Driver       string `mapstructure:"driver"`
 	Host         string `mapstructure:"host"`
@@ -36,19 +30,22 @@ type Config struct {
 
 var (
 	db     *gorm.DB
-	mu     sync.Mutex
+	mu     sync.RWMutex
 	inited bool
 )
 
-// GetDB 获取数据库实例
-func GetDB() *gorm.DB {
+// GetDB 获取数据库实例；未初始化时返回错误。
+func GetDB() (*gorm.DB, error) {
+	mu.RLock()
+	defer mu.RUnlock()
+
 	if db == nil {
-		panic("数据库未初始化，请先调用 database.InitDB()")
+		return nil, fmt.Errorf("数据库未初始化，请先调用 database.InitDB()")
 	}
-	return db
+	return db, nil
 }
 
-// InitDB 初始化数据库
+// InitDB 初始化数据库。
 func InitDB(v *viper.Viper) error {
 	mu.Lock()
 	defer mu.Unlock()
@@ -67,8 +64,10 @@ func InitDB(v *viper.Viper) error {
 	return nil
 }
 
-// IsInited 检查是否已初始化
+// IsInited 检查是否已初始化。
 func IsInited() bool {
+	mu.RLock()
+	defer mu.RUnlock()
 	return inited && db != nil
 }
 
@@ -137,12 +136,13 @@ func buildDialector(cfg Config) (gorm.Dialector, error) {
 	}
 }
 
-// initDB 初始化数据库
 func initDB(v *viper.Viper) (*gorm.DB, error) {
-	var cfg Config
-	if err := v.UnmarshalKey("database", &cfg); err != nil {
-		log.Printf("解析数据库配置失败，使用默认配置: %v", err)
-		cfg = getDefaultConfig()
+	cfg := getDefaultConfig()
+	if v != nil {
+		if err := v.UnmarshalKey("database", &cfg); err != nil {
+			log.Printf("解析数据库配置失败，使用默认配置: %v", err)
+			cfg = getDefaultConfig()
+		}
 	}
 
 	driverCfg := dbdriver.NormalizeConfig(toDriverConfig(cfg))
@@ -161,14 +161,18 @@ func initDB(v *viper.Viper) (*gorm.DB, error) {
 	}
 
 	sqlScene := ""
-	if v.GetBool("log.capture.sql") {
-		sqlScene = "sql"
+	serverMode := ""
+	if v != nil {
+		if v.GetBool("log.capture.sql") {
+			sqlScene = "sql"
+		}
+		serverMode = v.GetString("server.mode")
 	}
 
-	gormBaseLogger := gormlogger.Default.LogMode(resolveLogLevel(v.GetString("server.mode"), cfg.LogLevel))
+	gormBaseLogger := gormlogger.Default.LogMode(resolveLogLevel(serverMode, cfg.LogLevel))
 	gormDB, err := gorm.Open(dialector, &gorm.Config{
 		Logger: newSceneGormLogger(gormBaseLogger, sqlScene),
-		// 启用方言错误翻译，便于后续通过 gorm.ErrDuplicatedKey / gorm.ErrForeignKeyViolated 做统一判断。
+		// 启用方言错误翻译，便于通过 gorm.ErrDuplicatedKey / gorm.ErrForeignKeyViolated 统一判断。
 		TranslateError: true,
 	})
 	if err != nil {
@@ -192,7 +196,7 @@ func initDB(v *viper.Viper) (*gorm.DB, error) {
 	return gormDB, nil
 }
 
-// Close 关闭数据库连接
+// Close 关闭数据库连接。
 func Close() error {
 	mu.Lock()
 	defer mu.Unlock()

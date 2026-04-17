@@ -3,6 +3,10 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
+	"sync"
+	"time"
+
 	"go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
@@ -11,35 +15,23 @@ import (
 	"go-mvc/pkg/i18n"
 	pkglogger "go-mvc/pkg/logger"
 	"go-mvc/pkg/upload"
-	"log"
-	"sync"
-	"time"
 
 	"github.com/spf13/viper"
 )
-
-/*
-配置管理
-===========================================
-职责：
-- 读取 config.yaml 文件
-- 提供原始配置访问（通过 viper）
-- 提供组件生命周期编排入口
-*/
 
 var (
 	v  *viper.Viper
 	mu sync.Mutex
 )
 
-// ServerConfig 服务配置（核心配置，启动时加载）
+// ServerConfig 服务配置。
 type ServerConfig struct {
 	Port    int    `mapstructure:"port"`
 	Mode    string `mapstructure:"mode"`
 	AppName string `mapstructure:"app_name"`
 }
 
-// Init 初始化配置文件
+// Init 初始化配置文件。
 func Init(configPath string) error {
 	mu.Lock()
 	defer mu.Unlock()
@@ -113,7 +105,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("log.compress", false)
 }
 
-// GetViper 获取 viper 实例（供 pkg 使用）
+// GetViper 获取 viper 实例（供 pkg 使用）。
 func GetViper() *viper.Viper {
 	if v == nil {
 		panic("配置未初始化，请先调用 config.Init()")
@@ -121,7 +113,7 @@ func GetViper() *viper.Viper {
 	return v
 }
 
-// GetServer 获取服务配置
+// GetServer 获取服务配置。
 func GetServer() (ServerConfig, error) {
 	var cfg ServerConfig
 	if err := GetViper().UnmarshalKey("server", &cfg); err != nil {
@@ -130,7 +122,7 @@ func GetServer() (ServerConfig, error) {
 	return cfg, nil
 }
 
-// InitComponents 初始化所有组件
+// InitComponents 初始化所有组件。
 func InitComponents() error {
 	cfg := GetViper()
 	log.Println("开始初始化组件...")
@@ -159,7 +151,11 @@ func InitComponents() error {
 
 	if cfg.GetBool("casbin.enabled") {
 		log.Println("初始化 Casbin...")
-		if err := casbin.InitCasbin(database.GetDB()); err != nil {
+		db, err := database.GetDB()
+		if err != nil {
+			return fmt.Errorf("获取数据库实例失败: %w", err)
+		}
+		if err := casbin.InitCasbin(db); err != nil {
 			return fmt.Errorf("初始化 Casbin 失败: %w", err)
 		}
 	}
@@ -195,7 +191,7 @@ func InitComponents() error {
 	return nil
 }
 
-// CloseComponents 关闭所有组件
+// CloseComponents 关闭所有组件。
 func CloseComponents() error {
 	log.Println("开始关闭组件...")
 
@@ -223,6 +219,10 @@ func CloseComponents() error {
 		if err := database.Close(); err != nil {
 			closeErr = errors.Join(closeErr, err)
 		}
+	}
+
+	if err := pkglogger.Sync(); err != nil {
+		closeErr = errors.Join(closeErr, err)
 	}
 
 	if closeErr != nil {

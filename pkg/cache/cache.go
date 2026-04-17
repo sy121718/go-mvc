@@ -29,7 +29,7 @@ func buildProvider(v *viper.Viper) (cacheprovider.Provider, error) {
 
 var defaultProvider cacheprovider.Provider = cacheprovider.NewRedisProvider()
 
-// InitRedis 初始化 Redis 缓存
+// InitRedis 初始化 Redis 缓存。
 func InitRedis(v *viper.Viper) error {
 	provider, err := buildProvider(v)
 	if err != nil {
@@ -39,17 +39,17 @@ func InitRedis(v *viper.Viper) error {
 	return defaultProvider.Init(v)
 }
 
-// GetRedis 获取 Redis 客户端实例
-func GetRedis() redis.UniversalClient {
+// GetRedis 获取 Redis 客户端实例。
+func GetRedis() (redis.UniversalClient, error) {
 	return defaultProvider.Client()
 }
 
-// IsInited 检查 Redis 是否已初始化
+// IsInited 检查 Redis 是否已初始化。
 func IsInited() bool {
 	return defaultProvider.IsInited()
 }
 
-// Close 关闭 Redis 连接
+// Close 关闭 Redis 连接。
 func Close() error {
 	return defaultProvider.Close()
 }

@@ -18,7 +18,10 @@ var (
 
 // LoadCache 从数据库加载多语言数据到内存
 func LoadCache() error {
-	db := database.GetDB()
+	db, err := database.GetDB()
+	if err != nil {
+		return fmt.Errorf("获取数据库实例失败: %w", err)
+	}
 
 	var rows []struct {
 		Key      string
@@ -27,7 +30,7 @@ func LoadCache() error {
 		HttpCode *int
 	}
 
-	err := db.Table("sys_i18n").
+	err = db.Table("sys_i18n").
 		Select("item_key", "lang", "item_value", "http_code").
 		Where("status = ?", 1).
 		Scan(&rows).Error

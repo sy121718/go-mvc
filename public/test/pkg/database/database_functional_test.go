@@ -37,7 +37,10 @@ func TestDatabaseInitAndCRUDWithSQLite(t *testing.T) {
 		t.Fatalf("数据库初始化状态错误: 期望=true 实际=false")
 	}
 
-	db := database.GetDB()
+	db, err := database.GetDB()
+	if err != nil {
+		t.Fatalf("获取数据库实例失败: %v", err)
+	}
 	if err := db.AutoMigrate(&sampleRecord{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}

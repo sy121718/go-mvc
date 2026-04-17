@@ -5,10 +5,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Provider 缓存实现接口
+// Provider 缓存实现接口。
 type Provider interface {
 	Init(v *viper.Viper) error
 	Close() error
-	Client() redis.UniversalClient
+	Client() (redis.UniversalClient, error)
 	IsInited() bool
 }
