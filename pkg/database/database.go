@@ -162,6 +162,8 @@ func initDB(v *viper.Viper) (*gorm.DB, error) {
 
 	gormDB, err := gorm.Open(dialector, &gorm.Config{
 		Logger: logger.Default.LogMode(resolveLogLevel(v.GetString("server.mode"), cfg.LogLevel)),
+		// 启用方言错误翻译，便于后续通过 gorm.ErrDuplicatedKey / gorm.ErrForeignKeyViolated 做统一判断。
+		TranslateError: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("连接数据库失败: %w", err)
