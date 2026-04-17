@@ -11,10 +11,14 @@ pkg/
 ├── casbin/       # 权限组件
 ├── crypto/       # 加密签名组件
 ├── database/     # 数据库组件（根入口 + driver 实现）
+├── enums/        # 全局常量（含错误码）
 ├── errors/       # 通用错误定义
 ├── i18n/         # 多语言配置中心（数据库驱动）
+├── logger/       # 日志组件
 ├── queue/        # 异步任务队列（根入口 + provider 实现）
 ├── response/     # 统一响应格式
+├── upload/       # 上传组件（多 provider）
+├── utils/        # 通用工具函数
 └── validate/     # 通用校验能力
 ```
 
@@ -114,12 +118,13 @@ db.Find(&users)
 
 ---
 
-### 6. errors - 通用错误定义
+### 6. enums / errors - 错误契约与通用错误
 
 **职责范围：**
 
-- 存放 pkg 层通用错误定义
-- 业务错误码与业务提示优先放模块或 i18n 配置中心
+- `pkg/enums/errors.go` 作为全局错误码唯一来源。
+- `pkg/errors` 保留 pkg 层通用错误能力，不作为业务错误码常量定义位置。
+- 业务提示文案与 HTTP 状态码统一走 `pkg/i18n` 对应的 `sys_i18n` 字典。
 
 ---
 
@@ -136,9 +141,15 @@ db.Find(&users)
 **使用示例：**
 
 ```go
-result := i18n.Get("msg_operation_success", "zh-CN")
-text := result.Value
-code := result.HttpCode
+import (
+    "go-mvc/pkg/enums"
+    "go-mvc/pkg/i18n"
+)
+
+code := enums.ErrUploadConfigMissing
+result := i18n.Get(code, "zh-CN")   // 完整结构
+text := i18n.GetText(code, "zh-CN") // 仅文案
+httpCode := i18n.GetHttpCode(code)  // 仅状态码
 ```
 
 ---
@@ -174,9 +185,11 @@ err = queue.EnqueueIn("email:send", time.Minute, payload)
 **使用示例：**
 
 ```go
+import "go-mvc/pkg/enums"
+
 response.Success(c, user)
 response.SuccessWithMessage(c, "msg_operation_success", user)
-response.Error(c, "ErrSystemError")
+response.Error(c, enums.ErrSystemError)
 ```
 
 ---
@@ -300,4 +313,3 @@ func Init(v *viper.Viper) error {
 5. **`i18n` 继续以数据库为唯一数据源**
 
 ---
-

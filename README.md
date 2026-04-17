@@ -95,6 +95,27 @@ config.yaml → config.Init() → config.InitComponents() → 路由注册 → H
 HTTP Server → i18n 刷新器 → queue → Redis → DB
 ```
 
+## 错误码与 i18n（当前实现）
+
+- 全局错误码只保留一份，统一定义在 `pkg/enums/errors.go`。
+- 业务代码只引用错误码常量（`enums.ErrXxx`），不在模块内重复定义。
+- 错误文案和 HTTP 状态码统一从 `sys_i18n` 读取（通过 `pkg/i18n`）。
+
+```go
+import (
+    "go-mvc/pkg/enums"
+    "go-mvc/pkg/i18n"
+    "go-mvc/pkg/response"
+)
+
+code := enums.ErrUploadConfigMissing
+result := i18n.Get(code, "zh-CN")   // 完整结构：Key/Value/HttpCode/Lang
+msg := i18n.GetText(code, "zh-CN")  // 只要文案
+httpCode := i18n.GetHttpCode(code)  // 只要状态码
+
+response.Error(c, code) // 默认错误返回
+```
+
 ## 命名规范
 
 - 外部整合层目录可以使用复数，例如 `internal/routers`
