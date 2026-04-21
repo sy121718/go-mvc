@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -46,8 +47,8 @@ func TestSetupRoutesRegistersBaseRoutesAndModules(t *testing.T) {
 	if err := json.Unmarshal(notFoundRecorder.Body.Bytes(), &notFoundResp); err != nil {
 		t.Fatalf("解析 404 响应失败: %v", err)
 	}
-	if notFoundResp.Code != "ErrNotFound" {
-		t.Fatalf("404 错误码不正确: got=%s want=%s", notFoundResp.Code, "ErrNotFound")
+	if notFoundResp.Code != enums.ErrNotFound {
+		t.Fatalf("404 错误码不正确: got=%s want=%s", notFoundResp.Code, enums.ErrNotFound)
 	}
 }
 

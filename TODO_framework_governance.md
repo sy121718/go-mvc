@@ -164,7 +164,7 @@
 - [x] `internal/middleware`：增加默认中间件聚合注册入口
   - 目标：安全头、限流、鉴权、签名、防重放等默认链路统一装配
 
-- [ ] `pkg/response`、`pkg/enums`、`pkg/i18n`：统一消息码使用方式
+- [x] `pkg/response`、`pkg/enums`、`pkg/i18n`：统一消息码使用方式
   - 目标：禁止直接散写 `"msg_operation_success"` 这类字符串，统一走常量
 
 - [ ] 将组件初始化拆为关键启动和扩展启动

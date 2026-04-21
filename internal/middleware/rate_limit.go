@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -51,7 +52,7 @@ func RequestRateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc
 
 		if entry.count > limit {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, response.Response{
-				Code:    "ErrRateLimited",
+				Code:    enums.ErrRateLimited,
 				Message: "请求过于频繁",
 			})
 			return

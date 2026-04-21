@@ -4,12 +4,11 @@ import (
 	"net/http"
 	"strings"
 
+	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
-
-const errRequestEntityTooLarge = "ErrRequestEntityTooLarge"
 
 // RequestBodyLimitMiddleware 限制请求体大小。
 //
@@ -27,7 +26,7 @@ func RequestBodyLimitMiddleware(requestBodyLimit int64, uploadBodyLimit int64) g
 
 		if c.Request.ContentLength > limit {
 			c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, response.Response{
-				Code:    errRequestEntityTooLarge,
+				Code:    enums.ErrRequestEntityTooLarge,
 				Message: "请求体过大",
 			})
 			return

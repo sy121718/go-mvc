@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go-mvc/pkg/enums"
 	"go-mvc/pkg/i18n"
 
 	"github.com/gin-gonic/gin"
@@ -112,7 +113,7 @@ func normalizeLang(lang string) string {
 // Success 成功响应。
 func Success(c *gin.Context, data ...interface{}) {
 	lang := getLang(c)
-	result := i18n.Get("msg_operation_success", lang)
+	result := i18n.Get(enums.MsgOperationSuccess, lang)
 
 	var responseData interface{}
 	if len(data) > 0 {
@@ -168,7 +169,7 @@ func ErrorWithMessage(c *gin.Context, errCode string, message string) {
 // ParamError 参数错误。
 func ParamError(c *gin.Context, msg ...string) {
 	lang := getLang(c)
-	result := i18n.Get("ErrInvalidParams", lang)
+	result := i18n.Get(enums.ErrInvalidParams, lang)
 
 	message := result.Value
 	if len(msg) > 0 {
@@ -176,7 +177,7 @@ func ParamError(c *gin.Context, msg ...string) {
 	}
 
 	c.JSON(result.HttpCode, Response{
-		Code:    "ErrInvalidParams",
+		Code:    enums.ErrInvalidParams,
 		Message: message,
 	})
 }
@@ -184,7 +185,7 @@ func ParamError(c *gin.Context, msg ...string) {
 // NotFound 404 响应。
 func NotFound(c *gin.Context, msg ...string) {
 	lang := getLang(c)
-	result := i18n.Get("ErrNotFound", lang)
+	result := i18n.Get(enums.ErrNotFound, lang)
 
 	message := result.Value
 	if len(msg) > 0 {
@@ -192,7 +193,7 @@ func NotFound(c *gin.Context, msg ...string) {
 	}
 
 	c.JSON(result.HttpCode, Response{
-		Code:    "ErrNotFound",
+		Code:    enums.ErrNotFound,
 		Message: message,
 	})
 }

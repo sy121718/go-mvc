@@ -7,14 +7,17 @@ const (
 	ErrCacheError    = "ErrCacheError"    // 缓存错误
 	ErrInvalidParams = "ErrInvalidParams" // 请求参数错误
 	ErrInvalidBody   = "ErrInvalidBody"   // 请求体格式错误
+	ErrNotFound      = "ErrNotFound"      // 请求资源不存在
 )
 
 // 认证错误码（90xxx）
 const (
-	ErrUnauthorized     = "ErrUnauthorized"     // 未登录或登录已过期
-	ErrInvalidToken     = "ErrInvalidToken"     // Token无效
-	ErrTokenExpired     = "ErrTokenExpired"     // Token已过期
-	ErrPermissionDenied = "ErrPermissionDenied" // 无权限访问
+	ErrUnauthorized          = "ErrUnauthorized"          // 未登录或登录已过期
+	ErrInvalidToken          = "ErrInvalidToken"          // Token无效
+	ErrTokenExpired          = "ErrTokenExpired"          // Token已过期
+	ErrPermissionDenied      = "ErrPermissionDenied"      // 无权限访问
+	ErrRateLimited           = "ErrRateLimited"           // 请求触发限流
+	ErrRequestEntityTooLarge = "ErrRequestEntityTooLarge" // 请求体过大
 )
 
 // 用户模块错误码（20xxx）
