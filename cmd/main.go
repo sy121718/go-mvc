@@ -67,12 +67,12 @@ func run() error {
 	addr := fmt.Sprintf(":%d", serverCfg.Port)
 	log.Printf("服务启动: http://localhost%s", addr)
 
-	srv := buildHTTPServer(serverCfg, router)
+	appRuntime := config.NewAppRuntime(serverCfg, router, buildHTTPServer(serverCfg, router))
 
 	// 6) 在 goroutine 里启动 HTTP 服务：
 	// - 正常关闭时 ListenAndServe 会返回 http.ErrServerClosed（不是错误）
 	// - 非预期错误（如端口冲突）通过 channel 回传到主协程统一处理
-	serverErrCh := serveHTTPServer(srv)
+	serverErrCh := serveHTTPServer(appRuntime.HTTPServer)
 
 	// 7) 等待两类信号：
 	// - 服务启动/运行期错误
@@ -99,7 +99,7 @@ func run() error {
 	defer cancel()
 
 	// 8) 关闭 HTTP：给在途请求最多 5 秒收尾时间。
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := appRuntime.HTTPServer.Shutdown(ctx); err != nil {
 		log.Printf("HTTP Server 关闭失败: %v", err)
 	}
 
