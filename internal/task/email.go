@@ -54,7 +54,3 @@ func SendEmailDelay(to, subject, body string, delay time.Duration) error {
 }
 
 // ========== 自动注册 ==========
-
-func init() {
-	queue.Register(TypeEmailSend, HandleEmailSend)
-}

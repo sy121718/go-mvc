@@ -42,7 +42,3 @@ func CancelOrder(orderID int64, delay time.Duration) error {
 }
 
 // ========== 自动注册 ==========
-
-func init() {
-	queue.Register(TypeOrderCancel, HandleOrderCancel)
-}

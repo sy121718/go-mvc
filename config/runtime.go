@@ -28,6 +28,7 @@ func InitComponents() error {
 	}
 
 	cfg := GetViper()
+	prepareRuntimeRegistrations()
 	components := registeredComponents()
 	initialized := make([]runtimeComponent, 0, len(components))
 

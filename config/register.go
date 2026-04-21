@@ -1,10 +1,8 @@
 package config
 
 import (
-	"fmt"
-
 	adminrouter "go-mvc/internal/module/backend/admin/router"
-	_ "go-mvc/internal/task"
+	internaltask "go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
 	"go-mvc/pkg/casbin"
@@ -33,13 +31,8 @@ type runtimeModule struct {
 func registeredComponents() []runtimeComponent {
 	return []runtimeComponent{
 		{
-			Name: "logger",
-			Init: func(cfg *viper.Viper) error {
-				if err := pkglogger.Init(cfg); err != nil {
-					return fmt.Errorf("初始化日志组件失败: %w", err)
-				}
-				return nil
-			},
+			Name:  "logger",
+			Init:  pkglogger.Init,
 			Close: pkglogger.Sync,
 		},
 		{
@@ -48,13 +41,8 @@ func registeredComponents() []runtimeComponent {
 			Close: database.Close,
 		},
 		{
-			Name: "i18n",
-			Init: func(cfg *viper.Viper) error {
-				if err := i18n.Init(cfg); err != nil {
-					return fmt.Errorf("初始化多语言配置中心失败: %w", err)
-				}
-				return nil
-			},
+			Name:  "i18n",
+			Init:  i18n.Init,
 			Close: i18n.Close,
 		},
 		{
@@ -62,12 +50,7 @@ func registeredComponents() []runtimeComponent {
 			Enabled: func(cfg *viper.Viper) bool {
 				return cfg.GetBool("casbin.enabled")
 			},
-			Init: func(cfg *viper.Viper) error {
-				if err := casbin.Init(cfg); err != nil {
-					return fmt.Errorf("初始化 Casbin 失败: %w", err)
-				}
-				return nil
-			},
+			Init:  casbin.Init,
 			Close: casbin.Close,
 		},
 		{
@@ -87,12 +70,7 @@ func registeredComponents() []runtimeComponent {
 			Enabled: func(cfg *viper.Viper) bool {
 				return cfg.GetBool("upload.enabled")
 			},
-			Init: func(cfg *viper.Viper) error {
-				if err := upload.Init(cfg); err != nil {
-					return fmt.Errorf("初始化上传组件失败: %w", err)
-				}
-				return nil
-			},
+			Init:  upload.Init,
 			Close: upload.Close,
 		},
 		{
@@ -100,15 +78,14 @@ func registeredComponents() []runtimeComponent {
 			Enabled: func(cfg *viper.Viper) bool {
 				return cfg.GetBool("queue.enabled")
 			},
-			Init: func(cfg *viper.Viper) error {
-				if err := queue.Init(cfg); err != nil {
-					return fmt.Errorf("初始化任务队列失败: %w", err)
-				}
-				return nil
-			},
+			Init:  queue.Init,
 			Close: queue.Close,
 		},
 	}
+}
+
+func prepareRuntimeRegistrations() {
+	internaltask.RegisterHandlers()
 }
 
 func registeredModules() []runtimeModule {
