@@ -24,6 +24,8 @@ type BootstrapOptions struct {
 
 // SetupTestBootstrap 初始化测试用 gin 引擎并返回清理函数。
 func SetupTestBootstrap(options BootstrapOptions) (*gin.Engine, func() error, error) {
+	config.ResetForTest()
+
 	configPath := strings.TrimSpace(options.ConfigPath)
 	if configPath == "" {
 		configPath = "config.yaml"
@@ -82,6 +84,7 @@ func SetupTestBootstrap(options BootstrapOptions) (*gin.Engine, func() error, er
 			if componentsInited {
 				closeErr = config.CloseComponents()
 			}
+			config.ResetForTest()
 		})
 		return closeErr
 	}

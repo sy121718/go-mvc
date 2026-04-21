@@ -274,3 +274,10 @@ func ValidateRuntimeConfig() error {
 
 	return nil
 }
+
+// ResetForTest 重置 config 包的全局配置状态，仅用于测试环境。
+func ResetForTest() {
+	mu.Lock()
+	defer mu.Unlock()
+	v = nil
+}
