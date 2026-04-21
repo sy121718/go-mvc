@@ -28,12 +28,14 @@ func InitComponents() error {
 	}
 
 	cfg := GetViper()
-	prepareRuntimeRegistrations()
-	components := registeredComponents()
-	initialized := make([]runtimeComponent, 0, len(components))
+	for _, prepare := range runtimePreparers {
+		prepare()
+	}
+
+	initialized := make([]runtimeComponent, 0, len(runtimeComponents))
 
 	log.Println("开始初始化组件...")
-	for _, component := range components {
+	for _, component := range runtimeComponents {
 		if component.Enabled != nil && !component.Enabled(cfg) {
 			continue
 		}
@@ -86,7 +88,7 @@ func SetupRoutes(router *gin.Engine) {
 	})
 
 	api := router.Group("/api")
-	for _, module := range registeredModules() {
+	for _, module := range runtimeModules {
 		module.Register(api)
 	}
 

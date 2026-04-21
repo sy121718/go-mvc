@@ -1,0 +1,92 @@
+package config
+
+import (
+	"reflect"
+	"testing"
+
+	"github.com/spf13/viper"
+)
+
+func TestInitComponentsAndCloseComponentsFollowRegisteredOrder(t *testing.T) {
+	oldV := v
+	oldRuntimeInited := runtimeInited
+	oldInitializedRegistry := initializedRegistry
+	oldPreparers := runtimePreparers
+	oldComponents := runtimeComponents
+
+	t.Cleanup(func() {
+		v = oldV
+		runtimeInited = oldRuntimeInited
+		initializedRegistry = oldInitializedRegistry
+		runtimePreparers = oldPreparers
+		runtimeComponents = oldComponents
+	})
+
+	v = viper.New()
+	runtimeInited = false
+	initializedRegistry = nil
+
+	events := make([]string, 0, 8)
+	runtimePreparers = []func(){
+		func() {
+			events = append(events, "prepare")
+		},
+	}
+	runtimeComponents = []runtimeComponent{
+		{
+			Name: "first",
+			Init: func(_ *viper.Viper) error {
+				events = append(events, "init:first")
+				return nil
+			},
+			Close: func() error {
+				events = append(events, "close:first")
+				return nil
+			},
+		},
+		{
+			Name: "disabled",
+			Enabled: func(_ *viper.Viper) bool {
+				return false
+			},
+			Init: func(_ *viper.Viper) error {
+				events = append(events, "init:disabled")
+				return nil
+			},
+			Close: func() error {
+				events = append(events, "close:disabled")
+				return nil
+			},
+		},
+		{
+			Name: "second",
+			Init: func(_ *viper.Viper) error {
+				events = append(events, "init:second")
+				return nil
+			},
+			Close: func() error {
+				events = append(events, "close:second")
+				return nil
+			},
+		},
+	}
+
+	if err := InitComponents(); err != nil {
+		t.Fatalf("初始化组件失败: %v", err)
+	}
+
+	if err := CloseComponents(); err != nil {
+		t.Fatalf("关闭组件失败: %v", err)
+	}
+
+	want := []string{
+		"prepare",
+		"init:first",
+		"init:second",
+		"close:second",
+		"close:first",
+	}
+	if !reflect.DeepEqual(events, want) {
+		t.Fatalf("组件编排顺序不正确:\nwant=%v\ngot=%v", want, events)
+	}
+}

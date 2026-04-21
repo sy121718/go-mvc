@@ -60,11 +60,22 @@
 - [ ] 明确启动型 `pkg` 与 `internal` 私有业务层的边界
   - 目标：组件启动协议、生命周期、配置解析留在 `pkg`；`internal/task` 仅保留任务调度、自动任务与业务任务
 
-- [ ] 清理 `config/register.go` 中的组件初始化胶水逻辑
+- [x] 清理 `config/register.go` 中的组件初始化胶水逻辑
   - 目标：注册中心尽量只保留 `Name`、`Enabled`、`Init`、`Close` 的直接绑定，不承担组件内部初始化细节
 
 - [ ] 回看已落地改动并做二次收敛
   - 目标：把之前为了快速落地保留的包装层、过渡态结构、重复胶水代码继续收简，保持 Go 风格的直接、显式、少代码
+  - 当前明确回看范围：
+    1. `config/register.go`
+       - 继续压缩组件注册清单，去掉无意义包装函数，尽量只保留 `Enabled`、`Init`、`Close` 的直接绑定
+    2. `config/runtime.go`
+       - 评估 `runtimeComponent`、`runtimeModule`、`initializedRegistry` 这一层抽象是否过重，能否进一步减少类型和状态管理代码量
+    3. `pkg/queue/queue.go`
+       - 回看 `registrations`、`registrationMu`、provider 重建后重放注册这套逻辑，判断能否在保证显式注册的前提下继续收简
+    4. `internal/task/register.go`
+       - 回看当前“显式任务注册”方案是否仍有绕路，确认是否还能再减少一层转发或集中度更高的注册写法
+    5. `pkg/i18n/i18n.go`
+       - 回看初始化和加锁流程，减少为了快速落地留下的双阶段加锁、配置分支和状态切换代码
 
 - [x] `pkg/queue`：收敛为统一组件协议样板
   - 目标：由 `pkg/queue` 自行处理初始化、是否启动 worker、关闭逻辑；禁止把队列组件启动职责下沉到 `internal/task`
