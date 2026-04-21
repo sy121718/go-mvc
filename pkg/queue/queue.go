@@ -13,6 +13,12 @@ import (
 type Handler = queueprovider.Handler
 type Option = queueprovider.Option
 
+// Task 表示一个具备固定任务类型和默认选项的高层任务门面。
+type Task struct {
+	taskType string
+	options  []Option
+}
+
 func WithQueue(name string) Option {
 	return queueprovider.WithQueue(name)
 }
@@ -39,6 +45,14 @@ func WithTaskID(id string) Option {
 
 func WithRetention(retention time.Duration) Option {
 	return queueprovider.WithRetention(retention)
+}
+
+// NewTask 创建一个高层任务门面，用于减少业务侧反复手工传 taskType。
+func NewTask(taskType string, options ...Option) Task {
+	return Task{
+		taskType: taskType,
+		options:  append([]Option(nil), options...),
+	}
 }
 
 // Start 启动任务队列
@@ -131,4 +145,19 @@ func Init(v *viper.Viper) error {
 func Register(taskType string, handler Handler) {
 	registrations[taskType] = handler
 	defaultProvider.Register(taskType, handler)
+}
+
+// Enqueue 通过任务门面立即入队。
+func (t Task) Enqueue(payload any, options ...Option) error {
+	return Enqueue(t.taskType, payload, append(t.options, options...)...)
+}
+
+// EnqueueIn 通过任务门面延迟入队。
+func (t Task) EnqueueIn(delay time.Duration, payload any, options ...Option) error {
+	return EnqueueIn(t.taskType, delay, payload, append(t.options, options...)...)
+}
+
+// EnqueueAt 通过任务门面在指定时间入队。
+func (t Task) EnqueueAt(at time.Time, payload any, options ...Option) error {
+	return EnqueueAt(t.taskType, at, payload, append(t.options, options...)...)
 }

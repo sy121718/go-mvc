@@ -204,7 +204,7 @@
 - [x] `pkg/cache`：补高层 helper，如 `GetOrLoad`、`Remember`、`SetJSON`
   - 目标：减少业务层直接操作底层 Redis client
 
-- [ ] `pkg/queue`：补更高层任务门面
+- [x] `pkg/queue`：补更高层任务门面
   - 目标：减少业务层手工拼 task type、payload、opts
 
 - [ ] `pkg/upload`：补统一上传校验门面
