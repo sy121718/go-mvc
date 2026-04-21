@@ -219,6 +219,20 @@ func TestValidateReadyReturnsClassifiedReadyError(t *testing.T) {
 	}
 }
 
+func TestRuntimeComponentsExposeUnifiedLifecycleHooks(t *testing.T) {
+	for _, component := range runtimeComponents {
+		if component.Init == nil {
+			t.Fatalf("组件 %s 缺少 Init", component.Name)
+		}
+		if component.Ready == nil {
+			t.Fatalf("组件 %s 缺少 Ready", component.Name)
+		}
+		if component.Close == nil {
+			t.Fatalf("组件 %s 缺少 Close", component.Name)
+		}
+	}
+}
+
 type errString string
 
 func (e errString) Error() string {
