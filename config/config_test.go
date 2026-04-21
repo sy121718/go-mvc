@@ -22,6 +22,8 @@ func TestGetServerParsesHTTPTimeouts(t *testing.T) {
 	cfg.Set("server.read_timeout", "15s")
 	cfg.Set("server.write_timeout", "30s")
 	cfg.Set("server.idle_timeout", "60s")
+	cfg.Set("server.request_body_limit", "2MB")
+	cfg.Set("server.upload_body_limit", "32MB")
 	v = cfg
 
 	serverCfg, err := GetServer()
@@ -40,6 +42,12 @@ func TestGetServerParsesHTTPTimeouts(t *testing.T) {
 	}
 	if serverCfg.IdleTimeout != 60*time.Second {
 		t.Fatalf("IdleTimeout 不正确: got=%s want=%s", serverCfg.IdleTimeout, 60*time.Second)
+	}
+	if serverCfg.RequestBodyLimit != 2*1024*1024 {
+		t.Fatalf("RequestBodyLimit 不正确: got=%d want=%d", serverCfg.RequestBodyLimit, 2*1024*1024)
+	}
+	if serverCfg.UploadBodyLimit != 32*1024*1024 {
+		t.Fatalf("UploadBodyLimit 不正确: got=%d want=%d", serverCfg.UploadBodyLimit, 32*1024*1024)
 	}
 }
 

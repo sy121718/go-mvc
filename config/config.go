@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +27,8 @@ type ServerConfig struct {
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
+	RequestBodyLimit  int64
+	UploadBodyLimit   int64
 }
 
 // Init 初始化配置文件。
@@ -57,6 +61,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.read_timeout", "15s")
 	v.SetDefault("server.write_timeout", "30s")
 	v.SetDefault("server.idle_timeout", "60s")
+	v.SetDefault("server.request_body_limit", "2MB")
+	v.SetDefault("server.upload_body_limit", "32MB")
 
 	v.SetDefault("database.driver", "mysql")
 	v.SetDefault("database.host", "127.0.0.1")
@@ -123,6 +129,8 @@ func GetServer() (ServerConfig, error) {
 		ReadTimeout       string `mapstructure:"read_timeout"`
 		WriteTimeout      string `mapstructure:"write_timeout"`
 		IdleTimeout       string `mapstructure:"idle_timeout"`
+		RequestBodyLimit  string `mapstructure:"request_body_limit"`
+		UploadBodyLimit   string `mapstructure:"upload_body_limit"`
 	}
 
 	var raw serverConfigRaw
@@ -146,6 +154,14 @@ func GetServer() (ServerConfig, error) {
 	if err != nil {
 		return ServerConfig{}, err
 	}
+	requestBodyLimit, err := parseByteSize("request_body_limit", raw.RequestBodyLimit)
+	if err != nil {
+		return ServerConfig{}, err
+	}
+	uploadBodyLimit, err := parseByteSize("upload_body_limit", raw.UploadBodyLimit)
+	if err != nil {
+		return ServerConfig{}, err
+	}
 
 	return ServerConfig{
 		Port:              raw.Port,
@@ -155,6 +171,8 @@ func GetServer() (ServerConfig, error) {
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
+		RequestBodyLimit:  requestBodyLimit,
+		UploadBodyLimit:   uploadBodyLimit,
 	}, nil
 }
 
@@ -164,6 +182,46 @@ func parseServerDuration(field string, raw string) (time.Duration, error) {
 		return 0, fmt.Errorf("解析 server.%s 失败: %w", field, err)
 	}
 	return duration, nil
+}
+
+func parseByteSize(field string, raw string) (int64, error) {
+	if raw == "" {
+		return 0, fmt.Errorf("解析 server.%s 失败: 值不能为空", field)
+	}
+
+	normalized := strings.ToUpper(strings.TrimSpace(raw))
+	units := []struct {
+		Suffix string
+		Scale  int64
+	}{
+		{Suffix: "KB", Scale: 1024},
+		{Suffix: "MB", Scale: 1024 * 1024},
+		{Suffix: "GB", Scale: 1024 * 1024 * 1024},
+		{Suffix: "B", Scale: 1},
+	}
+
+	for _, unit := range units {
+		if strings.HasSuffix(normalized, unit.Suffix) {
+			number := strings.TrimSpace(strings.TrimSuffix(normalized, unit.Suffix))
+			value, err := strconv.ParseInt(number, 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("解析 server.%s 失败: %w", field, err)
+			}
+			if value <= 0 {
+				return 0, fmt.Errorf("解析 server.%s 失败: 值必须大于 0", field)
+			}
+			return value * unit.Scale, nil
+		}
+	}
+
+	value, err := strconv.ParseInt(normalized, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("解析 server.%s 失败: %w", field, err)
+	}
+	if value <= 0 {
+		return 0, fmt.Errorf("解析 server.%s 失败: 值必须大于 0", field)
+	}
+	return value, nil
 }
 
 // ValidateRuntimeConfig 在组件初始化前执行关键配置校验。

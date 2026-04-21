@@ -64,6 +64,7 @@ func run() error {
 	// 4) 构建 HTTP 路由。
 	router := gin.Default()
 	router.Use(middleware.SecurityHeadersMiddleware())
+	router.Use(middleware.RequestBodyLimitMiddleware(serverCfg.RequestBodyLimit, serverCfg.UploadBodyLimit))
 	router.Use(middleware.RequestLogCaptureMiddleware(config.GetViper().GetBool("log.capture.http")))
 	routers.SetupRoutes(router, config.ModuleRegistrars(), config.ValidateReady)
 
