@@ -8,12 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes 装配系统基础路由和业务模块路由。
-//
-// 参数说明：
-// - router: Gin 引擎实例
-// - modules: 业务模块路由注册函数列表，统一挂到 /api 分组下
-// - ready: 就绪检查函数，用于 /readyz 返回服务是否可提供服务
 func SetupRoutes(
 	router *gin.Engine,
 	modules []func(*gin.RouterGroup),
@@ -25,7 +19,7 @@ func SetupRoutes(
 
 	router.GET("/livez", func(c *gin.Context) {
 		c.JSON(http.StatusOK, response.Response{
-			Code:    "0",
+			Code:    http.StatusOK,
 			Message: "ok",
 			Data: gin.H{
 				"status": "alive",
@@ -37,7 +31,7 @@ func SetupRoutes(
 		if ready != nil {
 			if err := ready(); err != nil {
 				c.JSON(http.StatusServiceUnavailable, response.Response{
-					Code:    "ErrNotReady",
+					Code:    http.StatusServiceUnavailable,
 					Message: err.Error(),
 					Data: gin.H{
 						"status": "not_ready",
@@ -48,7 +42,7 @@ func SetupRoutes(
 		}
 
 		c.JSON(http.StatusOK, response.Response{
-			Code:    "0",
+			Code:    http.StatusOK,
 			Message: "ok",
 			Data: gin.H{
 				"status": "ready",

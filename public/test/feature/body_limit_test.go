@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"go-mvc/internal/middleware"
-	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 	"go-mvc/public/test/support"
 
@@ -49,8 +48,8 @@ func TestRequestBodyLimitRejectsLargeJSONBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("解析响应失败: %v", err)
 	}
-	if resp.Code != enums.ErrRequestEntityTooLarge {
-		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, enums.ErrRequestEntityTooLarge)
+	if resp.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("错误码不正确: got=%d want=%d", resp.Code, http.StatusRequestEntityTooLarge)
 	}
 }
 
@@ -120,7 +119,7 @@ func TestRequestRateLimitBlocksRepeatedRequests(t *testing.T) {
 	if err != nil {
 		t.Fatalf("解析响应失败: %v", err)
 	}
-	if resp.Code != enums.ErrRateLimited {
-		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, enums.ErrRateLimited)
+	if resp.Code != http.StatusTooManyRequests {
+		t.Fatalf("错误码不正确: got=%d want=%d", resp.Code, http.StatusTooManyRequests)
 	}
 }

@@ -50,16 +50,16 @@ func TestSignatureMiddlewareRejectsReplayNonce(t *testing.T) {
 	if secondRecorder.Body.String() == firstRecorder.Body.String() {
 		t.Fatalf("重复请求不应继续命中业务处理器")
 	}
-	if secondRecorder.Code != http.StatusOK {
-		t.Fatalf("重复请求响应状态码不正确: got=%d want=%d", secondRecorder.Code, http.StatusOK)
+	if secondRecorder.Code != http.StatusBadRequest {
+		t.Fatalf("重复请求响应状态码不正确: got=%d want=%d", secondRecorder.Code, http.StatusBadRequest)
 	}
-	if !contains(secondRecorder.Body.String(), "ErrInvalidParams") {
-		t.Fatalf("重复请求应返回 ErrInvalidParams, got=%s", secondRecorder.Body.String())
+	if !contains(secondRecorder.Body.String(), "\"code\":400") {
+		t.Fatalf("重复请求应返回 400, got=%s", secondRecorder.Body.String())
 	}
 }
 
 func contains(text string, target string) bool {
-	return len(text) >= len(target) && (text == target || len(text) > len(target) && (stringContains(text, target)))
+	return len(text) >= len(target) && (text == target || len(text) > len(target) && stringContains(text, target))
 }
 
 func stringContains(text string, target string) bool {

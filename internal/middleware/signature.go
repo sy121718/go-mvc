@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"go-mvc/pkg/enums"
-
 	"go-mvc/pkg/crypto"
 	"go-mvc/pkg/response"
 
@@ -24,7 +22,6 @@ var (
 	nonceStore = map[string]time.Time{}
 )
 
-// SignatureMiddleware 签名验证中间件
 func SignatureMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		timestampStr := c.GetHeader("X-Timestamp")
@@ -46,7 +43,7 @@ func SignatureMiddleware() gin.HandlerFunc {
 
 		now := time.Now().Unix()
 		if now-timestamp > 300 || timestamp-now > 300 {
-			response.ErrorWithMessage(c, enums.ErrInvalidParams, "请求已过期")
+			response.ErrorWithMessage(c, 400, "请求已过期")
 			c.Abort()
 			return
 		}
@@ -73,7 +70,6 @@ func SignatureMiddleware() gin.HandlerFunc {
 		}
 
 		params := make(map[string]interface{})
-
 		query := c.Request.URL.Query()
 		for k, v := range query {
 			if k == "signature" || k == "timestamp" || len(v) == 0 {
@@ -98,13 +94,13 @@ func SignatureMiddleware() gin.HandlerFunc {
 		}
 
 		if err := crypto.VerifySignature(params, timestamp, signature); err != nil {
-			response.ErrorWithMessage(c, enums.ErrInvalidParams, "签名验证失败")
+			response.ErrorWithMessage(c, 400, "签名验证失败")
 			c.Abort()
 			return
 		}
 
 		if !consumeNonce(nonce, time.Unix(timestamp, 0).Add(signatureReplayWindow)) {
-			response.ErrorWithMessage(c, enums.ErrInvalidParams, "请求重复提交")
+			response.ErrorWithMessage(c, 400, "请求重复提交")
 			c.Abort()
 			return
 		}

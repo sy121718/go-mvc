@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -47,8 +46,8 @@ func TestSetupRoutesRegistersBaseRoutesAndModules(t *testing.T) {
 	if err := json.Unmarshal(notFoundRecorder.Body.Bytes(), &notFoundResp); err != nil {
 		t.Fatalf("解析 404 响应失败: %v", err)
 	}
-	if notFoundResp.Code != enums.ErrNotFound {
-		t.Fatalf("404 错误码不正确: got=%s want=%s", notFoundResp.Code, enums.ErrNotFound)
+	if notFoundResp.Code != http.StatusNotFound {
+		t.Fatalf("404 错误码不正确: got=%d want=%d", notFoundResp.Code, http.StatusNotFound)
 	}
 }
 
@@ -70,7 +69,7 @@ func TestSetupRoutesReturns503WhenReadyCheckFails(t *testing.T) {
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("解析 /readyz 响应失败: %v", err)
 	}
-	if resp.Code != "ErrNotReady" {
-		t.Fatalf("/readyz 错误码不正确: got=%s want=%s", resp.Code, "ErrNotReady")
+	if resp.Code != http.StatusServiceUnavailable {
+		t.Fatalf("/readyz 错误码不正确: got=%d want=%d", resp.Code, http.StatusServiceUnavailable)
 	}
 }

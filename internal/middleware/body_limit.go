@@ -4,18 +4,11 @@ import (
 	"net/http"
 	"strings"
 
-	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-// RequestBodyLimitMiddleware 限制请求体大小。
-//
-// 规则：
-// - 普通请求使用 requestBodyLimit
-// - 上传相关请求使用 uploadBodyLimit
-// - 上传请求通过 URL 中包含 "/upload" 或 Content-Type 为 multipart/form-data 判断
 func RequestBodyLimitMiddleware(requestBodyLimit int64, uploadBodyLimit int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		limit := resolveRequestBodyLimit(c, requestBodyLimit, uploadBodyLimit)
@@ -26,7 +19,7 @@ func RequestBodyLimitMiddleware(requestBodyLimit int64, uploadBodyLimit int64) g
 
 		if c.Request.ContentLength > limit {
 			c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, response.Response{
-				Code:    enums.ErrRequestEntityTooLarge,
+				Code:    http.StatusRequestEntityTooLarge,
 				Message: "请求体过大",
 			})
 			return

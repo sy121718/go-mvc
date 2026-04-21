@@ -6,8 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
-	enums "go-mvc/pkg/enums"
-
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -29,7 +28,6 @@ type qiniuProvider struct {
 	client *http.Client
 }
 
-// NewQiniuProvider 创建七牛上传实现。
 func NewQiniuProvider() Provider {
 	return &qiniuProvider{}
 }
@@ -64,10 +62,10 @@ func (p *qiniuProvider) Close() error {
 
 func (p *qiniuProvider) Upload(ctx context.Context, cfg RuntimeConfig, file File, req Request) (Result, error) {
 	if file.Reader == nil {
-		return Result{}, NewError(enums.ErrUploadFileEmpty)
+		return Result{}, fmt.Errorf("上传文件为空")
 	}
 	if strings.TrimSpace(file.Filename) == "" && strings.TrimSpace(req.ObjectKey) == "" {
-		return Result{}, NewError(enums.ErrUploadFileNameRequired)
+		return Result{}, fmt.Errorf("上传文件名缺失")
 	}
 
 	client, err := p.getClient()
@@ -79,7 +77,7 @@ func (p *qiniuProvider) Upload(ctx context.Context, cfg RuntimeConfig, file File
 	secretKey := strings.TrimSpace(cfg.SecretKey)
 	bucket := strings.TrimSpace(cfg.Bucket)
 	if accessKey == "" || secretKey == "" || bucket == "" {
-		return Result{}, NewErrorf(enums.ErrUploadConfigMissing, "七牛配置缺少 access_key/secret_key/bucket")
+		return Result{}, fmt.Errorf("七牛配置缺少 access_key/secret_key/bucket")
 	}
 
 	objectKey, err := buildObjectKey(file.Filename, req)
@@ -90,7 +88,7 @@ func (p *qiniuProvider) Upload(ctx context.Context, cfg RuntimeConfig, file File
 	uploadHost := resolveQiniuUploadHost(cfg)
 	token, err := buildQiniuUploadToken(accessKey, secretKey, bucket, objectKey)
 	if err != nil {
-		return Result{}, WrapError(enums.ErrUploadTokenFailed, err, "生成上传 token 失败")
+		return Result{}, fmt.Errorf("生成上传 token 失败: %w", err)
 	}
 
 	bodyReader, contentType, sizeCounter, err := buildQiniuMultipartBody(file, objectKey, token)
@@ -100,27 +98,26 @@ func (p *qiniuProvider) Upload(ctx context.Context, cfg RuntimeConfig, file File
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadHost, bodyReader)
 	if err != nil {
-		return Result{}, WrapError(enums.ErrUploadRequestFailed, err, "创建七牛上传请求失败")
+		return Result{}, fmt.Errorf("创建七牛上传请求失败: %w", err)
 	}
 	request.Header.Set("Content-Type", contentType)
 
 	response, err := client.Do(request)
 	if err != nil {
-		return Result{}, WrapError(enums.ErrUploadRequestFailed, err, "请求七牛上传失败")
+		return Result{}, fmt.Errorf("请求七牛上传失败: %w", err)
 	}
 	defer response.Body.Close()
 
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		return Result{}, WrapError(enums.ErrUploadResponseInvalid, err, "读取七牛响应失败")
+		return Result{}, fmt.Errorf("读取七牛响应失败: %w", err)
 	}
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return Result{}, NewErrorf(enums.ErrUploadRequestFailed, "七牛上传失败: status=%d, body=%s", response.StatusCode, strings.TrimSpace(string(responseBody)))
+		return Result{}, fmt.Errorf("七牛上传失败: status=%d, body=%s", response.StatusCode, strings.TrimSpace(string(responseBody)))
 	}
 
 	publicURL := buildQiniuPublicURL(cfg, objectKey)
-
 	return Result{
 		Provider: qiniuName,
 		Key:      objectKey,
@@ -134,7 +131,7 @@ func (p *qiniuProvider) getClient() (*http.Client, error) {
 	defer p.mu.RUnlock()
 
 	if !p.inited || p.client == nil {
-		return nil, NewError(enums.ErrUploadNotInitialized)
+		return nil, fmt.Errorf("上传组件未初始化")
 	}
 	return p.client, nil
 }
@@ -147,13 +144,13 @@ func buildQiniuUploadToken(accessKey string, secretKey string, bucket string, ob
 
 	policyBytes, err := json.Marshal(putPolicy)
 	if err != nil {
-		return "", WrapError(enums.ErrUploadTokenFailed, err, "序列化七牛上传策略失败")
+		return "", fmt.Errorf("序列化七牛上传策略失败: %w", err)
 	}
 
 	encodedPolicy := base64.RawURLEncoding.EncodeToString(policyBytes)
 	mac := hmac.New(sha1.New, []byte(secretKey))
 	if _, err := mac.Write([]byte(encodedPolicy)); err != nil {
-		return "", WrapError(enums.ErrUploadTokenFailed, err, "生成七牛上传签名失败")
+		return "", fmt.Errorf("生成七牛上传签名失败: %w", err)
 	}
 
 	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
@@ -213,11 +210,11 @@ func buildQiniuMultipartBody(file File, objectKey string, token string) (io.Read
 		defer pw.Close()
 
 		if err := writer.WriteField("token", token); err != nil {
-			_ = pw.CloseWithError(WrapError(enums.ErrUploadRequestFailed, err, "写入 token 失败"))
+			_ = pw.CloseWithError(fmt.Errorf("写入 token 失败: %w", err))
 			return
 		}
 		if err := writer.WriteField("key", objectKey); err != nil {
-			_ = pw.CloseWithError(WrapError(enums.ErrUploadRequestFailed, err, "写入 key 失败"))
+			_ = pw.CloseWithError(fmt.Errorf("写入 key 失败: %w", err))
 			return
 		}
 
@@ -228,17 +225,17 @@ func buildQiniuMultipartBody(file File, objectKey string, token string) (io.Read
 
 		part, err := writer.CreateFormFile("file", fileName)
 		if err != nil {
-			_ = pw.CloseWithError(WrapError(enums.ErrUploadRequestFailed, err, "创建 multipart 文件字段失败"))
+			_ = pw.CloseWithError(fmt.Errorf("创建 multipart 文件字段失败: %w", err))
 			return
 		}
 
 		if _, err := io.Copy(io.MultiWriter(part, counter), file.Reader); err != nil {
-			_ = pw.CloseWithError(WrapError(enums.ErrUploadWriteFailed, err, "写入文件内容失败"))
+			_ = pw.CloseWithError(fmt.Errorf("写入文件内容失败: %w", err))
 			return
 		}
 
 		if err := writer.Close(); err != nil {
-			_ = pw.CloseWithError(WrapError(enums.ErrUploadRequestFailed, err, "关闭 multipart writer 失败"))
+			_ = pw.CloseWithError(fmt.Errorf("关闭 multipart writer 失败: %w", err))
 			return
 		}
 	}()

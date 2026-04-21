@@ -5,8 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	enums "go-mvc/pkg/enums"
-
 	"io"
 	"os"
 	"path/filepath"
@@ -30,7 +28,6 @@ type localProvider struct {
 	inited  bool
 }
 
-// NewLocalProvider 创建本地上传实现。
 func NewLocalProvider() Provider {
 	return &localProvider{}
 }
@@ -62,16 +59,16 @@ func (p *localProvider) Close() error {
 
 func (p *localProvider) Upload(_ context.Context, _ RuntimeConfig, file File, req Request) (Result, error) {
 	if file.Reader == nil {
-		return Result{}, NewError(enums.ErrUploadFileEmpty)
+		return Result{}, fmt.Errorf("上传文件为空")
 	}
 	if strings.TrimSpace(file.Filename) == "" && strings.TrimSpace(req.ObjectKey) == "" {
-		return Result{}, NewError(enums.ErrUploadFileNameRequired)
+		return Result{}, fmt.Errorf("上传文件名缺失")
 	}
 
 	p.mu.RLock()
 	if !p.inited {
 		p.mu.RUnlock()
-		return Result{}, NewError(enums.ErrUploadNotInitialized)
+		return Result{}, fmt.Errorf("上传组件未初始化")
 	}
 	rootDir := p.rootDir
 	baseURL := p.baseURL
@@ -86,18 +83,18 @@ func (p *localProvider) Upload(_ context.Context, _ RuntimeConfig, file File, re
 	targetPath = filepath.Clean(targetPath)
 
 	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
-		return Result{}, WrapError(enums.ErrUploadWriteFailed, err, "创建上传目录失败")
+		return Result{}, fmt.Errorf("创建上传目录失败: %w", err)
 	}
 
 	fd, err := os.Create(targetPath)
 	if err != nil {
-		return Result{}, WrapError(enums.ErrUploadWriteFailed, err, "创建上传文件失败")
+		return Result{}, fmt.Errorf("创建上传文件失败: %w", err)
 	}
 	defer fd.Close()
 
 	written, err := io.Copy(fd, file.Reader)
 	if err != nil {
-		return Result{}, WrapError(enums.ErrUploadWriteFailed, err, "写入上传文件失败")
+		return Result{}, fmt.Errorf("写入上传文件失败: %w", err)
 	}
 
 	return Result{
@@ -131,7 +128,7 @@ func buildObjectKey(filename string, req Request) (string, error) {
 	if name == "" {
 		randPart, err := randomHex(6)
 		if err != nil {
-			return "", WrapError(enums.ErrUploadSystemError, err, "生成随机文件名失败")
+			return "", fmt.Errorf("生成随机文件名失败: %w", err)
 		}
 		name = fmt.Sprintf("%d_%s", time.Now().UnixNano(), randPart)
 	}

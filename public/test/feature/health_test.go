@@ -38,13 +38,13 @@ func TestLivezSuccess(t *testing.T) {
 		t.Fatalf("状态码不正确: got=%d want=%d", recorder.Code, http.StatusOK)
 	}
 
-	response, err := support.ParseStandardResponse(recorder)
+	resp, err := support.ParseStandardResponse(recorder)
 	if err != nil {
 		t.Fatalf("解析响应失败: %v", err)
 	}
 
-	if response.Code != "0" {
-		t.Fatalf("响应 code 不正确: got=%s want=%s", response.Code, "0")
+	if resp.Code != http.StatusOK {
+		t.Fatalf("响应 code 不正确: got=%d want=%d", resp.Code, http.StatusOK)
 	}
 
 	var data struct {
@@ -91,8 +91,8 @@ func TestReadyzReturnsServiceUnavailableWhenComponentsNotInitialized(t *testing.
 		t.Fatalf("解析响应失败: %v", err)
 	}
 
-	if resp.Code != "ErrNotReady" {
-		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, "ErrNotReady")
+	if resp.Code != http.StatusServiceUnavailable {
+		t.Fatalf("错误码不正确: got=%d want=%d", resp.Code, http.StatusServiceUnavailable)
 	}
 
 	var data struct {
@@ -103,7 +103,7 @@ func TestReadyzReturnsServiceUnavailableWhenComponentsNotInitialized(t *testing.
 	}
 
 	if data.Status != "not_ready" {
-		t.Fatalf("响应 data.status 不正确: got=%s want=%s", data.Status, "ok")
+		t.Fatalf("响应 data.status 不正确: got=%s want=%s", data.Status, "not_ready")
 	}
 }
 
@@ -174,8 +174,8 @@ func TestJWTAuthMiddlewareAbortsOnMissingAuthorization(t *testing.T) {
 		t.Fatalf("解析响应失败: %v", err)
 	}
 
-	if resp.Code != "ErrUnauthorized" {
-		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, "ErrUnauthorized")
+	if resp.Code != http.StatusUnauthorized {
+		t.Fatalf("错误码不正确: got=%d want=%d", resp.Code, http.StatusUnauthorized)
 	}
 
 	var data struct {
@@ -222,8 +222,8 @@ func TestJWTAuthMiddlewareReturnsUnifiedUnauthorizedOnInvalidToken(t *testing.T)
 		t.Fatalf("解析响应失败: %v", err)
 	}
 
-	if resp.Code != "ErrUnauthorized" {
-		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, "ErrUnauthorized")
+	if resp.Code != http.StatusUnauthorized {
+		t.Fatalf("错误码不正确: got=%d want=%d", resp.Code, http.StatusUnauthorized)
 	}
 
 	var data struct {
@@ -267,8 +267,8 @@ func TestCasbinMiddlewareAbortsOnMissingUserContext(t *testing.T) {
 		t.Fatalf("解析响应失败: %v", err)
 	}
 
-	if resp.Code != "ErrUnauthorized" {
-		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, "ErrUnauthorized")
+	if resp.Code != http.StatusUnauthorized {
+		t.Fatalf("错误码不正确: got=%d want=%d", resp.Code, http.StatusUnauthorized)
 	}
 
 	var data struct {

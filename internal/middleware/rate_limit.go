@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"go-mvc/pkg/enums"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -22,12 +21,6 @@ var (
 	rateLimitStore = map[string]rateLimitEntry{}
 )
 
-// RequestRateLimitMiddleware 按“客户端 IP + 路由路径”进行固定窗口限流。
-//
-// 规则：
-// - 同一 IP 对同一路径在一个窗口内最多访问 limit 次
-// - 超过限制后返回 429
-// - 适合作为基础框架默认限流，不依赖额外组件
 func RequestRateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if limit <= 0 || window <= 0 {
@@ -52,7 +45,7 @@ func RequestRateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc
 
 		if entry.count > limit {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, response.Response{
-				Code:    enums.ErrRateLimited,
+				Code:    http.StatusTooManyRequests,
 				Message: "请求过于频繁",
 			})
 			return

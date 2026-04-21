@@ -12,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RequestOptions 测试请求参数。
 type RequestOptions struct {
 	Method  string
 	Path    string
@@ -22,14 +21,12 @@ type RequestOptions struct {
 	RawBody []byte
 }
 
-// StandardResponse 项目统一响应结构。
 type StandardResponse struct {
-	Code    string          `json:"code"`
+	Code    int             `json:"code"`
 	Message string          `json:"message"`
 	Data    json.RawMessage `json:"data,omitempty"`
 }
 
-// SendRequest 构造并发送 HTTP 请求。
 func SendRequest(engine *gin.Engine, options RequestOptions) (*httptest.ResponseRecorder, error) {
 	if engine == nil {
 		return nil, fmt.Errorf("engine 不能为空")
@@ -76,7 +73,6 @@ func SendRequest(engine *gin.Engine, options RequestOptions) (*httptest.Response
 	return recorder, nil
 }
 
-// ParseStandardResponse 解析标准响应结构。
 func ParseStandardResponse(recorder *httptest.ResponseRecorder) (*StandardResponse, error) {
 	if recorder == nil {
 		return nil, fmt.Errorf("recorder 不能为空")
@@ -89,7 +85,6 @@ func ParseStandardResponse(recorder *httptest.ResponseRecorder) (*StandardRespon
 	return &result, nil
 }
 
-// DecodeResponseBody 解析任意 JSON 响应体到目标结构。
 func DecodeResponseBody[T any](recorder *httptest.ResponseRecorder, out *T) error {
 	if recorder == nil {
 		return fmt.Errorf("recorder 不能为空")
@@ -104,7 +99,6 @@ func DecodeResponseBody[T any](recorder *httptest.ResponseRecorder, out *T) erro
 	return nil
 }
 
-// DecodeResponseData 解析标准响应中的 data 字段。
 func DecodeResponseData[T any](recorder *httptest.ResponseRecorder, out *T) error {
 	if out == nil {
 		return fmt.Errorf("out 不能为空")
@@ -141,7 +135,7 @@ func buildRequestPath(path string, query map[string]string) (string, error) {
 
 func buildRequestBody(body interface{}, rawBody []byte) ([]byte, error) {
 	if body != nil && len(rawBody) > 0 {
-		return nil, fmt.Errorf("body 与 rawBody 不能同时设置")
+		return nil, fmt.Errorf("body 和 rawBody 不能同时设置")
 	}
 
 	if len(rawBody) > 0 {
@@ -154,7 +148,7 @@ func buildRequestBody(body interface{}, rawBody []byte) ([]byte, error) {
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return nil, fmt.Errorf("序列化 Body 失败: %w", err)
+		return nil, fmt.Errorf("序列化 body 失败: %w", err)
 	}
 	return bodyBytes, nil
 }

@@ -1,16 +1,8 @@
-// Package upload 提供上传组件根入口与高层上传门面。
-//
-// 设计目标：
-// - 统一管理 provider 初始化与切换
-// - 在框架层统一处理上传安全校验
-// - 让业务层优先通过 Upload / Use / UseCfg 调用上传，而不是直接依赖 provider
 package upload
 
 import (
 	"context"
 	"errors"
-	enums "go-mvc/pkg/enums"
-
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -48,69 +40,27 @@ type validationRules struct {
 	allowedMIMETypes  map[string]struct{}
 }
 
-// File 上传文件参数。
-//
-// 字段说明：
-// - Filename: 原始文件名，用于扩展名判断和默认对象名生成
-// - Reader: 文件内容读取器
-// - Size: 文件大小，单位字节
-// - ContentType: MIME 类型
 type File = uploadprovider.File
 
-// Request 上传请求参数。
-//
-// 字段说明：
-// - Route: 业务路由标识，可用于分目录存放
-// - Directory: 目标子目录
-// - ObjectKey: 指定对象 key；留空时自动生成
-// - PreserveName: 是否尽量保留原始文件名
 type Request = uploadprovider.Request
 
-// RuntimeConfig 运行时上传配置。
-//
-// 适用场景：
-// - 动态切换 provider
-// - 动态切换线上存储配置
 type RuntimeConfig = uploadprovider.RuntimeConfig
 
-// Result 上传结果。
-//
-// 字段说明：
-// - Provider: 实际使用的 provider
-// - Key: 对象 key
-// - URL: 可访问地址
-// - Size: 实际写入大小
 type Result = uploadprovider.Result
 
-// Client 上传客户端。
-//
-// 说明：
-// - 通过 Use / UseCfg 创建
-// - 适合业务层按 provider 或运行时配置进行上传
 type Client struct {
 	provider string
 	runtime  *RuntimeConfig
 }
 
-// Uploader 高层上传门面。
-//
-// 设计目的：
-// - 固定 provider 和 Request 参数
-// - 让业务层重复上传同类文件时少传一层 request
 type Uploader struct {
 	client  Client
 	request Request
 }
 
-// Init 初始化上传组件。
-//
-// 说明：
-// - 会显式注册内建 provider
-// - 会读取上传校验规则
-// - 会初始化默认 provider
 func Init(v *viper.Viper) error {
 	if v == nil {
-		return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "upload 初始化配置为空")
+		return fmt.Errorf("upload 初始化配置为空")
 	}
 
 	registerBuiltinProviders()
@@ -140,7 +90,7 @@ func Init(v *viper.Viper) error {
 		stateMu.Lock()
 		inited = false
 		stateMu.Unlock()
-		return uploadprovider.NewErrorf(enums.ErrUploadProviderNotFound, "默认 provider=%s", selected)
+		return fmt.Errorf("默认 provider=%s 不存在", selected)
 	}
 
 	if err := ensureProviderReady(selected); err != nil {
@@ -149,14 +99,10 @@ func Init(v *viper.Viper) error {
 		stateMu.Unlock()
 		return err
 	}
+
 	return nil
 }
 
-// Close 关闭上传组件。
-//
-// 说明：
-// - 会关闭所有已就绪 provider
-// - 会清空运行时配置来源
 func Close() error {
 	runtimeMu.Lock()
 	defer runtimeMu.Unlock()
@@ -188,37 +134,31 @@ func Close() error {
 	inited = false
 	configSource = nil
 	stateMu.Unlock()
+
 	return closeErr
 }
 
-// IsInited 判断上传组件是否已初始化。
 func IsInited() bool {
 	stateMu.RLock()
 	defer stateMu.RUnlock()
 	return inited
 }
 
-// Ready 检查上传组件是否已初始化。
 func Ready() error {
 	if !IsInited() {
-		return uploadprovider.NewError(enums.ErrUploadNotInitialized)
+		return fmt.Errorf("上传组件未初始化")
 	}
 	return nil
 }
 
-// Register 注册上传 provider。
-//
-// 使用场景：
-// - 扩展自定义 provider
-// - 在框架初始化前先完成 provider 注入
 func Register(provider uploadprovider.Provider) error {
 	if provider == nil {
-		return uploadprovider.NewError(enums.ErrUploadConfigInvalid)
+		return fmt.Errorf("上传 provider 不能为空")
 	}
 
 	name := normalizeProvider(provider.Name())
 	if name == "" {
-		return uploadprovider.NewError(enums.ErrUploadConfigInvalid)
+		return fmt.Errorf("上传 provider 名称不能为空")
 	}
 
 	stateMu.Lock()
@@ -228,13 +168,13 @@ func Register(provider uploadprovider.Provider) error {
 
 	if shouldInit {
 		if err := ensureProviderReady(name); err != nil {
-			return uploadprovider.WrapError(enums.ErrUploadSystemError, err, "初始化 provider=%s 失败", name)
+			return fmt.Errorf("初始化 provider=%s 失败: %w", name, err)
 		}
 	}
+
 	return nil
 }
 
-// Providers 获取已注册 provider 列表。
 func Providers() []string {
 	stateMu.RLock()
 	defer stateMu.RUnlock()
@@ -247,42 +187,23 @@ func Providers() []string {
 	return result
 }
 
-// Upload 使用默认 provider 上传。
-//
-// 说明：
-// - 适合默认上传路径
-// - 安全校验会在框架层先执行，再交给 provider
 func Upload(ctx context.Context, file File, req Request) (Result, error) {
 	return uploadWithProvider(ctx, "", RuntimeConfig{}, file, req)
 }
 
-// UploadWithConfig 使用外部传入运行时配置上传。
-//
-// 适用场景：
-// - 动态切换到非默认 provider
-// - 按租户、按渠道、按对象来源临时切换存储配置
 func UploadWithConfig(ctx context.Context, runtime RuntimeConfig, file File, req Request) (Result, error) {
 	return uploadWithProvider(ctx, runtime.Provider, runtime, file, req)
 }
 
-// Use 指定 provider 上传。
-//
-// 示例：
-// - `upload.Use("local").Upload(ctx, file, req)`
 func Use(provider string) Client {
 	return Client{provider: normalizeProvider(provider)}
 }
 
-// UseCfg 使用外部传入运行时配置上传。
-//
-// 示例：
-// - `upload.UseCfg(runtimeCfg).Upload(ctx, file, req)`
 func UseCfg(runtime RuntimeConfig) Client {
 	cfg := runtime
 	return Client{provider: normalizeProvider(cfg.Provider), runtime: &cfg}
 }
 
-// NewUploader 创建一个固定 provider 和 Request 的高层上传门面。
 func NewUploader(provider string, request Request) Uploader {
 	return Uploader{
 		client:  Use(provider),
@@ -290,7 +211,6 @@ func NewUploader(provider string, request Request) Uploader {
 	}
 }
 
-// NewUploaderWithConfig 创建一个固定运行时配置和 Request 的高层上传门面。
 func NewUploaderWithConfig(runtime RuntimeConfig, request Request) Uploader {
 	return Uploader{
 		client:  UseCfg(runtime),
@@ -298,7 +218,6 @@ func NewUploaderWithConfig(runtime RuntimeConfig, request Request) Uploader {
 	}
 }
 
-// Upload 执行上传。
 func (c Client) Upload(ctx context.Context, file File, req Request) (Result, error) {
 	if c.runtime != nil {
 		return uploadWithProvider(ctx, c.provider, *c.runtime, file, req)
@@ -306,7 +225,6 @@ func (c Client) Upload(ctx context.Context, file File, req Request) (Result, err
 	return uploadWithProvider(ctx, c.provider, RuntimeConfig{}, file, req)
 }
 
-// Upload 使用门面中固定的 Request 执行上传。
 func (u Uploader) Upload(ctx context.Context, file File) (Result, error) {
 	return u.client.Upload(ctx, file, u.request)
 }
@@ -322,7 +240,7 @@ func uploadWithProvider(ctx context.Context, providerName string, runtime Runtim
 
 	runtime.Provider = name
 	if name != "local" && !hasOnlineRuntimeConfig(runtime) {
-		return Result{}, uploadprovider.NewError(enums.ErrUploadConfigMissing)
+		return Result{}, fmt.Errorf("上传配置缺失")
 	}
 	if err := validateFile(file); err != nil {
 		return Result{}, err
@@ -335,6 +253,7 @@ func uploadWithProvider(ctx context.Context, providerName string, runtime Runtim
 	if strings.TrimSpace(result.Provider) == "" {
 		result.Provider = name
 	}
+
 	return result, nil
 }
 
@@ -349,14 +268,15 @@ func getProvider(providerName string) (uploadprovider.Provider, string, error) {
 	stateMu.RUnlock()
 
 	if !initialized {
-		return nil, "", uploadprovider.NewError(enums.ErrUploadNotInitialized)
+		return nil, "", fmt.Errorf("上传组件未初始化")
 	}
 	if !ok {
-		return nil, "", uploadprovider.NewErrorf(enums.ErrUploadProviderNotFound, "provider=%s", name)
+		return nil, "", fmt.Errorf("provider=%s 不存在", name)
 	}
 	if err := ensureProviderReady(name); err != nil {
 		return nil, "", err
 	}
+
 	return entry.provider, name, nil
 }
 
@@ -368,13 +288,13 @@ func ensureProviderReady(providerName string) error {
 	stateMu.RUnlock()
 
 	if !initialized {
-		return uploadprovider.NewError(enums.ErrUploadNotInitialized)
+		return fmt.Errorf("上传组件未初始化")
 	}
 	if !ok {
-		return uploadprovider.NewErrorf(enums.ErrUploadProviderNotFound, "provider=%s", providerName)
+		return fmt.Errorf("provider=%s 不存在", providerName)
 	}
 	if cfg == nil {
-		return uploadprovider.NewError(enums.ErrUploadConfigInvalid)
+		return fmt.Errorf("上传配置无效")
 	}
 
 	entry.mu.Lock()
@@ -385,7 +305,7 @@ func ensureProviderReady(providerName string) error {
 	}
 
 	if err := entry.provider.Init(cfg); err != nil {
-		return uploadprovider.WrapError(enums.ErrUploadSystemError, err, "初始化 provider=%s 失败", providerName)
+		return fmt.Errorf("初始化 provider=%s 失败: %w", providerName, err)
 	}
 	entry.ready = true
 	return nil
@@ -430,7 +350,7 @@ func parseValidationRules(v *viper.Viper) (validationRules, error) {
 	if raw := strings.TrimSpace(v.GetString("upload.max_size")); raw != "" {
 		size, err := parseByteSize(raw)
 		if err != nil {
-			return validationRules{}, uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "upload.max_size 配置无效: %v", err)
+			return validationRules{}, fmt.Errorf("upload.max_size 配置无效: %w", err)
 		}
 		rules.maxSize = size
 	}
@@ -459,20 +379,20 @@ func parseValidationRules(v *viper.Viper) (validationRules, error) {
 
 func validateFile(file File) error {
 	if file.Size > 0 && uploadRules.maxSize > 0 && file.Size > uploadRules.maxSize {
-		return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "上传文件大小超限: max=%d current=%d", uploadRules.maxSize, file.Size)
+		return fmt.Errorf("上传文件大小超限: max=%d current=%d", uploadRules.maxSize, file.Size)
 	}
 
 	if len(uploadRules.allowedExtensions) > 0 {
 		ext := strings.ToLower(filepath.Ext(strings.TrimSpace(file.Filename)))
 		if _, ok := uploadRules.allowedExtensions[ext]; !ok {
-			return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "上传扩展名不允许: %s", ext)
+			return fmt.Errorf("上传扩展名不允许: %s", ext)
 		}
 	}
 
 	if len(uploadRules.allowedMIMETypes) > 0 {
 		contentType := strings.ToLower(strings.TrimSpace(file.ContentType))
 		if _, ok := uploadRules.allowedMIMETypes[contentType]; !ok {
-			return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "上传 MIME 类型不允许: %s", file.ContentType)
+			return fmt.Errorf("上传 MIME 类型不允许: %s", file.ContentType)
 		}
 	}
 
@@ -514,6 +434,7 @@ func parseByteSize(raw string) (int64, error) {
 	if value <= 0 {
 		return 0, fmt.Errorf("值必须大于 0")
 	}
+
 	return value, nil
 }
 
