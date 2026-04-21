@@ -8,10 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"go-mvc/pkg/auth"
-	"go-mvc/pkg/database"
-	"go-mvc/pkg/defaults"
-
 	"github.com/spf13/viper"
 )
 
@@ -20,7 +16,6 @@ var (
 	mu sync.Mutex
 )
 
-// ServerConfig 服务配置。
 type ServerConfig struct {
 	Port              int
 	Mode              string
@@ -37,7 +32,6 @@ type ServerConfig struct {
 	PortStrategy      string
 }
 
-// Init 初始化配置文件。
 func Init(configPath string) error {
 	mu.Lock()
 	defer mu.Unlock()
@@ -47,7 +41,6 @@ func Init(configPath string) error {
 	}
 
 	cfg := viper.New()
-	setDefaults(cfg)
 	cfg.SetConfigFile(configPath)
 
 	if err := cfg.ReadInConfig(); err != nil {
@@ -59,75 +52,6 @@ func Init(configPath string) error {
 	return nil
 }
 
-func setDefaults(v *viper.Viper) {
-	v.SetDefault("server.port", 8080)
-	v.SetDefault("server.mode", "debug")
-	v.SetDefault("server.app_name", "go-mvc")
-	v.SetDefault("server.read_header_timeout", "3s")
-	v.SetDefault("server.read_timeout", "15s")
-	v.SetDefault("server.write_timeout", "30s")
-	v.SetDefault("server.idle_timeout", "60s")
-	v.SetDefault("server.request_body_limit", "2MB")
-	v.SetDefault("server.upload_body_limit", "32MB")
-	v.SetDefault("server.rate_limit_enabled", true)
-	v.SetDefault("server.rate_limit_limit", 120)
-	v.SetDefault("server.rate_limit_window", "1m")
-	v.SetDefault("server.port_strategy", "")
-
-	v.SetDefault("database.driver", defaults.DefaultDatabaseDriver)
-	v.SetDefault("database.host", defaults.DefaultDatabaseHost)
-	v.SetDefault("database.port", defaults.DefaultDatabasePort)
-	v.SetDefault("database.user", defaults.DefaultDatabaseUser)
-	v.SetDefault("database.password", defaults.DefaultDatabasePassword)
-	v.SetDefault("database.dbname", defaults.DefaultDatabaseName)
-	v.SetDefault("database.max_idle_conns", defaults.DefaultDatabaseMaxIdleConns)
-	v.SetDefault("database.max_open_conns", defaults.DefaultDatabaseMaxOpenConns)
-	v.SetDefault("database.log_level", "")
-	v.SetDefault("database.prepare_stmt", false)
-	v.SetDefault("database.skip_default_transaction", false)
-	v.SetDefault("database.slow_threshold", "200ms")
-
-	v.SetDefault("redis.host", defaults.DefaultRedisHost)
-	v.SetDefault("redis.port", defaults.DefaultRedisPort)
-	v.SetDefault("redis.password", defaults.DefaultRedisPassword)
-	v.SetDefault("redis.db", defaults.DefaultRedisDB)
-	v.SetDefault("redis.enabled", true)
-	v.SetDefault("redis.provider", defaults.DefaultRedisProvider)
-	v.SetDefault("redis.addrs", []string{})
-
-	v.SetDefault("jwt.secret", defaults.DefaultJWTSecret)
-	v.SetDefault("jwt.expire_time", defaults.DefaultJWTExpireTime)
-	v.SetDefault("jwt.issuer", defaults.DefaultJWTIssuer)
-
-	v.SetDefault("casbin.enabled", true)
-	v.SetDefault("i18n.default_lang", "zh-CN")
-	v.SetDefault("i18n.auto_refresh", true)
-	v.SetDefault("i18n.refresh_interval", "20s")
-	v.SetDefault("queue.enabled", false)
-	v.SetDefault("queue.provider", defaults.DefaultQueueProvider)
-	v.SetDefault("queue.run_worker", false)
-	v.SetDefault("queue.concurrency", defaults.DefaultQueueConcurrency)
-	v.SetDefault("queue.redis.host", "")
-	v.SetDefault("queue.redis.port", 0)
-	v.SetDefault("queue.redis.password", "")
-	v.SetDefault("queue.redis.db", 0)
-
-	v.SetDefault("upload.enabled", true)
-	v.SetDefault("upload.default_provider", "local")
-
-	v.SetDefault("log.level", "info")
-	v.SetDefault("log.filename", "public/logs/app.log")
-	v.SetDefault("log.base_dir", "public/logs")
-	v.SetDefault("log.max_size", 100)
-	v.SetDefault("log.max_backups", 10)
-	v.SetDefault("log.max_age", 30)
-	v.SetDefault("log.compress", false)
-	v.SetDefault("log.sample.enabled", false)
-	v.SetDefault("log.sample.initial", 100)
-	v.SetDefault("log.sample.thereafter", 100)
-}
-
-// GetViper 获取 viper 实例（供 pkg 使用）。
 func GetViper() (*viper.Viper, error) {
 	if v == nil {
 		return nil, fmt.Errorf("配置未初始化，请先调用 config.Init()")
@@ -135,7 +59,6 @@ func GetViper() (*viper.Viper, error) {
 	return v, nil
 }
 
-// GetServer 获取服务配置。
 func GetServer() (ServerConfig, error) {
 	type serverConfigRaw struct {
 		Port              int    `mapstructure:"port"`
@@ -259,33 +182,6 @@ func parseByteSize(field string, raw string) (int64, error) {
 	return value, nil
 }
 
-// ValidateRuntimeConfig 在组件初始化前执行关键配置校验。
-//
-// 当前规则：
-// - 仅 release 模式启用严格 fail-fast
-// - 拒绝默认 JWT secret
-// - 拒绝默认数据库名
-// - 拒绝空数据库密码
-func ValidateRuntimeConfig() error {
-	cfg, err := GetViper()
-	if err != nil {
-		return err
-	}
-	if cfg.GetString("server.mode") != "release" {
-		return nil
-	}
-
-	if err := auth.ValidateConfig(cfg, true); err != nil {
-		return err
-	}
-	if err := database.ValidateConfig(cfg, true); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ResetForTest 重置 config 包的全局配置状态，仅用于测试环境。
 func ResetForTest() {
 	mu.Lock()
 	defer mu.Unlock()

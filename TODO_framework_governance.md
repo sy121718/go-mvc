@@ -131,8 +131,9 @@
 - [x] `internal/middleware/casbin.go`：错误响应后统一执行 `c.Abort()`
   - 目标：避免权限校验失败时请求链继续向下执行
 
-- [x] `config/config.go`、`pkg/auth/jwt.go`：增加 release 模式 fail-fast 校验
+- [x] `pkg/auth/jwt.go`、`pkg/database/database.go`：增加 release 模式 fail-fast 校验
   - 目标：禁止默认 JWT secret、默认数据库名、空关键配置在生产模式启动
+  - 当前实现：严格校验已经回收到各自 `pkg.Init()` 内部，`config` 只负责统一调度初始化并接收错误
 
 - [x] `internal/routers/routes.go`：将 `/health` 拆分为 `/livez` 与 `/readyz`
   - 目标：区分存活检查与依赖就绪检查，支撑部署与故障切换

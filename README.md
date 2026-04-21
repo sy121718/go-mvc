@@ -53,6 +53,12 @@ if err := config.InitComponents(); err != nil {
 }
 ```
 
+说明：
+
+- `config` 只负责统一编排组件初始化
+- 组件自己的配置校验在各自 `pkg` 的 `Init()` 内部完成
+- 任一 `pkg` 初始化失败，错误会直接返回到启动链路，进程停止启动
+
 关闭时统一走：
 
 ```go
@@ -114,6 +120,12 @@ httpCode := i18n.GetHttpCode("ErrAdminNotFound")
 - 参数校验、状态校验类错误：直接返回简单中文提示
 - 底层系统错误：优先直接返回原始 `err`
 - 不在 `pkg` 里做过度包装的错误翻译
+
+补充约定：
+
+- `pkg` 自己负责自己的严格配置校验
+- 不在 `config` 层手工点名调用 `pkg.ValidateConfig(...)`
+- `pkg` 初始化失败后，直接把 `error` 返回给上层，由启动入口决定退出
 
 不建议：
 

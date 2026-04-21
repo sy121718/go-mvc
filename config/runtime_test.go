@@ -89,7 +89,7 @@ func TestInitComponentsAndCloseComponentsFollowRegisteredOrder(t *testing.T) {
 		"close:first",
 	}
 	if !reflect.DeepEqual(events, want) {
-		t.Fatalf("组件编排顺序不正确:\nwant=%v\ngot=%v", want, events)
+		t.Fatalf("组件编排顺序不正确\nwant=%v\ngot=%v", want, events)
 	}
 }
 
@@ -139,7 +139,7 @@ func TestInitComponentsInitializesCriticalBeforeOptional(t *testing.T) {
 
 	want := []string{"init:critical", "init:optional"}
 	if !reflect.DeepEqual(events, want) {
-		t.Fatalf("关键组件应先初始化:\nwant=%v\ngot=%v", want, events)
+		t.Fatalf("关键组件应先初始化\nwant=%v\ngot=%v", want, events)
 	}
 }
 

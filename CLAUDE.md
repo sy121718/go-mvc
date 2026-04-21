@@ -29,6 +29,7 @@ go test ./internal/module/backend/...
 - `config.CloseComponents()`
 
 组件不自行决定进程退出，组件只返回 `error`。
+组件自己的严格配置校验在各自 `pkg.Init()` 内部完成，`config` 不手工点名外调校验函数。
 
 ### 2. 目录职责
 
@@ -58,6 +59,7 @@ go test ./internal/module/backend/...
 - 默认值统一放在 `config/config.go`
 - `pkg` 自己定义并解析自己的配置结构
 - `pkg` 不导入 `config` 包，避免循环依赖
+- `config` 只负责读取配置和调度组件初始化，不承载具体 `pkg` 配置校验逻辑
 
 ## 路由与中间件
 
@@ -158,6 +160,12 @@ return fmt.Errorf("创建日志目录失败: %w", err)
 ```go
 return err
 ```
+
+另外：
+
+- `pkg` 初始化失败，直接返回 `error`
+- 启动链路收到错误后直接停止进程
+- 不在外部重复做一层 `pkg` 配置校验中转
 
 ## 测试约定
 

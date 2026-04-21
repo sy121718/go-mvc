@@ -18,7 +18,6 @@ const (
 	errComponentNotReadyPrefix   = "component not ready"
 )
 
-// InitComponents 按注册顺序初始化运行时组件。
 func InitComponents() error {
 	runtimeMu.Lock()
 	defer runtimeMu.Unlock()
@@ -27,14 +26,11 @@ func InitComponents() error {
 		return nil
 	}
 
-	if err := ValidateRuntimeConfig(); err != nil {
-		return err
-	}
-
 	cfg, err := GetViper()
 	if err != nil {
 		return err
 	}
+
 	for _, prepare := range runtimePreparers {
 		prepare()
 	}
@@ -69,7 +65,6 @@ func InitComponents() error {
 	return nil
 }
 
-// CloseComponents 按初始化逆序关闭运行时组件。
 func CloseComponents() error {
 	runtimeMu.Lock()
 	defer runtimeMu.Unlock()
@@ -91,7 +86,6 @@ func CloseComponents() error {
 	return nil
 }
 
-// ValidateReady 检查当前运行时是否达到“可对外提供服务”的就绪状态。
 func ValidateReady() error {
 	runtimeMu.Lock()
 	ready := runtimeInited

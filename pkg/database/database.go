@@ -76,6 +76,10 @@ func Init(v *viper.Viper) error {
 	if inited {
 		return nil
 	}
+	strict := v != nil && strings.EqualFold(strings.TrimSpace(v.GetString("server.mode")), "release")
+	if err := ValidateConfig(v, strict); err != nil {
+		return err
+	}
 
 	instance, err := initDB(v)
 	if err != nil {

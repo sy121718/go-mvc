@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -80,9 +81,12 @@ func Init(v *viper.Viper) error {
 	cfg := getDefaultConfig()
 	if v != nil {
 		if err := v.UnmarshalKey("jwt", &cfg); err != nil {
-			log.Printf("解析 JWT 配置失败，使用默认配置: %v", err)
-			cfg = getDefaultConfig()
+			return fmt.Errorf("解析 JWT 配置失败: %w", err)
 		}
+	}
+	strict := v != nil && strings.EqualFold(strings.TrimSpace(v.GetString("server.mode")), "release")
+	if err := ValidateConfig(v, strict); err != nil {
+		return err
 	}
 
 	defaultCfg := getDefaultConfig()

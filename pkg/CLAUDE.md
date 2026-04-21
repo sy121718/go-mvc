@@ -31,12 +31,14 @@ pkg/
 ### 2. 生命周期
 
 组件统一由 `config.InitComponents()` / `config.CloseComponents()` 编排。
+但组件自己的严格配置校验必须在各自 `Init()` 内部完成。
 
 ### 3. 配置
 
 - 默认值在 `config/config.go`
 - 每个 `pkg` 自己解析自己的配置
 - `pkg` 不导入 `config`
+- `config` 不手工点名调用某个 `pkg` 的校验函数
 
 ### 4. 错误处理
 
@@ -46,6 +48,7 @@ pkg/
 - 底层系统错误：优先直接返回原始 `err`
 - 不做复杂的统一错误码中转
 - 不做复杂的国际化翻译中转
+- 初始化阶段如果配置不合法，直接在本包 `Init()` 返回错误
 
 不建议：
 
@@ -149,5 +152,6 @@ httpCode := i18n.GetHttpCode("ErrAdminNotFound")
 - 目录清晰
 - 根包只做 facade
 - 配置自己解析
+- 校验自己在 `Init()` 做完
 - 错误处理保持简单
 - 不在 pkg 内扩散业务语义中转
