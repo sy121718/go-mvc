@@ -5,13 +5,14 @@ import (
 	"time"
 
 	adminrouter "go-mvc/internal/module/backend/admin/router"
-	"go-mvc/internal/task"
+	_ "go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
 	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/database"
 	"go-mvc/pkg/i18n"
 	pkglogger "go-mvc/pkg/logger"
+	"go-mvc/pkg/queue"
 	"go-mvc/pkg/upload"
 
 	"github.com/gin-gonic/gin"
@@ -116,17 +117,12 @@ func registeredComponents() []runtimeComponent {
 				return cfg.GetBool("queue.enabled")
 			},
 			Init: func(cfg *viper.Viper) error {
-				if err := task.Init(cfg); err != nil {
+				if err := queue.Init(cfg); err != nil {
 					return fmt.Errorf("初始化任务队列失败: %w", err)
-				}
-				if cfg.GetBool("queue.run_worker") {
-					if err := task.StartQueue(); err != nil {
-						return fmt.Errorf("启动任务队列失败: %w", err)
-					}
 				}
 				return nil
 			},
-			Close: task.ShutdownQueue,
+			Close: queue.Close,
 		},
 	}
 }
