@@ -144,13 +144,14 @@ func buildHTTPRouter(
 	ready func() error,
 ) *gin.Engine {
 	router := gin.New()
-	router.Use(gin.Recovery())
-	router.Use(middleware.SecurityHeadersMiddleware())
-	router.Use(middleware.RequestBodyLimitMiddleware(serverCfg.RequestBodyLimit, serverCfg.UploadBodyLimit))
-	if serverCfg.RateLimitEnabled {
-		router.Use(middleware.RequestRateLimitMiddleware(serverCfg.RateLimitLimit, serverCfg.RateLimitWindow))
-	}
-	router.Use(middleware.RequestLogCaptureMiddleware(logCapture))
+	middleware.UseDefaultMiddlewares(router, middleware.DefaultOptions{
+		RequestBodyLimit: serverCfg.RequestBodyLimit,
+		UploadBodyLimit:  serverCfg.UploadBodyLimit,
+		RateLimitEnabled: serverCfg.RateLimitEnabled,
+		RateLimitLimit:   serverCfg.RateLimitLimit,
+		RateLimitWindow:  serverCfg.RateLimitWindow,
+		LogCapture:       logCapture,
+	})
 	routers.SetupRoutes(router, modules, ready)
 	return router
 }

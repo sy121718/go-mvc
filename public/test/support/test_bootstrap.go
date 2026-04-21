@@ -49,16 +49,18 @@ func SetupTestBootstrap(options BootstrapOptions) (*gin.Engine, func() error, er
 	}
 
 	engine := gin.New()
-	engine.Use(gin.Recovery())
-	engine.Use(middleware.SecurityHeadersMiddleware())
 	serverCfg, err := config.GetServer()
 	if err != nil {
 		return nil, nil, fmt.Errorf("获取服务配置失败: %w", err)
 	}
-	engine.Use(middleware.RequestBodyLimitMiddleware(serverCfg.RequestBodyLimit, serverCfg.UploadBodyLimit))
-	if serverCfg.RateLimitEnabled {
-		engine.Use(middleware.RequestRateLimitMiddleware(serverCfg.RateLimitLimit, serverCfg.RateLimitWindow))
-	}
+	middleware.UseDefaultMiddlewares(engine, middleware.DefaultOptions{
+		RequestBodyLimit: serverCfg.RequestBodyLimit,
+		UploadBodyLimit:  serverCfg.UploadBodyLimit,
+		RateLimitEnabled: serverCfg.RateLimitEnabled,
+		RateLimitLimit:   serverCfg.RateLimitLimit,
+		RateLimitWindow:  serverCfg.RateLimitWindow,
+		LogCapture:       false,
+	})
 
 	useDefaultRoute := options.UseDefaultRoute
 	if !useDefaultRoute && options.RouteRegistrar == nil {

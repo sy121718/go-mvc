@@ -161,7 +161,7 @@
 
 ### 结构化与组件边界
 
-- [ ] `internal/middleware`：增加默认中间件聚合注册入口
+- [x] `internal/middleware`：增加默认中间件聚合注册入口
   - 目标：安全头、限流、鉴权、签名、防重放等默认链路统一装配
 
 - [ ] `pkg/response`、`pkg/enums`、`pkg/i18n`：统一消息码使用方式
