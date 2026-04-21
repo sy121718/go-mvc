@@ -15,6 +15,17 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
+const (
+	defaultDatabaseDriver       = "mysql"
+	defaultDatabaseHost         = "127.0.0.1"
+	defaultDatabasePort         = 3306
+	defaultDatabaseUser         = "root"
+	defaultDatabasePassword     = ""
+	defaultDatabaseName         = ""
+	defaultDatabaseMaxIdleConns = 10
+	defaultDatabaseMaxOpenConns = 100
+)
+
 // Config 数据库配置。
 type Config struct {
 	Driver                 string         `mapstructure:"driver"`
@@ -54,17 +65,6 @@ var (
 	db     *gorm.DB
 	mu     sync.RWMutex
 	inited bool
-)
-
-const (
-	defaultDatabaseDriver       = "mysql"
-	defaultDatabaseHost         = "127.0.0.1"
-	defaultDatabasePort         = 3306
-	defaultDatabaseUser         = "root"
-	defaultDatabasePassword     = ""
-	defaultDatabaseName         = ""
-	defaultDatabaseMaxIdleConns = 10
-	defaultDatabaseMaxOpenConns = 100
 )
 
 // GetDB 获取数据库实例；未初始化时返回错误。

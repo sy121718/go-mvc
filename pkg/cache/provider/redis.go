@@ -10,6 +10,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultRedisHost     = "127.0.0.1"
+	defaultRedisPort     = 6379
+	defaultRedisPassword = ""
+	defaultRedisDB       = 0
+)
+
 // Config Redis 配置。
 type Config struct {
 	Host     string   `mapstructure:"host"`
@@ -24,13 +31,6 @@ type redisProvider struct {
 	mu     sync.RWMutex
 	inited bool
 }
-
-const (
-	defaultRedisHost     = "127.0.0.1"
-	defaultRedisPort     = 6379
-	defaultRedisPassword = ""
-	defaultRedisDB       = 0
-)
 
 func getDefaultConfig() Config {
 	return Config{
