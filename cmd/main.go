@@ -67,7 +67,13 @@ func run() error {
 	addr := fmt.Sprintf(":%d", serverCfg.Port)
 	log.Printf("服务启动: http://localhost%s", addr)
 
-	appRuntime := config.NewAppRuntime(serverCfg, router, buildHTTPServer(serverCfg, router))
+	appRuntime := config.NewAppRuntime(
+		serverCfg,
+		router,
+		buildHTTPServer(serverCfg, router),
+		config.ValidateReady,
+		config.CloseComponents,
+	)
 
 	// 6) 在 goroutine 里启动 HTTP 服务：
 	// - 正常关闭时 ListenAndServe 会返回 http.ErrServerClosed（不是错误）
@@ -85,7 +91,7 @@ func run() error {
 	case err := <-serverErrCh:
 		if err != nil {
 			// 启动失败时也要执行组件关闭，避免留下后台资源（连接、定时器等）。
-			if closeErr := config.CloseComponents(); closeErr != nil {
+			if closeErr := appRuntime.Shutdown(); closeErr != nil {
 				log.Printf("组件关闭失败: %v", closeErr)
 			}
 			return fmt.Errorf("HTTP 服务启动失败: %w", err)
@@ -104,7 +110,7 @@ func run() error {
 	}
 
 	// 9) 统一关闭组件，释放数据库、缓存、队列等资源。
-	if err := config.CloseComponents(); err != nil {
+	if err := appRuntime.Shutdown(); err != nil {
 		log.Printf("组件关闭失败: %v", err)
 	}
 
