@@ -16,14 +16,17 @@ type sceneGormLogger struct {
 	slowThreshold time.Duration
 }
 
-func newSceneGormLogger(inner gormlogger.Interface, scene string) gormlogger.Interface {
+func newSceneGormLogger(inner gormlogger.Interface, scene string, slowThreshold time.Duration) gormlogger.Interface {
 	if scene == "" {
 		return inner
+	}
+	if slowThreshold <= 0 {
+		slowThreshold = defaultSQLSlowThreshold
 	}
 	return &sceneGormLogger{
 		inner:         inner,
 		scene:         scene,
-		slowThreshold: defaultSQLSlowThreshold,
+		slowThreshold: slowThreshold,
 	}
 }
 

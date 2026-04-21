@@ -24,6 +24,9 @@ database:
   max_idle_conns: 10
   max_open_conns: 100
   log_level: ""  # 留空时按 server.mode 推导
+  prepare_stmt: false
+  skip_default_transaction: false
+  slow_threshold: 200ms
 
 # Redis配置
 redis:

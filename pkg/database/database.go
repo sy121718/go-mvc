@@ -17,15 +17,24 @@ import (
 
 // Config 数据库配置。
 type Config struct {
-	Driver       string `mapstructure:"driver"`
-	Host         string `mapstructure:"host"`
-	Port         int    `mapstructure:"port"`
-	User         string `mapstructure:"user"`
-	Password     string `mapstructure:"password"`
-	DBName       string `mapstructure:"dbname"`
-	MaxIdleConns int    `mapstructure:"max_idle_conns"`
-	MaxOpenConns int    `mapstructure:"max_open_conns"`
-	LogLevel     string `mapstructure:"log_level"`
+	Driver                 string `mapstructure:"driver"`
+	Host                   string `mapstructure:"host"`
+	Port                   int    `mapstructure:"port"`
+	User                   string `mapstructure:"user"`
+	Password               string `mapstructure:"password"`
+	DBName                 string `mapstructure:"dbname"`
+	MaxIdleConns           int    `mapstructure:"max_idle_conns"`
+	MaxOpenConns           int    `mapstructure:"max_open_conns"`
+	LogLevel               string `mapstructure:"log_level"`
+	PrepareStmt            bool   `mapstructure:"prepare_stmt"`
+	SkipDefaultTransaction bool   `mapstructure:"skip_default_transaction"`
+	SlowThreshold          string `mapstructure:"slow_threshold"`
+}
+
+type runtimeOptions struct {
+	prepareStmt            bool
+	skipDefaultTransaction bool
+	slowThreshold          time.Duration
 }
 
 var (
@@ -90,15 +99,18 @@ func Ready() error {
 
 func getDefaultConfig() Config {
 	return Config{
-		Driver:       "mysql",
-		Host:         "127.0.0.1",
-		Port:         3306,
-		User:         "root",
-		Password:     "",
-		DBName:       "test",
-		MaxIdleConns: 10,
-		MaxOpenConns: 100,
-		LogLevel:     "",
+		Driver:                 "mysql",
+		Host:                   "127.0.0.1",
+		Port:                   3306,
+		User:                   "root",
+		Password:               "",
+		DBName:                 "test",
+		MaxIdleConns:           10,
+		MaxOpenConns:           100,
+		LogLevel:               "",
+		PrepareStmt:            false,
+		SkipDefaultTransaction: false,
+		SlowThreshold:          "",
 	}
 }
 
@@ -177,6 +189,11 @@ func initDB(v *viper.Viper) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	runtimeCfg, err := parseRuntimeOptions(v)
+	if err != nil {
+		return nil, err
+	}
+
 	sqlScene := ""
 	serverMode := ""
 	if v != nil {
@@ -188,9 +205,11 @@ func initDB(v *viper.Viper) (*gorm.DB, error) {
 
 	gormBaseLogger := gormlogger.Default.LogMode(resolveLogLevel(serverMode, cfg.LogLevel))
 	gormDB, err := gorm.Open(dialector, &gorm.Config{
-		Logger: newSceneGormLogger(gormBaseLogger, sqlScene),
+		Logger: newSceneGormLogger(gormBaseLogger, sqlScene, runtimeCfg.slowThreshold),
 		// 启用方言错误翻译，便于通过 gorm.ErrDuplicatedKey / gorm.ErrForeignKeyViolated 统一判断。
-		TranslateError: true,
+		TranslateError:         true,
+		PrepareStmt:            runtimeCfg.prepareStmt,
+		SkipDefaultTransaction: runtimeCfg.skipDefaultTransaction,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("连接数据库失败: %w", err)
@@ -211,6 +230,29 @@ func initDB(v *viper.Viper) (*gorm.DB, error) {
 
 	log.Printf("数据库初始化成功，driver=%s", strings.ToLower(cfg.Driver))
 	return gormDB, nil
+}
+
+func parseRuntimeOptions(v *viper.Viper) (runtimeOptions, error) {
+	options := runtimeOptions{
+		prepareStmt:            false,
+		skipDefaultTransaction: false,
+		slowThreshold:          defaultSQLSlowThreshold,
+	}
+	if v == nil {
+		return options, nil
+	}
+
+	options.prepareStmt = v.GetBool("database.prepare_stmt")
+	options.skipDefaultTransaction = v.GetBool("database.skip_default_transaction")
+	rawThreshold := strings.TrimSpace(v.GetString("database.slow_threshold"))
+	if rawThreshold != "" {
+		duration, err := time.ParseDuration(rawThreshold)
+		if err != nil {
+			return runtimeOptions{}, fmt.Errorf("解析 database.slow_threshold 失败: %w", err)
+		}
+		options.slowThreshold = duration
+	}
+	return options, nil
 }
 
 // Close 关闭数据库连接。

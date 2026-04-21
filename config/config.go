@@ -79,6 +79,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.max_idle_conns", 10)
 	v.SetDefault("database.max_open_conns", 100)
 	v.SetDefault("database.log_level", "")
+	v.SetDefault("database.prepare_stmt", false)
+	v.SetDefault("database.skip_default_transaction", false)
+	v.SetDefault("database.slow_threshold", "200ms")
 
 	v.SetDefault("redis.host", "127.0.0.1")
 	v.SetDefault("redis.port", 6379)

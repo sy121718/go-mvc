@@ -220,7 +220,7 @@
 
 ### 性能治理
 
-- [ ] `pkg/database/database.go`：增加可配置性能开关
+- [x] `pkg/database/database.go`：增加可配置性能开关
   - 目标：支持 `PrepareStmt`、`SkipDefaultTransaction`、慢 SQL 阈值等能力
 
 - [ ] 为数据库读写分离预留配置结构
