@@ -83,6 +83,11 @@ log:
   max_backups: 10  # 最多保留旧文件数
   max_age: 30  # 最多保留天数
   compress: false  # 是否压缩
+  sample:
+    enabled: false
+    initial: 100
+    thereafter: 100
+  scene_levels: {}  # 例如: { sql: error, http: warn }
 
 # 上传配置
 upload:
