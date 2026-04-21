@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"go-mvc/pkg/enums"
@@ -13,6 +15,13 @@ import (
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
+)
+
+const signatureReplayWindow = 5 * time.Minute
+
+var (
+	nonceMu    sync.Mutex
+	nonceStore = map[string]time.Time{}
 )
 
 // SignatureMiddleware 签名验证中间件
@@ -52,6 +61,17 @@ func SignatureMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		nonce := c.GetHeader("X-Nonce")
+		if nonce == "" {
+			nonce = c.Query("nonce")
+		}
+		nonce = strings.TrimSpace(nonce)
+		if nonce == "" {
+			response.ParamError(c, "缺少 nonce 参数")
+			c.Abort()
+			return
+		}
+
 		params := make(map[string]interface{})
 
 		query := c.Request.URL.Query()
@@ -83,6 +103,12 @@ func SignatureMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		if !consumeNonce(nonce, time.Unix(timestamp, 0).Add(signatureReplayWindow)) {
+			response.ErrorWithMessage(c, enums.ErrInvalidParams, "请求重复提交")
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }
@@ -107,4 +133,30 @@ func readBodyParams(c *gin.Context) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return body, nil
+}
+
+func consumeNonce(nonce string, expiresAt time.Time) bool {
+	now := time.Now()
+
+	nonceMu.Lock()
+	defer nonceMu.Unlock()
+
+	for key, expiry := range nonceStore {
+		if !expiry.After(now) {
+			delete(nonceStore, key)
+		}
+	}
+
+	if expiry, exists := nonceStore[nonce]; exists && expiry.After(now) {
+		return false
+	}
+
+	nonceStore[nonce] = expiresAt
+	return true
+}
+
+func resetNonceStore() {
+	nonceMu.Lock()
+	defer nonceMu.Unlock()
+	nonceStore = map[string]time.Time{}
 }

@@ -151,7 +151,7 @@
 - [ ] `pkg/upload`：增加最大大小限制、MIME 白名单、扩展名白名单的默认上传防护策略
   - 目标：把上传安全校验前置到框架层，而不是散落在业务层
 
-- [ ] `internal/middleware/signature.go`：增加 `nonce` 去重机制
+- [x] `internal/middleware/signature.go`：增加 `nonce` 去重机制
   - 目标：配合时间戳校验，防止 5 分钟窗口内请求重放
 
 - [ ] 新增基础限流能力
