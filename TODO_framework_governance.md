@@ -114,7 +114,7 @@
 - [ ] 将启动流程显式拆分为 `LoadConfig -> ValidateConfig -> InitCritical -> InitOptional -> BuildRouter -> StartServer`
   - 目标：减少启动逻辑耦合，便于后续拆分关键与扩展启动阶段
 
-- [ ] `cmd/main.go`：由 `gin.Default()` 改为 `gin.New()` + 显式挂载中间件
+- [x] `cmd/main.go`：由 `gin.Default()` 改为 `gin.New()` + 显式挂载中间件
   - 目标：统一请求日志、恢复处理、安全中间件的注册顺序，避免默认中间件与自定义链路重复或失控
 
 - [x] `pkg/queue`、`internal/task`：重构队列与任务调度边界

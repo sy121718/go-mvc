@@ -62,14 +62,12 @@ func run() error {
 	}
 
 	// 4) 构建 HTTP 路由。
-	router := gin.Default()
-	router.Use(middleware.SecurityHeadersMiddleware())
-	router.Use(middleware.RequestBodyLimitMiddleware(serverCfg.RequestBodyLimit, serverCfg.UploadBodyLimit))
-	if serverCfg.RateLimitEnabled {
-		router.Use(middleware.RequestRateLimitMiddleware(serverCfg.RateLimitLimit, serverCfg.RateLimitWindow))
-	}
-	router.Use(middleware.RequestLogCaptureMiddleware(config.GetViper().GetBool("log.capture.http")))
-	routers.SetupRoutes(router, config.ModuleRegistrars(), config.ValidateReady)
+	router := buildHTTPRouter(
+		serverCfg,
+		config.GetViper().GetBool("log.capture.http"),
+		config.ModuleRegistrars(),
+		config.ValidateReady,
+	)
 
 	// 5) 启动前端口策略：
 	// - debug/test：自动尝试释放端口（仅白名单进程）
@@ -137,4 +135,22 @@ func run() error {
 
 	log.Println("服务已退出")
 	return nil
+}
+
+func buildHTTPRouter(
+	serverCfg config.ServerConfig,
+	logCapture bool,
+	modules []func(*gin.RouterGroup),
+	ready func() error,
+) *gin.Engine {
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(middleware.SecurityHeadersMiddleware())
+	router.Use(middleware.RequestBodyLimitMiddleware(serverCfg.RequestBodyLimit, serverCfg.UploadBodyLimit))
+	if serverCfg.RateLimitEnabled {
+		router.Use(middleware.RequestRateLimitMiddleware(serverCfg.RateLimitLimit, serverCfg.RateLimitWindow))
+	}
+	router.Use(middleware.RequestLogCaptureMiddleware(logCapture))
+	routers.SetupRoutes(router, modules, ready)
+	return router
 }
