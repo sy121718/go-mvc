@@ -70,7 +70,7 @@ func SetupTestBootstrap(options BootstrapOptions) (*gin.Engine, func() error, er
 	}
 
 	if useDefaultRoute {
-		routers.SetupRoutes(engine, config.ModuleRegistrars(), config.ValidateReady)
+		routers.SetupRoutes(engine, config.ValidateReady)
 	}
 
 	if options.RouteRegistrar != nil {

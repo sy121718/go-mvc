@@ -58,7 +58,6 @@ func run() error {
 	router := buildHTTPRouter(
 		serverCfg,
 		cfg.GetBool("log.capture.http"),
-		config.ModuleRegistrars(),
 		config.ValidateReady,
 	)
 
@@ -139,7 +138,6 @@ func loadAndPrepareRuntime(configPath string) (config.ServerConfig, error) {
 func buildHTTPRouter(
 	serverCfg config.ServerConfig,
 	logCapture bool,
-	modules []func(*gin.RouterGroup),
 	ready func() error,
 ) *gin.Engine {
 	router := gin.New()
@@ -151,7 +149,7 @@ func buildHTTPRouter(
 		RateLimitWindow:  serverCfg.RateLimitWindow,
 		LogCapture:       logCapture,
 	})
-	routers.SetupRoutes(router, modules, ready)
+	routers.SetupRoutes(router, ready)
 	return router
 }
 

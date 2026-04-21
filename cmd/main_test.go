@@ -23,15 +23,11 @@ func TestBuildHTTPRouterUsesRecoveryAndDefaultMiddleware(t *testing.T) {
 			RateLimitWindow:  time.Minute,
 		},
 		false,
-		[]func(*gin.RouterGroup){
-			func(rg *gin.RouterGroup) {
-				rg.GET("/panic", func(c *gin.Context) {
-					panic("boom")
-				})
-			},
-		},
 		func() error { return nil },
 	)
+	router.GET("/api/panic", func(c *gin.Context) {
+		panic("boom")
+	})
 
 	recorder, err := support.SendRequest(router, support.RequestOptions{
 		Method: http.MethodGet,

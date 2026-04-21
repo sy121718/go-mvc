@@ -1,7 +1,7 @@
 package config
 
 import (
-	adminmodule "go-mvc/internal/module/backend/admin"
+	"github.com/spf13/viper"
 	internaltask "go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
@@ -11,9 +11,6 @@ import (
 	pkglogger "go-mvc/pkg/logger"
 	"go-mvc/pkg/queue"
 	"go-mvc/pkg/upload"
-
-	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 )
 
 type runtimeComponent struct {
@@ -23,10 +20,6 @@ type runtimeComponent struct {
 	Init     func(cfg *viper.Viper) error
 	Ready    func() error
 	Close    func() error
-}
-
-type runtimeModule struct {
-	Register func(rg *gin.RouterGroup)
 }
 
 var runtimePreparers = []func(){
@@ -98,18 +91,4 @@ var runtimeComponents = []runtimeComponent{
 		Ready: queue.Ready,
 		Close: queue.Close,
 	},
-}
-
-var runtimeModules = []runtimeModule{
-	{
-		Register: adminmodule.RegisterRoutes,
-	},
-}
-
-func ModuleRegistrars() []func(*gin.RouterGroup) {
-	registrars := make([]func(*gin.RouterGroup), 0, len(runtimeModules))
-	for _, module := range runtimeModules {
-		registrars = append(registrars, module.Register)
-	}
-	return registrars
 }

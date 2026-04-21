@@ -3,16 +3,14 @@ package routers
 import (
 	"net/http"
 
+	adminrouter "go-mvc/internal/module/backend/admin/router"
+	userrouter "go-mvc/internal/module/backend/user/router"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(
-	router *gin.Engine,
-	modules []func(*gin.RouterGroup),
-	ready func() error,
-) {
+func SetupRoutes(router *gin.Engine, ready func() error) {
 	if router == nil {
 		return
 	}
@@ -51,9 +49,8 @@ func SetupRoutes(
 	})
 
 	api := router.Group("/api")
-	for _, register := range modules {
-		register(api)
-	}
+	adminrouter.SetupAdminRoutes(api)
+	userrouter.SetupUserRoutes(api)
 
 	router.NoRoute(func(c *gin.Context) {
 		response.NotFound(c, "请求的资源不存在")
