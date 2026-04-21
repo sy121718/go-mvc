@@ -32,6 +32,7 @@ type ServerConfig struct {
 	RateLimitEnabled  bool
 	RateLimitLimit    int
 	RateLimitWindow   time.Duration
+	PortStrategy      string
 }
 
 // Init 初始化配置文件。
@@ -69,6 +70,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.rate_limit_enabled", true)
 	v.SetDefault("server.rate_limit_limit", 120)
 	v.SetDefault("server.rate_limit_window", "1m")
+	v.SetDefault("server.port_strategy", "")
 
 	v.SetDefault("database.driver", "mysql")
 	v.SetDefault("database.host", "127.0.0.1")
@@ -143,6 +145,7 @@ func GetServer() (ServerConfig, error) {
 		RateLimitEnabled  bool   `mapstructure:"rate_limit_enabled"`
 		RateLimitLimit    int    `mapstructure:"rate_limit_limit"`
 		RateLimitWindow   string `mapstructure:"rate_limit_window"`
+		PortStrategy      string `mapstructure:"port_strategy"`
 	}
 
 	var raw serverConfigRaw
@@ -195,6 +198,7 @@ func GetServer() (ServerConfig, error) {
 		RateLimitEnabled:  raw.RateLimitEnabled,
 		RateLimitLimit:    raw.RateLimitLimit,
 		RateLimitWindow:   rateLimitWindow,
+		PortStrategy:      raw.PortStrategy,
 	}, nil
 }
 

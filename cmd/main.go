@@ -60,7 +60,7 @@ func run() error {
 	// 5) 启动前端口策略：
 	// - debug/test：自动尝试释放端口（仅白名单进程）
 	// - release：只提示占用进程与 kill 命令，不自动结束进程
-	if err := utils.EnsurePortReady(serverCfg.Mode, serverCfg.Port); err != nil {
+	if err := utils.EnsurePortReadyWithStrategy(serverCfg.PortStrategy, serverCfg.Mode, serverCfg.Port); err != nil {
 		return err
 	}
 

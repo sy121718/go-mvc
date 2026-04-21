@@ -12,6 +12,7 @@ server:
   rate_limit_enabled: true
   rate_limit_limit: 120
   rate_limit_window: 1m
+  port_strategy: ""  # auto_release / report_only；留空时按 mode 推导
 
 # 数据库配置
 database:

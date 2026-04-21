@@ -129,11 +129,17 @@ func ReleaseTCPPortIfOccupied(port int, allowedProcessNames []string) error {
 // debug/test: auto-release only allowlisted processes on the target port.
 // others: only report occupancy and provide manual kill commands.
 func EnsurePortReady(serverMode string, port int) error {
+	return EnsurePortReadyWithStrategy("", serverMode, port)
+}
+
+// EnsurePortReadyWithStrategy handles port occupancy strategy by explicit config or server mode fallback.
+func EnsurePortReadyWithStrategy(strategy string, serverMode string, port int) error {
+	strategy = resolvePortStrategy(strategy, serverMode)
 	mode := strings.ToLower(strings.TrimSpace(serverMode))
 	allowKill := []string{"main.exe", "main", "go.exe", "go", "air.exe", "air"}
 
-	switch mode {
-	case "debug", "test":
+	switch strategy {
+	case "auto_release":
 		if err := ReleaseTCPPortIfOccupied(port, allowKill); err != nil {
 			return fmt.Errorf("启动前端口检查失败: %w", err)
 		}
@@ -159,6 +165,22 @@ func EnsurePortReady(serverMode string, port int) error {
 			FormatProcesses(processes),
 			strings.Join(commands, " ; "),
 		)
+	}
+}
+
+func resolvePortStrategy(strategy string, serverMode string) string {
+	normalized := strings.ToLower(strings.TrimSpace(strategy))
+	switch normalized {
+	case "auto_release", "report_only":
+		return normalized
+	}
+
+	mode := strings.ToLower(strings.TrimSpace(serverMode))
+	switch mode {
+	case "debug", "test":
+		return "auto_release"
+	default:
+		return "report_only"
 	}
 }
 
