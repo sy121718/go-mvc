@@ -122,6 +122,11 @@ func ensureInited() error {
 	return fmt.Errorf("logger 未初始化，请先调用 logger.Init()")
 }
 
+// Ready 检查 logger 组件是否已显式初始化。
+func Ready() error {
+	return ensureInited()
+}
+
 func syncOneLogger(scene any, lg *zap.Logger) error {
 	if lg == nil {
 		return nil

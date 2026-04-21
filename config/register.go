@@ -17,10 +17,12 @@ import (
 )
 
 type runtimeComponent struct {
-	Name    string
-	Enabled func(cfg *viper.Viper) bool
-	Init    func(cfg *viper.Viper) error
-	Close   func() error
+	Name     string
+	Critical bool
+	Enabled  func(cfg *viper.Viper) bool
+	Init     func(cfg *viper.Viper) error
+	Ready    func() error
+	Close    func() error
 }
 
 type runtimeModule struct {
@@ -33,19 +35,25 @@ var runtimePreparers = []func(){
 
 var runtimeComponents = []runtimeComponent{
 	{
-		Name:  "logger",
-		Init:  pkglogger.Init,
-		Close: pkglogger.Close,
+		Name:     "logger",
+		Critical: true,
+		Init:     pkglogger.Init,
+		Ready:    pkglogger.Ready,
+		Close:    pkglogger.Close,
 	},
 	{
-		Name:  "database",
-		Init:  database.Init,
-		Close: database.Close,
+		Name:     "database",
+		Critical: true,
+		Init:     database.Init,
+		Ready:    database.Ready,
+		Close:    database.Close,
 	},
 	{
-		Name:  "i18n",
-		Init:  i18n.Init,
-		Close: i18n.Close,
+		Name:     "i18n",
+		Critical: true,
+		Init:     i18n.Init,
+		Ready:    i18n.Ready,
+		Close:    i18n.Close,
 	},
 	{
 		Name: "casbin",
@@ -53,6 +61,7 @@ var runtimeComponents = []runtimeComponent{
 			return cfg.GetBool("casbin.enabled")
 		},
 		Init:  casbin.Init,
+		Ready: casbin.Ready,
 		Close: casbin.Close,
 	},
 	{
@@ -61,12 +70,15 @@ var runtimeComponents = []runtimeComponent{
 			return cfg.GetBool("redis.enabled")
 		},
 		Init:  cache.Init,
+		Ready: cache.Ready,
 		Close: cache.Close,
 	},
 	{
-		Name:  "auth",
-		Init:  auth.Init,
-		Close: auth.Close,
+		Name:     "auth",
+		Critical: true,
+		Init:     auth.Init,
+		Ready:    auth.Ready,
+		Close:    auth.Close,
 	},
 	{
 		Name: "upload",
@@ -74,6 +86,7 @@ var runtimeComponents = []runtimeComponent{
 			return cfg.GetBool("upload.enabled")
 		},
 		Init:  upload.Init,
+		Ready: upload.Ready,
 		Close: upload.Close,
 	},
 	{
@@ -82,6 +95,7 @@ var runtimeComponents = []runtimeComponent{
 			return cfg.GetBool("queue.enabled")
 		},
 		Init:  queue.Init,
+		Ready: queue.Ready,
 		Close: queue.Close,
 	},
 }

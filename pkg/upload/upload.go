@@ -147,6 +147,14 @@ func IsInited() bool {
 	return inited
 }
 
+// Ready 检查上传组件是否已初始化。
+func Ready() error {
+	if !IsInited() {
+		return uploadprovider.NewError(enums.ErrUploadNotInitialized)
+	}
+	return nil
+}
+
 // Register 注册上传 provider。
 func Register(provider uploadprovider.Provider) error {
 	if provider == nil {

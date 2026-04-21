@@ -167,10 +167,10 @@
 - [x] `pkg/response`、`pkg/enums`、`pkg/i18n`：统一消息码使用方式
   - 目标：禁止直接散写 `"msg_operation_success"` 这类字符串，统一走常量
 
-- [ ] 将组件初始化拆为关键启动和扩展启动
+- [x] 将组件初始化拆为关键启动和扩展启动
   - 目标：数据库、JWT、日志作为关键依赖；i18n 自动刷新、queue worker、Casbin 预热作为扩展依赖
 
-- [ ] 为各组件增加 `Ready()` 或等价就绪检查接口
+- [x] 为各组件增加 `Ready()` 或等价就绪检查接口
   - 目标：避免将“调用过 Init”误当作“真实可用”
 
 - [x] `config/config.go`：增加测试态重置能力或独立 runtime 隔离

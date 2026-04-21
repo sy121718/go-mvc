@@ -71,6 +71,23 @@ func IsInited() bool {
 	return inited && db != nil
 }
 
+// Ready 检查数据库组件是否处于可用状态。
+func Ready() error {
+	instance, err := GetDB()
+	if err != nil {
+		return err
+	}
+
+	sqlDB, err := instance.DB()
+	if err != nil {
+		return fmt.Errorf("获取数据库连接失败: %w", err)
+	}
+	if err := sqlDB.Ping(); err != nil {
+		return fmt.Errorf("数据库连接不可用: %w", err)
+	}
+	return nil
+}
+
 func getDefaultConfig() Config {
 	return Config{
 		Driver:       "mysql",

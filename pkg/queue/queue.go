@@ -61,6 +61,14 @@ func IsInited() bool {
 	return defaultProvider.IsInited()
 }
 
+// Ready 检查任务队列组件是否可用。
+func Ready() error {
+	if !IsInited() {
+		return fmt.Errorf("任务队列组件未初始化")
+	}
+	return nil
+}
+
 // Enqueue 立即执行任务
 func Enqueue(taskType string, payload any, opts ...Option) error {
 	return defaultProvider.Enqueue(taskType, payload, opts...)

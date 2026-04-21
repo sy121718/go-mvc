@@ -84,6 +84,14 @@ func Close() error {
 	return nil
 }
 
+// Ready 检查 Casbin 组件是否已完成初始化。
+func Ready() error {
+	if GetEnforcer() == nil {
+		return fmt.Errorf("casbin 未初始化")
+	}
+	return nil
+}
+
 func initCasbin(db *gorm.DB) (*casbinlib.Enforcer, error) {
 	a, err := gormadapter.NewAdapterByDBUseTableName(db, "", "sys_casbin_rule")
 	if err != nil {

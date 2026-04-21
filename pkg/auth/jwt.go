@@ -189,6 +189,11 @@ func MustBeReady() error {
 	return nil
 }
 
+// Ready 检查 JWT 组件是否可用。
+func Ready() error {
+	return MustBeReady()
+}
+
 func snapshotState() ([]byte, Config, error) {
 	jwtMu.RLock()
 	defer jwtMu.RUnlock()

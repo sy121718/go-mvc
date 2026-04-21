@@ -49,6 +49,14 @@ func IsInited() bool {
 	return defaultProvider.IsInited()
 }
 
+// Ready 检查缓存组件是否已初始化。
+func Ready() error {
+	if !IsInited() {
+		return fmt.Errorf("缓存组件未初始化")
+	}
+	return nil
+}
+
 // Close 关闭 Redis 连接。
 func Close() error {
 	return defaultProvider.Close()

@@ -5,14 +5,6 @@ import (
 	"fmt"
 	"log"
 	"sync"
-
-	"go-mvc/pkg/auth"
-	"go-mvc/pkg/cache"
-	"go-mvc/pkg/casbin"
-	"go-mvc/pkg/database"
-	"go-mvc/pkg/i18n"
-	"go-mvc/pkg/queue"
-	"go-mvc/pkg/upload"
 )
 
 var (
@@ -47,16 +39,21 @@ func InitComponents() error {
 	initialized := make([]runtimeComponent, 0, len(runtimeComponents))
 
 	log.Println("开始初始化组件...")
-	for _, component := range runtimeComponents {
-		if component.Enabled != nil && !component.Enabled(cfg) {
-			continue
-		}
+	for _, critical := range []bool{true, false} {
+		for _, component := range runtimeComponents {
+			if component.Critical != critical {
+				continue
+			}
+			if component.Enabled != nil && !component.Enabled(cfg) {
+				continue
+			}
 
-		if err := component.Init(cfg); err != nil {
-			_ = closeComponents(initialized)
-			return fmt.Errorf("%s [%s]: %w", errComponentInitFailedPrefix, component.Name, err)
+			if err := component.Init(cfg); err != nil {
+				_ = closeComponents(initialized)
+				return fmt.Errorf("%s [%s]: %w", errComponentInitFailedPrefix, component.Name, err)
+			}
+			initialized = append(initialized, component)
 		}
-		initialized = append(initialized, component)
 	}
 
 	initializedRegistry = initialized
@@ -97,27 +94,13 @@ func ValidateReady() error {
 		return fmt.Errorf("%s [runtime]: runtime not initialized", errComponentNotReadyPrefix)
 	}
 
-	cfg := GetViper()
-	if !database.IsInited() {
-		return fmt.Errorf("%s [database]: database not ready", errComponentNotReadyPrefix)
-	}
-	if err := auth.MustBeReady(); err != nil {
-		return fmt.Errorf("%s [auth]: %w", errComponentNotReadyPrefix, err)
-	}
-	if err := i18n.ValidateReady(); err != nil {
-		return fmt.Errorf("%s [i18n]: %w", errComponentNotReadyPrefix, err)
-	}
-	if cfg.GetBool("redis.enabled") && !cache.IsInited() {
-		return fmt.Errorf("%s [cache]: cache not ready", errComponentNotReadyPrefix)
-	}
-	if cfg.GetBool("casbin.enabled") && casbin.GetEnforcer() == nil {
-		return fmt.Errorf("%s [casbin]: casbin not ready", errComponentNotReadyPrefix)
-	}
-	if cfg.GetBool("upload.enabled") && !upload.IsInited() {
-		return fmt.Errorf("%s [upload]: upload not ready", errComponentNotReadyPrefix)
-	}
-	if cfg.GetBool("queue.enabled") && !queue.IsInited() {
-		return fmt.Errorf("%s [queue]: queue not ready", errComponentNotReadyPrefix)
+	for _, component := range initializedRegistry {
+		if component.Ready == nil {
+			continue
+		}
+		if err := component.Ready(); err != nil {
+			return fmt.Errorf("%s [%s]: %w", errComponentNotReadyPrefix, component.Name, err)
+		}
 	}
 	return nil
 }

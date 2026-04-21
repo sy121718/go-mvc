@@ -118,3 +118,8 @@ func ValidateReady() error {
 	}
 	return nil
 }
+
+// Ready 检查 i18n 组件是否可用。
+func Ready() error {
+	return ValidateReady()
+}
