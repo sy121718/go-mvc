@@ -161,6 +161,57 @@ func TestI18nReinitAppliesLatestRuntimeConfig(t *testing.T) {
 	}
 }
 
+func TestI18nGetDoesNotExposeMutableAllLangsMap(t *testing.T) {
+	t.Cleanup(func() {
+		if err := i18n.Close(); err != nil {
+			t.Fatalf("关闭 i18n 失败: %v", err)
+		}
+		if err := database.Close(); err != nil {
+			t.Fatalf("关闭数据库失败: %v", err)
+		}
+	})
+
+	cfg := viper.New()
+	cfg.Set("server.mode", "test")
+	cfg.Set("database.driver", "sqlite")
+	cfg.Set("database.dbname", ":memory:")
+	cfg.Set("database.max_idle_conns", 1)
+	cfg.Set("database.max_open_conns", 1)
+	cfg.Set("i18n.default_lang", "zh-CN")
+
+	if err := database.Init(cfg); err != nil {
+		t.Fatalf("初始化数据库失败: %v", err)
+	}
+
+	db, err := database.GetDB()
+	if err != nil {
+		t.Fatalf("获取数据库实例失败: %v", err)
+	}
+	if err := db.AutoMigrate(&testI18nRecord{}); err != nil {
+		t.Fatalf("迁移 sys_i18n 失败: %v", err)
+	}
+
+	seed := []testI18nRecord{
+		{ItemKey: "msg_copy", Lang: "zh-CN", ItemValue: "中文", HttpCode: 200, Status: 1},
+		{ItemKey: "msg_copy", Lang: "en-US", ItemValue: "english", HttpCode: 200, Status: 1},
+	}
+	if err := db.Create(&seed).Error; err != nil {
+		t.Fatalf("写入 i18n 测试数据失败: %v", err)
+	}
+
+	if err := i18n.Init(cfg); err != nil {
+		t.Fatalf("初始化 i18n 失败: %v", err)
+	}
+
+	result := i18n.Get("msg_copy", "zh-CN")
+	result.AllLangs["zh-CN"] = "被污染"
+
+	refetched := i18n.Get("msg_copy", "zh-CN")
+	if refetched.AllLangs["zh-CN"] != "中文" {
+		t.Fatalf("内部缓存不应被外部修改污染: got=%s want=%s", refetched.AllLangs["zh-CN"], "中文")
+	}
+}
+
 func waitForText(t *testing.T, getter func() string, expected string) {
 	t.Helper()
 

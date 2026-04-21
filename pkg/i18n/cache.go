@@ -46,7 +46,7 @@ func (c *MemoryCache) Get(key, lang string) *I18nResult {
 
 	// 获取多语言数据
 	if m, ok := c.data[key]; ok {
-		result.AllLangs = m
+		result.AllLangs = cloneLangMap(m)
 
 		// 优先返回指定语言
 		if v, ok := m[lang]; ok {
@@ -91,4 +91,16 @@ func (c *MemoryCache) GetVersion() int64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.version
+}
+
+func cloneLangMap(source map[string]string) map[string]string {
+	if len(source) == 0 {
+		return map[string]string{}
+	}
+
+	result := make(map[string]string, len(source))
+	for lang, value := range source {
+		result[lang] = value
+	}
+	return result
 }

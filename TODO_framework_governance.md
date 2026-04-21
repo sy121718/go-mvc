@@ -240,7 +240,7 @@
 - [ ] 收敛默认值定义位置
   - 目标：减少 `config/config.go`、`pkg/database/driver/config.go`、`pkg/auth/jwt.go`、`pkg/cache/provider/redis.go`、`pkg/queue/provider/asynq.go` 之间的默认值漂移
 
-- [ ] `pkg/i18n/cache.go`：避免将内部缓存 map 直接暴露给调用方
+- [x] `pkg/i18n/cache.go`：避免将内部缓存 map 直接暴露给调用方
   - 目标：防止外部误改 `AllLangs` 污染内存缓存
 
 - [ ] `pkg/utils/port.go`：将端口占用处理策略配置化
