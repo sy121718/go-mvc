@@ -5,6 +5,8 @@ import (
 	"errors"
 	enums "go-mvc/pkg/enums"
 
+	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -21,12 +23,23 @@ var (
 	configSource    *viper.Viper
 	defaultProvider = "local"
 	providers       = map[string]*providerEntry{}
+	uploadRules     = validationRules{
+		maxSize:           10 * 1024 * 1024,
+		allowedExtensions: map[string]struct{}{},
+		allowedMIMETypes:  map[string]struct{}{},
+	}
 )
 
 type providerEntry struct {
 	provider uploadprovider.Provider
 	mu       sync.Mutex
 	ready    bool
+}
+
+type validationRules struct {
+	maxSize           int64
+	allowedExtensions map[string]struct{}
+	allowedMIMETypes  map[string]struct{}
 }
 
 func init() {
@@ -69,6 +82,12 @@ func Init(v *viper.Viper) error {
 	stateMu.Lock()
 	configSource = v
 	defaultProvider = selected
+	rules, err := parseValidationRules(v)
+	if err != nil {
+		stateMu.Unlock()
+		return err
+	}
+	uploadRules = rules
 	inited = true
 	_, ok := providers[selected]
 	stateMu.Unlock()
@@ -210,6 +229,9 @@ func uploadWithProvider(ctx context.Context, providerName string, runtime Runtim
 	if name != "local" && !hasOnlineRuntimeConfig(runtime) {
 		return Result{}, uploadprovider.NewError(enums.ErrUploadConfigMissing)
 	}
+	if err := validateFile(file); err != nil {
+		return Result{}, err
+	}
 
 	result, err := provider.Upload(ctx, runtime, file, req)
 	if err != nil {
@@ -298,4 +320,104 @@ func hasOnlineRuntimeConfig(cfg RuntimeConfig) bool {
 
 func normalizeProvider(name string) string {
 	return strings.ToLower(strings.TrimSpace(name))
+}
+
+func parseValidationRules(v *viper.Viper) (validationRules, error) {
+	rules := validationRules{
+		maxSize:           10 * 1024 * 1024,
+		allowedExtensions: map[string]struct{}{},
+		allowedMIMETypes:  map[string]struct{}{},
+	}
+	if v == nil {
+		return rules, nil
+	}
+
+	if raw := strings.TrimSpace(v.GetString("upload.max_size")); raw != "" {
+		size, err := parseByteSize(raw)
+		if err != nil {
+			return validationRules{}, uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "upload.max_size 配置无效: %v", err)
+		}
+		rules.maxSize = size
+	}
+
+	for _, ext := range v.GetStringSlice("upload.allowed_extensions") {
+		normalized := strings.ToLower(strings.TrimSpace(ext))
+		if normalized == "" {
+			continue
+		}
+		if !strings.HasPrefix(normalized, ".") {
+			normalized = "." + normalized
+		}
+		rules.allowedExtensions[normalized] = struct{}{}
+	}
+
+	for _, mimeType := range v.GetStringSlice("upload.allowed_mime_types") {
+		normalized := strings.ToLower(strings.TrimSpace(mimeType))
+		if normalized == "" {
+			continue
+		}
+		rules.allowedMIMETypes[normalized] = struct{}{}
+	}
+
+	return rules, nil
+}
+
+func validateFile(file File) error {
+	if file.Size > 0 && uploadRules.maxSize > 0 && file.Size > uploadRules.maxSize {
+		return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "上传文件大小超限: max=%d current=%d", uploadRules.maxSize, file.Size)
+	}
+
+	if len(uploadRules.allowedExtensions) > 0 {
+		ext := strings.ToLower(filepath.Ext(strings.TrimSpace(file.Filename)))
+		if _, ok := uploadRules.allowedExtensions[ext]; !ok {
+			return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "上传扩展名不允许: %s", ext)
+		}
+	}
+
+	if len(uploadRules.allowedMIMETypes) > 0 {
+		contentType := strings.ToLower(strings.TrimSpace(file.ContentType))
+		if _, ok := uploadRules.allowedMIMETypes[contentType]; !ok {
+			return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "上传 MIME 类型不允许: %s", file.ContentType)
+		}
+	}
+
+	return nil
+}
+
+func parseByteSize(raw string) (int64, error) {
+	normalized := strings.ToUpper(strings.TrimSpace(raw))
+	units := []struct {
+		suffix string
+		scale  int64
+	}{
+		{suffix: "KB", scale: 1024},
+		{suffix: "MB", scale: 1024 * 1024},
+		{suffix: "GB", scale: 1024 * 1024 * 1024},
+		{suffix: "B", scale: 1},
+	}
+
+	for _, unit := range units {
+		if strings.HasSuffix(normalized, unit.suffix) {
+			text := strings.TrimSpace(strings.TrimSuffix(normalized, unit.suffix))
+			var value int64
+			_, err := fmt.Sscanf(text, "%d", &value)
+			if err != nil {
+				return 0, err
+			}
+			if value <= 0 {
+				return 0, fmt.Errorf("值必须大于 0")
+			}
+			return value * unit.scale, nil
+		}
+	}
+
+	var value int64
+	_, err := fmt.Sscanf(normalized, "%d", &value)
+	if err != nil {
+		return 0, err
+	}
+	if value <= 0 {
+		return 0, fmt.Errorf("值必须大于 0")
+	}
+	return value, nil
 }

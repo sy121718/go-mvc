@@ -72,3 +72,6 @@ log:
 upload:
   enabled: true
   default_provider: local
+  max_size: 10MB
+  allowed_extensions: [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".txt"]
+  allowed_mime_types: ["image/jpeg", "image/png", "image/gif", "application/pdf", "text/plain"]
