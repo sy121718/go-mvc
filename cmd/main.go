@@ -76,8 +76,12 @@ func run() error {
 	log.Printf("服务启动: http://localhost%s", addr)
 
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: router,
+		Addr:              addr,
+		Handler:           router,
+		ReadHeaderTimeout: serverCfg.ReadHeaderTimeout,
+		ReadTimeout:       serverCfg.ReadTimeout,
+		WriteTimeout:      serverCfg.WriteTimeout,
+		IdleTimeout:       serverCfg.IdleTimeout,
 	}
 
 	// 6) 在 goroutine 里启动 HTTP 服务：
