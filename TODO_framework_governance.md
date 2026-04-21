@@ -223,7 +223,7 @@
 - [x] `pkg/database/database.go`：增加可配置性能开关
   - 目标：支持 `PrepareStmt`、`SkipDefaultTransaction`、慢 SQL 阈值等能力
 
-- [ ] 为数据库读写分离预留配置结构
+- [x] 为数据库读写分离预留配置结构
   - 目标：先留好扩展位，避免未来改配置结构时破坏兼容
 
 - [ ] `pkg/cache`：补缓存穿透、击穿、雪崩治理能力

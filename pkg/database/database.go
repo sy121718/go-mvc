@@ -17,18 +17,31 @@ import (
 
 // Config 数据库配置。
 type Config struct {
-	Driver                 string `mapstructure:"driver"`
-	Host                   string `mapstructure:"host"`
-	Port                   int    `mapstructure:"port"`
-	User                   string `mapstructure:"user"`
-	Password               string `mapstructure:"password"`
-	DBName                 string `mapstructure:"dbname"`
-	MaxIdleConns           int    `mapstructure:"max_idle_conns"`
-	MaxOpenConns           int    `mapstructure:"max_open_conns"`
-	LogLevel               string `mapstructure:"log_level"`
-	PrepareStmt            bool   `mapstructure:"prepare_stmt"`
-	SkipDefaultTransaction bool   `mapstructure:"skip_default_transaction"`
-	SlowThreshold          string `mapstructure:"slow_threshold"`
+	Driver                 string         `mapstructure:"driver"`
+	Host                   string         `mapstructure:"host"`
+	Port                   int            `mapstructure:"port"`
+	User                   string         `mapstructure:"user"`
+	Password               string         `mapstructure:"password"`
+	DBName                 string         `mapstructure:"dbname"`
+	MaxIdleConns           int            `mapstructure:"max_idle_conns"`
+	MaxOpenConns           int            `mapstructure:"max_open_conns"`
+	LogLevel               string         `mapstructure:"log_level"`
+	PrepareStmt            bool           `mapstructure:"prepare_stmt"`
+	SkipDefaultTransaction bool           `mapstructure:"skip_default_transaction"`
+	SlowThreshold          string         `mapstructure:"slow_threshold"`
+	Resolver               ResolverConfig `mapstructure:"resolver"`
+}
+
+// ResolverConfig 预留数据库读写分离配置结构。
+//
+// 当前阶段：
+// - 仅保留配置结构，不启用真正的读写分离逻辑
+// -TODO 目的是先把配置边界稳定下来，避免未来再改配置结构
+type ResolverConfig struct {
+	Enabled  bool     `mapstructure:"enabled"`
+	Policy   string   `mapstructure:"policy"`
+	Sources  []string `mapstructure:"sources"`
+	Replicas []string `mapstructure:"replicas"`
 }
 
 type runtimeOptions struct {
@@ -111,6 +124,12 @@ func getDefaultConfig() Config {
 		PrepareStmt:            false,
 		SkipDefaultTransaction: false,
 		SlowThreshold:          "",
+		Resolver: ResolverConfig{
+			Enabled:  false,
+			Policy:   "",
+			Sources:  []string{},
+			Replicas: []string{},
+		},
 	}
 }
 

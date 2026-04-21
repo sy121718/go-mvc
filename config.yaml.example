@@ -28,6 +28,11 @@ database:
   prepare_stmt: false
   skip_default_transaction: false
   slow_threshold: 200ms
+  resolver:
+    enabled: false
+    policy: ""        # round_robin / random / weight
+    sources: []       # 主库地址列表，预留结构
+    replicas: []      # 从库地址列表，预留结构
 
 # Redis配置
 redis:
