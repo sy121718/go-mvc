@@ -63,15 +63,12 @@ func registeredComponents() []runtimeComponent {
 				return cfg.GetBool("casbin.enabled")
 			},
 			Init: func(cfg *viper.Viper) error {
-				db, err := database.GetDB()
-				if err != nil {
-					return fmt.Errorf("获取数据库实例失败: %w", err)
-				}
-				if err := casbin.InitCasbin(db); err != nil {
+				if err := casbin.Init(cfg); err != nil {
 					return fmt.Errorf("初始化 Casbin 失败: %w", err)
 				}
 				return nil
 			},
+			Close: casbin.Close,
 		},
 		{
 			Name: "cache",

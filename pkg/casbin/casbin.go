@@ -5,9 +5,12 @@ import (
 	"log"
 	"sync"
 
+	"go-mvc/pkg/database"
+
 	casbinlib "github.com/casbin/casbin/v3"
 	"github.com/casbin/casbin/v3/model"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -44,6 +47,15 @@ func GetEnforcer() *casbinlib.Enforcer {
 	return enforcer
 }
 
+// Init 初始化 Casbin 组件。
+func Init(_ *viper.Viper) error {
+	db, err := database.GetDB()
+	if err != nil {
+		return fmt.Errorf("获取数据库实例失败: %w", err)
+	}
+	return InitCasbin(db)
+}
+
 // InitCasbin 初始化 Casbin（传入已有的 GORM DB 实例）
 func InitCasbin(db *gorm.DB) error {
 	mu.Lock()
@@ -60,6 +72,15 @@ func InitCasbin(db *gorm.DB) error {
 
 	enforcer = instance
 	log.Println("Casbin 初始化成功")
+	return nil
+}
+
+// Close 关闭 Casbin 组件并清理运行时状态。
+func Close() error {
+	mu.Lock()
+	defer mu.Unlock()
+
+	enforcer = nil
 	return nil
 }
 
