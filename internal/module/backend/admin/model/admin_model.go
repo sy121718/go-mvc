@@ -1,16 +1,19 @@
 package adminmodel
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-const(
-	AdminStatusActive = 1
+const (
+	AdminStatusActive   = 1
 	AdminStatusInactive = 0
 )
+
+const allowModifyIsAdminKey string = "allow_modify_is_admin"
 
 // Admin 管理员模型（充血模型 - 字段 + 自动规则 + 状态判断）
 type Admin struct {
@@ -105,10 +108,19 @@ func (a *Admin) BeforeUpdate(tx *gorm.DB) error {
 	// 2. 阻止 IsAdmin 字段被外部修改（规则：超管字段不可外部修改）
 	if tx.Statement.Changed("IsAdmin") {
 		// 只有内部调用（设置标记）才允许修改，外部请求直接拒绝
-		if !tx.Statement.Context.Value("allow_modify_is_admin").(bool) {
+		if !allowModifyIsAdmin(tx.Statement.Context) {
 			return errors.New("不允许外部修改")
 		}
 	}
 
 	return nil
+}
+
+func allowModifyIsAdmin(ctx context.Context) bool {
+	if ctx == nil {
+		return false
+	}
+	value := ctx.Value(allowModifyIsAdminKey)
+	allowed, ok := value.(bool)
+	return ok && allowed
 }

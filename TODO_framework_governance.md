@@ -182,7 +182,7 @@
 - [ ] 逐步从全局单例向 App Runtime 容器过渡
   - 目标：降低 `config`、`database`、`cache`、`auth`、`upload` 等包级状态对测试和扩展的限制
 
-- [ ] `internal/module/backend/admin/model/admin_model.go`：移除 hook 中直接断言 context 值的 panic 风险
+- [x] `internal/module/backend/admin/model/admin_model.go`：移除 hook 中直接断言 context 值的 panic 风险
   - 目标：将 `tx.Statement.Context.Value(...).(bool)` 改为安全取值与默认拒绝策略，避免运行时崩溃
 
 ### 锁与并发治理
