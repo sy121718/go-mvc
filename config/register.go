@@ -35,11 +35,11 @@ var runtimeComponents = []runtimeComponent{
 	{
 		Name:  "logger",
 		Init:  pkglogger.Init,
-		Close: pkglogger.Sync,
+		Close: pkglogger.Close,
 	},
 	{
 		Name:  "database",
-		Init:  database.InitDB,
+		Init:  database.Init,
 		Close: database.Close,
 	},
 	{
@@ -60,12 +60,13 @@ var runtimeComponents = []runtimeComponent{
 		Enabled: func(cfg *viper.Viper) bool {
 			return cfg.GetBool("redis.enabled")
 		},
-		Init:  cache.InitRedis,
+		Init:  cache.Init,
 		Close: cache.Close,
 	},
 	{
-		Name: "auth",
-		Init: auth.InitJWT,
+		Name:  "auth",
+		Init:  auth.Init,
+		Close: auth.Close,
 	},
 	{
 		Name: "upload",

@@ -57,8 +57,8 @@ func Init(v *viper.Viper) error {
 	return nil
 }
 
-// Sync 刷新并落盘所有场景 logger。
-func Sync() error {
+// Close 刷新并落盘所有场景 logger。
+func Close() error {
 	var syncErr error
 	sceneLoggers.Range(func(key, value any) bool {
 		lg, ok := value.(*zap.Logger)

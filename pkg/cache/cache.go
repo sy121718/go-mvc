@@ -29,8 +29,8 @@ func buildProvider(v *viper.Viper) (cacheprovider.Provider, error) {
 
 var defaultProvider cacheprovider.Provider = cacheprovider.NewRedisProvider()
 
-// InitRedis 初始化 Redis 缓存。
-func InitRedis(v *viper.Viper) error {
+// Init 初始化 Redis 缓存组件。
+func Init(v *viper.Viper) error {
 	provider, err := buildProvider(v)
 	if err != nil {
 		return err

@@ -26,7 +26,7 @@ func TestCasbinInitAndCloseWithSQLite(t *testing.T) {
 	cfg.Set("database.max_idle_conns", 1)
 	cfg.Set("database.max_open_conns", 1)
 
-	if err := database.InitDB(cfg); err != nil {
+	if err := database.Init(cfg); err != nil {
 		t.Fatalf("初始化数据库失败: %v", err)
 	}
 

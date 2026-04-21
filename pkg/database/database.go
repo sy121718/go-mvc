@@ -40,13 +40,13 @@ func GetDB() (*gorm.DB, error) {
 	defer mu.RUnlock()
 
 	if db == nil {
-		return nil, fmt.Errorf("数据库未初始化，请先调用 database.InitDB()")
+		return nil, fmt.Errorf("数据库未初始化，请先调用 database.Init()")
 	}
 	return db, nil
 }
 
-// InitDB 初始化数据库。
-func InitDB(v *viper.Viper) error {
+// Init 初始化数据库。
+func Init(v *viper.Viper) error {
 	mu.Lock()
 	defer mu.Unlock()
 

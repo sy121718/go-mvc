@@ -114,7 +114,7 @@ func (p *redisProvider) Client() (redis.UniversalClient, error) {
 	defer p.mu.RUnlock()
 
 	if p.rdb == nil {
-		return nil, fmt.Errorf("redis 未初始化，请先调用 cache.InitRedis()")
+		return nil, fmt.Errorf("redis 未初始化，请先调用 cache.Init()")
 	}
 	return p.rdb, nil
 }

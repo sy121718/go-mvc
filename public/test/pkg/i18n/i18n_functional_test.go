@@ -43,7 +43,7 @@ func TestI18nInitUsesConfigAndAutoRefresh(t *testing.T) {
 	cfg.Set("i18n.auto_refresh", true)
 	cfg.Set("i18n.refresh_interval", "20ms")
 
-	if err := database.InitDB(cfg); err != nil {
+	if err := database.Init(cfg); err != nil {
 		t.Fatalf("初始化数据库失败: %v", err)
 	}
 
@@ -107,7 +107,7 @@ func TestI18nReinitAppliesLatestRuntimeConfig(t *testing.T) {
 	cfg.Set("i18n.auto_refresh", true)
 	cfg.Set("i18n.refresh_interval", "20ms")
 
-	if err := database.InitDB(cfg); err != nil {
+	if err := database.Init(cfg); err != nil {
 		t.Fatalf("初始化数据库失败: %v", err)
 	}
 

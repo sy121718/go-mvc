@@ -66,8 +66,8 @@ func ValidateConfig(v *viper.Viper, strict bool) error {
 	return nil
 }
 
-// InitJWT 初始化 JWT。
-func InitJWT(v *viper.Viper) error {
+// Init 初始化 JWT 组件。
+func Init(v *viper.Viper) error {
 	jwtMu.Lock()
 	defer jwtMu.Unlock()
 
@@ -99,6 +99,17 @@ func InitJWT(v *viper.Viper) error {
 	jwtSecret = []byte(cfg.Secret)
 	inited = true
 	log.Println("JWT 初始化成功")
+	return nil
+}
+
+// Close 关闭 JWT 组件并清空运行时状态。
+func Close() error {
+	jwtMu.Lock()
+	defer jwtMu.Unlock()
+
+	jwtSecret = nil
+	jwtConfig = Config{}
+	inited = false
 	return nil
 }
 

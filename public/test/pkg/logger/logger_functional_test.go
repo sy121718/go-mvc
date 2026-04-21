@@ -51,7 +51,7 @@ func TestLoggerConcurrentWriteAndSync(t *testing.T) {
 	}
 	wg.Wait()
 
-	if err := logger.Sync(); err != nil {
+	if err := logger.Close(); err != nil {
 		t.Fatalf("日志 Sync 失败: %v", err)
 	}
 

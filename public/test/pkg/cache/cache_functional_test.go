@@ -30,7 +30,7 @@ func TestCacheInitAndReadWriteWithMiniRedis(t *testing.T) {
 	cfg.Set("redis.password", "")
 	cfg.Set("redis.db", 0)
 
-	if err := cache.InitRedis(cfg); err != nil {
+	if err := cache.Init(cfg); err != nil {
 		t.Fatalf("初始化缓存失败: %v", err)
 	}
 
