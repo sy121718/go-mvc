@@ -119,7 +119,7 @@ func ensureInited() error {
 		return nil
 	}
 
-	return Init(nil)
+	return fmt.Errorf("logger 未初始化，请先调用 logger.Init()")
 }
 
 func syncOneLogger(scene any, lg *zap.Logger) error {
