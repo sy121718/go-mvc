@@ -31,7 +31,10 @@ func InitComponents() error {
 		return err
 	}
 
-	cfg := GetViper()
+	cfg, err := GetViper()
+	if err != nil {
+		return err
+	}
 	for _, prepare := range runtimePreparers {
 		prepare()
 	}
@@ -49,8 +52,12 @@ func InitComponents() error {
 			}
 
 			if err := component.Init(cfg); err != nil {
-				_ = closeComponents(initialized)
-				return fmt.Errorf("%s [%s]: %w", errComponentInitFailedPrefix, component.Name, err)
+				initErr := fmt.Errorf("%s [%s]: %w", errComponentInitFailedPrefix, component.Name, err)
+				closeErr := closeComponents(initialized)
+				if closeErr != nil {
+					return errors.Join(initErr, closeErr)
+				}
+				return initErr
 			}
 			initialized = append(initialized, component)
 		}
@@ -88,13 +95,14 @@ func CloseComponents() error {
 func ValidateReady() error {
 	runtimeMu.Lock()
 	ready := runtimeInited
+	components := append([]runtimeComponent(nil), initializedRegistry...)
 	runtimeMu.Unlock()
 
 	if !ready {
 		return fmt.Errorf("%s [runtime]: runtime not initialized", errComponentNotReadyPrefix)
 	}
 
-	for _, component := range initializedRegistry {
+	for _, component := range components {
 		if component.Ready == nil {
 			continue
 		}

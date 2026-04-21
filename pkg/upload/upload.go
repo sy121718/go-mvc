@@ -63,14 +63,16 @@ func Init(v *viper.Viper) error {
 		return fmt.Errorf("upload 初始化配置为空")
 	}
 
-	registerBuiltinProviders()
+	if err := registerBuiltinProviders(); err != nil {
+		return err
+	}
 
 	selected := normalizeProvider(v.GetString("upload.default_provider"))
 	if selected == "" {
 		selected = normalizeProvider(v.GetString("upload.provider"))
 	}
 	if selected == "" {
-		selected = "local"
+		return fmt.Errorf("upload.default_provider 不能为空")
 	}
 
 	stateMu.Lock()
@@ -438,7 +440,12 @@ func parseByteSize(raw string) (int64, error) {
 	return value, nil
 }
 
-func registerBuiltinProviders() {
-	_ = Register(uploadprovider.NewLocalProvider())
-	_ = Register(uploadprovider.NewQiniuProvider())
+func registerBuiltinProviders() error {
+	if err := Register(uploadprovider.NewLocalProvider()); err != nil {
+		return err
+	}
+	if err := Register(uploadprovider.NewQiniuProvider()); err != nil {
+		return err
+	}
+	return nil
 }

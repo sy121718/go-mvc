@@ -134,12 +134,13 @@ func EnqueueAt(taskType string, at time.Time, payload any, opts ...Option) error
 }
 
 func buildProvider(v *viper.Viper) (queueprovider.Provider, error) {
-	providerName := "asynq"
-	if v != nil {
-		providerName = strings.TrimSpace(strings.ToLower(v.GetString("queue.provider")))
-		if providerName == "" {
-			providerName = "asynq"
-		}
+	if v == nil {
+		return nil, fmt.Errorf("queue 配置不能为空")
+	}
+
+	providerName := strings.TrimSpace(strings.ToLower(v.GetString("queue.provider")))
+	if providerName == "" {
+		return nil, fmt.Errorf("queue.provider 不能为空")
 	}
 
 	switch providerName {

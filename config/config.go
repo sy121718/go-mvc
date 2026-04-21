@@ -128,11 +128,11 @@ func setDefaults(v *viper.Viper) {
 }
 
 // GetViper 获取 viper 实例（供 pkg 使用）。
-func GetViper() *viper.Viper {
+func GetViper() (*viper.Viper, error) {
 	if v == nil {
-		panic("配置未初始化，请先调用 config.Init()")
+		return nil, fmt.Errorf("配置未初始化，请先调用 config.Init()")
 	}
-	return v
+	return v, nil
 }
 
 // GetServer 获取服务配置。
@@ -154,7 +154,11 @@ func GetServer() (ServerConfig, error) {
 	}
 
 	var raw serverConfigRaw
-	if err := GetViper().UnmarshalKey("server", &raw); err != nil {
+	cfg, err := GetViper()
+	if err != nil {
+		return ServerConfig{}, err
+	}
+	if err := cfg.UnmarshalKey("server", &raw); err != nil {
 		return ServerConfig{}, fmt.Errorf("解析 Server 配置失败: %w", err)
 	}
 
@@ -263,7 +267,10 @@ func parseByteSize(field string, raw string) (int64, error) {
 // - 拒绝默认数据库名
 // - 拒绝空数据库密码
 func ValidateRuntimeConfig() error {
-	cfg := GetViper()
+	cfg, err := GetViper()
+	if err != nil {
+		return err
+	}
 	if cfg.GetString("server.mode") != "release" {
 		return nil
 	}

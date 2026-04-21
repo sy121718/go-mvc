@@ -49,10 +49,15 @@ func run() error {
 		return err
 	}
 
+	cfg, err := config.GetViper()
+	if err != nil {
+		return err
+	}
+
 	// 4) 构建 HTTP 路由。
 	router := buildHTTPRouter(
 		serverCfg,
-		config.GetViper().GetBool("log.capture.http"),
+		cfg.GetBool("log.capture.http"),
 		config.ModuleRegistrars(),
 		config.ValidateReady,
 	)
