@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go-mvc/config"
 	"go-mvc/internal/middleware"
+	"go-mvc/internal/routers"
 	"go-mvc/pkg/utils"
 	"log"
 	"net/http"
@@ -63,7 +64,7 @@ func run() error {
 	// 4) 构建 HTTP 路由。
 	router := gin.Default()
 	router.Use(middleware.RequestLogCaptureMiddleware(config.GetViper().GetBool("log.capture.http")))
-	config.SetupRoutes(router)
+	routers.SetupRoutes(router, config.ModuleRegistrars(), config.ValidateReady)
 
 	// 5) 启动前端口策略：
 	// - debug/test：自动尝试释放端口（仅白名单进程）

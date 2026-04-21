@@ -90,3 +90,12 @@ var runtimeModules = []runtimeModule{
 		Register: adminrouter.SetupAdminRoutes,
 	},
 }
+
+// ModuleRegistrars 返回当前已注册的业务模块路由注册函数列表。
+func ModuleRegistrars() []func(*gin.RouterGroup) {
+	registrars := make([]func(*gin.RouterGroup), 0, len(runtimeModules))
+	for _, module := range runtimeModules {
+		registrars = append(registrars, module.Register)
+	}
+	return registrars
+}

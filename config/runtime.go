@@ -12,11 +12,7 @@ import (
 	"go-mvc/pkg/database"
 	"go-mvc/pkg/i18n"
 	"go-mvc/pkg/queue"
-	"go-mvc/pkg/response"
 	"go-mvc/pkg/upload"
-
-	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 var (
@@ -84,53 +80,6 @@ func CloseComponents() error {
 
 	log.Println("组件关闭完成")
 	return nil
-}
-
-// SetupRoutes 根据注册清单装配系统路由与业务模块路由。
-func SetupRoutes(router *gin.Engine) {
-	if router == nil {
-		return
-	}
-
-	router.GET("/livez", func(c *gin.Context) {
-		c.JSON(http.StatusOK, response.Response{
-			Code:    "0",
-			Message: "ok",
-			Data: gin.H{
-				"status": "alive",
-			},
-		})
-	})
-
-	router.GET("/readyz", func(c *gin.Context) {
-		if err := ValidateReady(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, response.Response{
-				Code:    "ErrNotReady",
-				Message: err.Error(),
-				Data: gin.H{
-					"status": "not_ready",
-				},
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, response.Response{
-			Code:    "0",
-			Message: "ok",
-			Data: gin.H{
-				"status": "ready",
-			},
-		})
-	})
-
-	api := router.Group("/api")
-	for _, module := range runtimeModules {
-		module.Register(api)
-	}
-
-	router.NoRoute(func(c *gin.Context) {
-		response.NotFound(c, "请求的资源不存在")
-	})
 }
 
 // ValidateReady 检查当前运行时是否达到“可对外提供服务”的就绪状态。

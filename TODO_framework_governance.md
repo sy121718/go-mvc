@@ -70,12 +70,16 @@
        - 继续压缩组件注册清单，去掉无意义包装函数，尽量只保留 `Enabled`、`Init`、`Close` 的直接绑定
     2. `config/runtime.go`
        - 评估 `runtimeComponent`、`runtimeModule`、`initializedRegistry` 这一层抽象是否过重，能否进一步减少类型和状态管理代码量
+       - 将 `/livez`、`/readyz`、`NoRoute`、`/api` 分组等 HTTP 路由装配细节迁出 `config`，回收到专门的路由层
     3. `pkg/queue/queue.go`
        - 回看 `registrations`、`registrationMu`、provider 重建后重放注册这套逻辑，判断能否在保证显式注册的前提下继续收简
     4. `internal/task/register.go`
        - 回看当前“显式任务注册”方案是否仍有绕路，确认是否还能再减少一层转发或集中度更高的注册写法
     5. `pkg/i18n/i18n.go`
        - 回看初始化和加锁流程，减少为了快速落地留下的双阶段加锁、配置分支和状态切换代码
+
+- [x] 将 HTTP 路由装配细节迁出 `config`
+  - 目标：把 `/livez`、`/readyz`、`NoRoute`、`/api` 分组等路由装配细节迁回专门的路由层，`config` 只保留模块注册清单和就绪判断
 
 - [x] `pkg/queue`：收敛为统一组件协议样板
   - 目标：由 `pkg/queue` 自行处理初始化、是否启动 worker、关闭逻辑；禁止把队列组件启动职责下沉到 `internal/task`
