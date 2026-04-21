@@ -1,235 +1,174 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件描述当前仓库的实际开发约定。
 
-## 项目概述
+## 项目概览
 
-Go MVC 项目，专为快速开发设计，采用模块化架构，支持未来微服务迁移。使用 Gin 框架，当前基础设施采用显式生命周期编排。
+- 项目类型：Go MVC Web 项目
+- 核心框架：Gin
+- 运行模式：显式组件生命周期
+- 目录结构：`cmd` / `config` / `internal` / `pkg` / `public`
 
 ## 常用命令
 
 ```bash
-# 运行项目
 go run cmd/main.go
-
-# 构建
 go build -o app cmd/main.go
-
-# 运行测试
 go test ./...
-
-# 运行指定包的测试
 go test ./internal/module/backend/...
 ```
 
-## 架构设计
+## 架构约定
 
-### 项目目录
+### 1. 启动与关闭
 
-```text
-your-project/
-├── cmd/main.go                            # 启动入口
-├── config/                                # 配置解析与生命周期编排
-├── internal/                              # 私有应用代码（Go 编译器保护）
-│   ├── routers/                           # 主路由聚合（外部整合层）
-│   ├── middleware/                        # 全局中间件
-│   ├── module/                            # 业务模块
-│   │   └── backend/                       # 当前已启用的后台业务模块
-│   └── task/                              # 任务处理
-├── pkg/                                   # 通用组件
-├── public/                                # 公共文件聚合目录
-│   ├── docs/                              # 项目文档
-│   ├── logs/                              # 运行日志目录
-│   ├── storage/                           # 静态资源目录
-│   └── test/                              # 测试资源目录
-└── config.yaml                            # 配置文件
-```
+统一入口：
 
-### 目录职责
+- `config.Init()`
+- `config.InitComponents()`
+- `config.CloseComponents()`
 
-- **cmd/** - 启动入口（main.go）
-- **config/** - 配置解析与生命周期编排入口
-- **pkg/** - 通用基础组件与能力封装
-- **internal/** - 私有应用代码（Go 编译器保护）
-  - **routers/** - 主路由聚合（注册所有模块路由）
-  - **middleware/** - 全局中间件（auth, cors, logging, rate limit）
-  - **module/** - 业务模块
-  - **task/** - 异步任务处理
-- **public/** - 公共文件与运行产物聚合目录
-  - **docs/** - 文档资料
-  - **logs/** - 运行日志
-  - **storage/** - 业务静态资源
-  - **test/** - 测试资源
+组件不自行决定进程退出，组件只返回 `error`。
 
-### 模块结构
+### 2. 目录职责
 
-每个业务模块至少保持以下核心层级：
+- `cmd/`：启动入口
+- `config/`：配置读取、默认值、组件注册与关闭编排
+- `internal/routers/`：主路由聚合
+- `internal/middleware/`：默认中间件与系统中间件
+- `internal/module/`：业务模块
+- `internal/task/`：任务注册与调度
+- `pkg/`：可复用基础组件 facade
+- `public/`：日志、存储、测试资源等公共目录
 
-```text
-module_name/
-├── router/               # 路由目录
-│   └── admin_router.go   # 按模块名命名
-├── handle/               # 控制器目录
-│   └── admin_handle.go
-├── service/              # 业务逻辑目录
-│   └── admin_service.go
-└── model/                # 数据模型目录
-    └── admin_model.go
-```
+### 3. pkg 组件方向
 
-可按需要补充：`dto/`、`enums/`、`client/`、`service/helper/` 等目录，但命名规则保持一致；若暂时不用，不创建空目录。
+`pkg` 当前以 facade 形式对外暴露统一入口，具体实现放在 provider/driver 子目录。
 
-### 命名规则
+已有代表：
 
-- 外部整合层目录可以使用复数，例如 `internal/routers`
-- 模块内部的小目录使用单数，例如 `router`、`handle`、`service`、`model`
-- 模块内文件统一使用“模块名 + 分层名”命名：
-  - `admin_router.go`
-  - `admin_handle.go`
-  - `admin_service.go`
-  - `admin_model.go`
-- 模块内包名也统一使用“模块名 + 分层名”命名，避免跨模块冲突：
-  - `package adminrouter`
-  - `package adminhandle`
-  - `package adminservice`
-  - `package adminmodel`
-- 扩展层沿用同一规则：
-  - `admin_dto.go` -> `package admindto`
-  - `admin_enum.go` / `admin_error.go` -> `package adminenums`
-  - `admin_client.go` -> `package adminclient`
-  - `admin_helper.go` -> `package adminhelper`
-- 不保留 `sys_` 前缀
-- 不使用 `router.go`、`user.go` 这类缺少模块语义的文件名
+- `pkg/cache`
+- `pkg/database`
+- `pkg/queue`
+- `pkg/upload`
+- `pkg/lock`
 
-### 核心设计模式
+## 配置约定
 
-1. **显式生命周期编排**：基础组件统一由 `config.InitComponents()` / `config.CloseComponents()` 编排
-2. **模块隔离**：每个模块独立维护自己的路由、控制器、服务、模型
-3. **配置分离**：默认值在 `config/config.go` 里设置，各 pkg 自己解析配置段
-4. **数据库驱动 i18n**：多语言配置中心以数据库为唯一数据源
-5. **基础设施门面 + provider/driver 实现**：`pkg` 根入口对外暴露统一 API，具体技术栈实现放在 `provider/` 或 `driver/` 子目录
+- 默认值统一放在 `config/config.go`
+- `pkg` 自己定义并解析自己的配置结构
+- `pkg` 不导入 `config` 包，避免循环依赖
 
-### 配置读取流程
+## 路由与中间件
 
-```text
-config.yaml → config/config.go（默认值 + 解析）→ pkg 根入口（database/cache/queue 等）→ provider/driver 具体实现
-```
+### 路由
 
-默认值应在 `config/config.go` 中通过 `viper.SetDefault()` 设置，不在 pkg 组件中设置。
+- 只使用 `GET` 和 `POST`
+- 主路由聚合在 `internal/routers/routes.go`
+- 模块路由各自维护在模块自己的 `router/` 目录
+- 当前默认健康检查路由：
+  - `GET /livez`
+  - `GET /readyz`
 
-### 日志与 public 目录
+### 默认中间件
 
-- 日志文件默认放在 `public/logs/app.log`
-- `public/logs/` 与 `public/storage/` 分工不同：
-  - `logs/` 用于运行日志与排查产物
-  - `storage/` 用于业务静态资源
-- `public/` 只聚合公共文件与运行产物，不放业务实现代码
+当前默认框架能力包括：
 
-## 开发规范
+- 安全响应头
+- 请求体大小限制
+- 固定窗口限流
+- 签名中间件防重放
+- Recovery
 
-- 文档和注释使用中文
-- Windows 开发环境 - 使用 Windows 路径和命令
-- 不生成测试脚本 - 用户自行测试
-- 不自动启动项目 - 用户手动启动
-- 使用 Gin binding 标签做请求验证（不单独建 validator 层）
-- 涉及 internal/module 下的业务模块开发时，先阅读 internal/module/CLAUDE.md，遵循模块结构与多语言规范
-- 涉及 public 下的文档、静态资源、测试资源、日志目录时，先阅读 public/CLAUDE.md，遵循目录边界
+## 响应约定
 
-### 路由规范
+当前实现已经调整为：
 
-**路由分层：**
+- `pkg/response` 使用数字状态码
+- `pkg/response` 不再维护字符串错误码
+- `pkg/response` 不再做国际化翻译
+- 调用点直接写最终中文提示
 
-- **主路由**：`internal/routers/routes.go` - 聚合所有模块路由
-- **模块路由**：`internal/module/{分组}/{模块}/router/{模块}_router.go` - 定义模块内路由
-
-**只使用 GET 和 POST 两种请求方法：**
-
-- **GET** - 查询操作，无数据变化的请求
-  - 列表查询
-  - 详情查询
-  - 数据导出
-  - 搜索功能
-
-- **POST** - 数据变更操作，有数据提交的请求
-  - 新增数据
-  - 修改数据
-  - 删除数据
-  - 状态变更
-  - 批量操作
-
-**示例：**
+标准结构：
 
 ```go
-// GET 请求 - 查询类
-GET  /api/user/list       // 用户列表
-GET  /api/user/detail     // 用户详情
-GET  /api/user/export     // 导出用户
-
-// POST 请求 - 变更类
-POST /api/user/create     // 创建用户
-POST /api/user/update     // 更新用户
-POST /api/user/delete     // 删除用户
-POST /api/user/status     // 修改状态
+type Response struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
 ```
 
-
-
-**禁止使用 PUT、DELETE、PATCH 等其他 HTTP 方法。**
-
-### 测试要求（全局）
-
-- 每个接口开发完成后，必须补充并维护对应的用例测试。
-- 默认先执行用例测试验证接口行为与业务链路。
-- 单元测试不作为默认要求，仅在以下场景执行：
-  - 用例测试发现问题后，针对出问题的函数做定向单元测试定位原因。
-  - 用户明确要求测试某个函数时，才补充该函数的单元测试。
-
-### 错误码与 i18n 规范（最终）
-
-- 历史上错误码曾分散在模块内，当前统一为全局单一来源：`pkg/enums/errors.go`。
-- 业务代码拿 `code` 时只使用 `pkg/enums` 常量，不在模块和 provider 内重复定义 `ErrXxx`。
-- 错误文本与 HTTP 状态码统一由 `pkg/i18n` 从 `sys_i18n` 获取。
-- provider 层只保留错误封装函数（`Msg` / `NewError` / `NewErrorf` / `WrapError`）。
-
-#### 1. 获取完整结构（推荐）
+推荐用法：
 
 ```go
-import (
-    "go-mvc/pkg/enums"
-    "go-mvc/pkg/i18n"
-)
-
-result := i18n.Get(enums.ErrUploadConfigMissing, "zh-CN")
-// result.Key      == "ErrUploadConfigMissing"
-// result.Value    == "上传配置缺失"
-// result.HttpCode == 400
-// result.Lang     == "zh-CN"
+response.Success(c, data)
+response.SuccessWithMessage(c, "保存成功", data)
+response.ErrorWithMessage(c, 400, "请求参数错误")
+response.ErrorWithMessage(c, 401, "未登录或登录已过期")
+response.ErrorWithMessage(c, 403, "无权限访问")
+response.ErrorWithMessage(c, 404, "请求的资源不存在")
 ```
 
-#### 2. 只获取错误码（code）
+不要再写：
 
 ```go
-import "go-mvc/pkg/enums"
-
-code := enums.ErrUploadConfigMissing
+response.Error(c, enums.ErrSystemError)
+response.ErrorWithMessage(c, enums.ErrInvalidParams, "请求已过期")
 ```
 
-#### 3. 只获取文本 / HTTP 状态码
+## i18n 约定
+
+`pkg/i18n` 仍然保留，但用途已经收窄：
+
+- 用于直接读取数据库中的多语言文本
+- 用于 UI 文案、字典、业务明确指定的文本查询
+
+不再作为以下内容的默认出口：
+
+- `pkg` 默认错误返回
+- 系统中间件默认错误返回
+- `pkg/response` 文案翻译
+
+## 错误处理约定
+
+### 保留直接中文提示的场景
+
+- 参数缺失
+- 配置缺失
+- 配置无效
+- 状态不满足
+- provider / driver 不支持
+- 文件为空、扩展名不允许等规则校验
+
+### 不要过度包装的场景
+
+底层系统错误尽量直接返回原始 `err`，不要在 `pkg` 里重复翻译。
+
+不建议：
 
 ```go
-import (
-    "go-mvc/pkg/enums"
-    "go-mvc/pkg/i18n"
-)
-
-msg := i18n.GetText(enums.ErrUploadConfigMissing, "zh-CN")
-httpCode := i18n.GetHttpCode(enums.ErrUploadConfigMissing)
+return fmt.Errorf("创建日志目录失败: %w", err)
 ```
 
-#### 4. 接口返回约定
+更倾向：
 
-- 默认错误返回：`response.Error(c, code)`。
-- 仅在必须覆盖字典文案时：`response.ErrorWithMessage(c, code, customMessage)`。
-- 语言优先级：`Accept-Language` Header > `lang` Query 参数 > 默认 `zh-CN`。
+```go
+return err
+```
 
-说明：历史示例若与本节冲突，一律以本节为准。
+## 测试约定
+
+- 默认跑现有测试，不新增额外测试框架
+- 接口完成后优先维护 feature/usecase 测试
+- 只有定位复杂函数问题时，再补定向单测
+
+## 模块开发
+
+涉及业务模块开发时，先看：
+
+- [internal/module/CLAUDE.md](./internal/module/CLAUDE.md)
+
+涉及 `pkg` 组件开发时，先看：
+
+- [pkg/CLAUDE.md](./pkg/CLAUDE.md)
