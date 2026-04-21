@@ -84,6 +84,8 @@ go test ./internal/module/backend/...
 
 当前实现已经调整为：
 
+- `pkg` 和系统相关的包不使用国际化翻译
+- `pkg` 默认错误提示直接写最终中文，或直接返回原始系统错误
 - `pkg/response` 使用数字状态码
 - `pkg/response` 不再维护字符串错误码
 - `pkg/response` 不再做国际化翻译
