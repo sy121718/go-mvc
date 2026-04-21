@@ -179,8 +179,8 @@
 - [x] 统一启动型 `pkg` 的接口、错误语义和生命周期约定
   - 目标：让 `cache`、`queue`、`upload`、`i18n`、后续 `lock` 的使用体验保持一致
 
-- [x] 逐步从全局单例向 App Runtime 容器过渡
-  - 目标：降低 `config`、`database`、`cache`、`auth`、`upload` 等包级状态对测试和扩展的限制
+- [x] 清理半成品 App Runtime 容器，保持 `config` 三层职责单纯
+  - 目标：删除不彻底的运行时容器，避免形成新的职责粘连；继续保持 `config.go / register.go / runtime.go` 三层边界清晰
 
 - [x] `internal/module/backend/admin/model/admin_model.go`：移除 hook 中直接断言 context 值的 panic 风险
   - 目标：将 `tx.Statement.Context.Value(...).(bool)` 改为安全取值与默认拒绝策略，避免运行时崩溃

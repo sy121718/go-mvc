@@ -67,18 +67,12 @@ func run() error {
 	addr := fmt.Sprintf(":%d", serverCfg.Port)
 	log.Printf("服务启动: http://localhost%s", addr)
 
-	appRuntime := config.NewAppRuntime(
-		serverCfg,
-		router,
-		buildHTTPServer(serverCfg, router),
-		config.ValidateReady,
-		config.CloseComponents,
-	)
+	srv := buildHTTPServer(serverCfg, router)
 
 	// 6) 在 goroutine 里启动 HTTP 服务：
 	// - 正常关闭时 ListenAndServe 会返回 http.ErrServerClosed（不是错误）
 	// - 非预期错误（如端口冲突）通过 channel 回传到主协程统一处理
-	serverErrCh := serveHTTPServer(appRuntime.HTTPServer)
+	serverErrCh := serveHTTPServer(srv)
 
 	// 7) 等待两类信号：
 	// - 服务启动/运行期错误
@@ -91,7 +85,7 @@ func run() error {
 	case err := <-serverErrCh:
 		if err != nil {
 			// 启动失败时也要执行组件关闭，避免留下后台资源（连接、定时器等）。
-			if closeErr := appRuntime.Shutdown(); closeErr != nil {
+			if closeErr := config.CloseComponents(); closeErr != nil {
 				log.Printf("组件关闭失败: %v", closeErr)
 			}
 			return fmt.Errorf("HTTP 服务启动失败: %w", err)
@@ -105,12 +99,12 @@ func run() error {
 	defer cancel()
 
 	// 8) 关闭 HTTP：给在途请求最多 5 秒收尾时间。
-	if err := appRuntime.HTTPServer.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("HTTP Server 关闭失败: %v", err)
 	}
 
 	// 9) 统一关闭组件，释放数据库、缓存、队列等资源。
-	if err := appRuntime.Shutdown(); err != nil {
+	if err := config.CloseComponents(); err != nil {
 		log.Printf("组件关闭失败: %v", err)
 	}
 
