@@ -17,44 +17,37 @@ var (
 	defaultLang = fallbackDefaultLang
 )
 
+type initConfig struct {
+	defaultLang     string
+	autoRefresh     bool
+	refreshInterval time.Duration
+}
+
 // Init initializes i18n cache data and runtime behaviors from config.
 func Init(v *viper.Viper) error {
-	initMu.Lock()
-	lang := ""
-	autoRefresh := false
-	refreshInterval := 20 * time.Second
-	if v != nil {
-		lang = v.GetString("i18n.default_lang")
-		autoRefresh = v.GetBool("i18n.auto_refresh")
-		if raw := strings.TrimSpace(v.GetString("i18n.refresh_interval")); raw != "" {
-			duration, err := time.ParseDuration(raw)
-			if err != nil {
-				initMu.Unlock()
-				return fmt.Errorf("failed to parse i18n refresh interval: %w", err)
-			}
-			refreshInterval = duration
-		}
+	cfg, err := parseInitConfig(v)
+	if err != nil {
+		return err
 	}
-	setDefaultLangLocked(lang)
-	if inited {
+
+	initMu.Lock()
+	alreadyInited := inited
+	setDefaultLangLocked(cfg.defaultLang)
+	initMu.Unlock()
+
+	if !alreadyInited {
+		if err := LoadCache(); err != nil {
+			return fmt.Errorf("failed to load i18n cache: %w", err)
+		}
+
+		initMu.Lock()
+		inited = true
 		initMu.Unlock()
-		if autoRefresh {
-			StartAutoRefresh(refreshInterval)
-		}
-		return nil
-	}
-	initMu.Unlock()
-
-	if err := LoadCache(); err != nil {
-		return fmt.Errorf("failed to load i18n cache: %w", err)
 	}
 
-	initMu.Lock()
-	inited = true
-	initMu.Unlock()
-
-	if autoRefresh {
-		StartAutoRefresh(refreshInterval)
+	StopAutoRefresh()
+	if cfg.autoRefresh {
+		StartAutoRefresh(cfg.refreshInterval)
 	}
 	return nil
 }
@@ -153,4 +146,30 @@ func setDefaultLangLocked(lang string) {
 	}
 
 	defaultLang = lang
+}
+
+func parseInitConfig(v *viper.Viper) (initConfig, error) {
+	cfg := initConfig{
+		defaultLang:     fallbackDefaultLang,
+		autoRefresh:     false,
+		refreshInterval: 20 * time.Second,
+	}
+	if v == nil {
+		return cfg, nil
+	}
+
+	if lang := strings.TrimSpace(v.GetString("i18n.default_lang")); lang != "" {
+		cfg.defaultLang = lang
+	}
+	cfg.autoRefresh = v.GetBool("i18n.auto_refresh")
+
+	if raw := strings.TrimSpace(v.GetString("i18n.refresh_interval")); raw != "" {
+		duration, err := time.ParseDuration(raw)
+		if err != nil {
+			return initConfig{}, fmt.Errorf("failed to parse i18n refresh interval: %w", err)
+		}
+		cfg.refreshInterval = duration
+	}
+
+	return cfg, nil
 }
