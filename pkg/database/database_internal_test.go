@@ -57,3 +57,25 @@ func TestDatabaseConfigReservesResolverStructure(t *testing.T) {
 		t.Fatalf("resolver.replicas 不正确: %+v", parsed.Resolver.Replicas)
 	}
 }
+
+func TestValidateConfigFailsForStrictDefaultDatabaseName(t *testing.T) {
+	cfg := viper.New()
+	cfg.Set("database.dbname", "test")
+	cfg.Set("database.password", "secret")
+
+	err := ValidateConfig(cfg, true)
+	if err == nil {
+		t.Fatalf("严格模式下默认数据库名应校验失败")
+	}
+}
+
+func TestValidateConfigFailsForStrictEmptyPassword(t *testing.T) {
+	cfg := viper.New()
+	cfg.Set("database.dbname", "base")
+	cfg.Set("database.password", "")
+
+	err := ValidateConfig(cfg, true)
+	if err == nil {
+		t.Fatalf("严格模式下空数据库密码应校验失败")
+	}
+}

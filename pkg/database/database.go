@@ -275,6 +275,33 @@ func parseRuntimeOptions(v *viper.Viper) (runtimeOptions, error) {
 	return options, nil
 }
 
+// ValidateConfig 校验数据库配置。
+//
+// strict=true 时，会拒绝危险默认值和空关键配置。
+func ValidateConfig(v *viper.Viper, strict bool) error {
+	cfg := getDefaultConfig()
+	if v != nil {
+		if err := v.UnmarshalKey("database", &cfg); err != nil {
+			return fmt.Errorf("解析数据库配置失败: %w", err)
+		}
+	}
+
+	if !strict {
+		return nil
+	}
+
+	if cfg.DBName == "" {
+		return fmt.Errorf("database.dbname 不能为空")
+	}
+	if cfg.DBName == defaults.DefaultDatabaseName {
+		return fmt.Errorf("database.dbname 不能使用默认值")
+	}
+	if cfg.Password == "" {
+		return fmt.Errorf("database.password 不能为空")
+	}
+	return nil
+}
+
 // Close 关闭数据库连接。
 func Close() error {
 	mu.Lock()

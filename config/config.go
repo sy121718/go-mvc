@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go-mvc/pkg/auth"
+	"go-mvc/pkg/database"
 	"go-mvc/pkg/defaults"
 
 	"github.com/spf13/viper"
@@ -270,17 +271,8 @@ func ValidateRuntimeConfig() error {
 	if err := auth.ValidateConfig(cfg, true); err != nil {
 		return err
 	}
-
-	dbName := cfg.GetString("database.dbname")
-	if dbName == "" {
-		return fmt.Errorf("database.dbname 不能为空")
-	}
-	if dbName == "test" {
-		return fmt.Errorf("database.dbname 不能使用默认值")
-	}
-
-	if cfg.GetString("database.password") == "" {
-		return fmt.Errorf("database.password 不能为空")
+	if err := database.ValidateConfig(cfg, true); err != nil {
+		return err
 	}
 
 	return nil
