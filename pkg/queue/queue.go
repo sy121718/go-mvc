@@ -3,7 +3,6 @@ package queue
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	queueprovider "go-mvc/pkg/queue/provider"
@@ -13,11 +12,6 @@ import (
 
 type Handler = queueprovider.Handler
 type Option = queueprovider.Option
-
-type registeredHandler struct {
-	taskType string
-	handler  Handler
-}
 
 func WithQueue(name string) Option {
 	return queueprovider.WithQueue(name)
@@ -95,10 +89,7 @@ func buildProvider(v *viper.Viper) (queueprovider.Provider, error) {
 }
 
 var defaultProvider queueprovider.Provider = queueprovider.NewAsynqProvider()
-var (
-	registrationMu sync.RWMutex
-	registrations  []registeredHandler
-)
+var registrations = map[string]Handler{}
 
 // Init 初始化任务队列
 func Init(v *viper.Viper) error {
@@ -107,12 +98,8 @@ func Init(v *viper.Viper) error {
 		return err
 	}
 
-	registrationMu.RLock()
-	registered := append([]registeredHandler(nil), registrations...)
-	registrationMu.RUnlock()
-
-	for _, item := range registered {
-		provider.Register(item.taskType, item.handler)
+	for taskType, handler := range registrations {
+		provider.Register(taskType, handler)
 	}
 
 	defaultProvider = provider
@@ -129,11 +116,6 @@ func Init(v *viper.Viper) error {
 
 // Register 注册处理器
 func Register(taskType string, handler Handler) {
-	registrationMu.Lock()
-	registrations = append(registrations, registeredHandler{
-		taskType: taskType,
-		handler:  handler,
-	})
-	registrationMu.Unlock()
+	registrations[taskType] = handler
 	defaultProvider.Register(taskType, handler)
 }
