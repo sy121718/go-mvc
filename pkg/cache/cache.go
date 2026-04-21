@@ -1,3 +1,9 @@
+// Package cache 提供缓存组件根入口和高层调用门面。
+//
+// 设计目的：
+// - 对上层隐藏具体缓存 provider
+// - 统一缓存组件的 Init/Ready/Close 生命周期
+// - 提供常用的 JSON 缓存 helper，减少业务层直接手写序列化和回源逻辑
 package cache
 
 import (
@@ -35,6 +41,12 @@ func buildProvider(v *viper.Viper) (cacheprovider.Provider, error) {
 var defaultProvider cacheprovider.Provider = cacheprovider.NewRedisProvider()
 var loadGroup singleflight.Group
 
+// Init 初始化缓存组件。
+//
+// 说明：
+// - 当前默认 provider 为 Redis
+// - 调用后才允许 GetRedis / SetJSON / GetJSON / RememberJSON 等高层入口工作
+// - v 中的 redis.provider 用于切换 provider，未配置时默认走 redis
 // Init 初始化 Redis 缓存组件。
 func Init(v *viper.Viper) error {
 	provider, err := buildProvider(v)
@@ -45,12 +57,30 @@ func Init(v *viper.Viper) error {
 	return defaultProvider.Init(v)
 }
 
+// GetRedis 返回底层 Redis 客户端。
+//
+// 适用场景：
+// - 需要执行高层 helper 未覆盖的 Redis 操作
+// - 框架层能力之外的特殊命令
+//
+// 不建议：
+// - 业务代码优先直接操作底层客户端
+// - 能用 SetJSON / GetJSON / RememberJSON 时，优先使用高层入口
 // GetRedis 获取 Redis 客户端实例。
 func GetRedis() (redis.UniversalClient, error) {
 	return defaultProvider.Client()
 }
 
 // SetJSON 将任意结构体序列化为 JSON 后写入缓存。
+//
+// 参数说明：
+// - ctx: 上下文，用于超时和取消控制
+// - key: 缓存 key
+// - value: 任意可 JSON 序列化的值
+// - ttl: 缓存过期时间
+//
+// 使用示例：
+// - `cache.SetJSON(ctx, "user:1", userDTO, time.Minute)`
 func SetJSON(ctx context.Context, key string, value any, ttl time.Duration) error {
 	client, err := GetRedis()
 	if err != nil {
@@ -69,6 +99,17 @@ func SetJSON(ctx context.Context, key string, value any, ttl time.Duration) erro
 }
 
 // GetJSON 从缓存中读取 JSON 并反序列化为指定类型。
+//
+// 参数说明：
+// - ctx: 上下文
+// - key: 缓存 key
+//
+// 返回值说明：
+// - 返回指定泛型类型的值
+// - 缓存不存在时会返回 redis.Nil
+//
+// 使用示例：
+// - `user, err := cache.GetJSON[UserDTO](ctx, "user:1")`
 func GetJSON[T any](ctx context.Context, key string) (T, error) {
 	var zero T
 
@@ -92,6 +133,21 @@ func GetJSON[T any](ctx context.Context, key string) (T, error) {
 // RememberJSON 优先从缓存读取 JSON，缓存缺失时通过 loader 回源加载，并使用 singleflight 合并并发请求。
 //
 // jitter 表示在 ttl 基础上的随机抖动上限，用于降低同一批 key 同时过期带来的压力。
+//
+// 参数说明：
+// - ctx: 上下文
+// - key: 缓存 key
+// - ttl: 基础缓存时长
+// - jitter: 随机抖动上限；为 0 表示不加抖动
+// - loader: 缓存未命中时的回源函数
+//
+// 设计收益：
+// - 自动处理缓存未命中回源
+// - 使用 singleflight 合并并发请求，降低击穿风险
+// - 支持 TTL 抖动，降低同批 key 同时过期带来的雪崩风险
+//
+// 使用示例：
+// - `value, err := cache.RememberJSON(ctx, "user:1", time.Minute, 5*time.Second, loader)`
 func RememberJSON[T any](
 	ctx context.Context,
 	key string,
@@ -131,11 +187,13 @@ func RememberJSON[T any](
 	return typed, nil
 }
 
+// IsInited 判断缓存组件是否已初始化。
 // IsInited 检查 Redis 是否已初始化。
 func IsInited() bool {
 	return defaultProvider.IsInited()
 }
 
+// Ready 检查缓存组件是否已达到可用状态。
 // Ready 检查缓存组件是否已初始化。
 func Ready() error {
 	if !IsInited() {
@@ -144,6 +202,7 @@ func Ready() error {
 	return nil
 }
 
+// Close 关闭缓存组件并释放底层连接。
 // Close 关闭 Redis 连接。
 func Close() error {
 	return defaultProvider.Close()

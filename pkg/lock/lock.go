@@ -13,11 +13,19 @@ import (
 )
 
 // Locker 定义统一锁接口。
+//
+// 使用建议：
+// - 本地互斥优先使用 NewLocal()
+// - 跨实例互斥再使用 NewRedis()
 type Locker interface {
 	Acquire(ctx context.Context, key string, ttl time.Duration) (Lease, error)
 }
 
 // Lease 表示一次成功获取到的锁租约。
+//
+// 约束：
+// - 调用方获取到 Lease 后，应在任务完成后显式 Release
+// - 不要依赖 TTL 到期作为正常释放路径
 type Lease interface {
 	Key() string
 	Release(ctx context.Context) error
