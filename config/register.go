@@ -1,7 +1,7 @@
 package config
 
 import (
-	adminrouter "go-mvc/internal/module/backend/admin/router"
+	adminmodule "go-mvc/internal/module/backend/admin"
 	internaltask "go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
@@ -87,7 +87,7 @@ var runtimeComponents = []runtimeComponent{
 
 var runtimeModules = []runtimeModule{
 	{
-		Register: adminrouter.SetupAdminRoutes,
+		Register: adminmodule.RegisterRoutes,
 	},
 }
 

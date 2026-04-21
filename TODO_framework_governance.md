@@ -108,7 +108,7 @@
 - [x] `internal/routers/routes.go`：建立模块路由统一注册机制
   - 目标：减少主路由中心文件手工 import 和手工调用
 
-- [ ] 为业务模块增加统一入口文件，如 `module.go` / `bootstrap.go`
+- [x] 为业务模块增加统一入口文件，如 `module.go` / `bootstrap.go`
   - 目标：显式暴露模块路由注册、依赖初始化、ready 检查等能力
 
 - [ ] 将启动流程显式拆分为 `LoadConfig -> ValidateConfig -> InitCritical -> InitOptional -> BuildRouter -> StartServer`
