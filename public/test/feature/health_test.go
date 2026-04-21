@@ -4,7 +4,11 @@ import (
 	"net/http"
 	"testing"
 
+	"go-mvc/internal/middleware"
+	"go-mvc/pkg/response"
 	"go-mvc/public/test/support"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestHealthCheckSuccess(t *testing.T) {
@@ -52,5 +56,50 @@ func TestHealthCheckSuccess(t *testing.T) {
 
 	if data.Status != "ok" {
 		t.Fatalf("响应 data.status 不正确: got=%s want=%s", data.Status, "ok")
+	}
+}
+
+func TestJWTAuthMiddlewareAbortsOnMissingAuthorization(t *testing.T) {
+	engine, cleanup, err := support.SetupTestBootstrap(support.BootstrapOptions{
+		UseDefaultRoute: false,
+		InitComponents:  false,
+		RouteRegistrar: func(engine *gin.Engine) {
+			engine.GET("/protected", middleware.JWTAuthMiddleware(), func(c *gin.Context) {
+				response.Success(c, gin.H{"reached": true})
+			})
+		},
+	})
+	if err != nil {
+		t.Fatalf("初始化测试引擎失败: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if closeErr := cleanup(); closeErr != nil {
+			t.Errorf("清理测试资源失败: %v", closeErr)
+		}
+	})
+
+	recorder, err := support.SendRequest(engine, support.RequestOptions{
+		Method: http.MethodGet,
+		Path:   "/protected",
+	})
+	if err != nil {
+		t.Fatalf("发送请求失败: %v", err)
+	}
+
+	resp, err := support.ParseStandardResponse(recorder)
+	if err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if resp.Code != "ErrUnauthorized" {
+		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, "ErrUnauthorized")
+	}
+
+	var data struct {
+		Reached bool `json:"reached"`
+	}
+	if err := support.DecodeResponseData(recorder, &data); err == nil {
+		t.Fatalf("handler 不应继续执行，但返回了 data")
 	}
 }

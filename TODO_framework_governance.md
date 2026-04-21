@@ -103,7 +103,7 @@
 - [ ] `cmd/main.go`：为 `http.Server` 增加 `ReadHeaderTimeout`、`ReadTimeout`、`WriteTimeout`、`IdleTimeout`
   - 目标：补齐最基础的连接保护与慢请求防护
 
-- [ ] `internal/middleware/auth.go`：错误响应后统一执行 `c.Abort()`
+- [x] `internal/middleware/auth.go`：错误响应后统一执行 `c.Abort()`
   - 目标：避免后续 handler 继续执行造成鉴权绕过
 
 - [ ] `internal/middleware/casbin.go`：错误响应后统一执行 `c.Abort()`
