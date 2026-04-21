@@ -1,8 +1,10 @@
 package logger_test
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -62,5 +64,71 @@ func TestLoggerConcurrentWriteAndSync(t *testing.T) {
 	}
 	if len(content) == 0 {
 		t.Fatalf("日志文件内容为空: %s", logPath)
+	}
+}
+
+func TestLoggerSceneLevelOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	cfg := viper.New()
+	cfg.Set("log.base_dir", tmpDir)
+	cfg.Set("log.level", "info")
+	cfg.Set("log.scene_levels.sql", "error")
+
+	if err := logger.Init(cfg); err != nil {
+		t.Fatalf("日志初始化失败: %v", err)
+	}
+
+	logger.Scene("sql").Info("这条不应写入")
+	logger.Scene("sql").Error(nil, "这条应写入")
+
+	if err := logger.Close(); err != nil {
+		t.Fatalf("日志关闭失败: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(tmpDir, "sql", "app.log"))
+	if err != nil {
+		t.Fatalf("读取 sql 日志失败: %v", err)
+	}
+
+	text := string(content)
+	if strings.Contains(text, "这条不应写入") {
+		t.Fatalf("sql 场景级别覆盖未生效")
+	}
+	if !strings.Contains(text, "这条应写入") {
+		t.Fatalf("sql error 日志未写入")
+	}
+}
+
+func TestLoggerSamplingReducesRepeatedLogs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	cfg := viper.New()
+	cfg.Set("log.base_dir", tmpDir)
+	cfg.Set("log.level", "info")
+	cfg.Set("log.sample.enabled", true)
+	cfg.Set("log.sample.initial", 1)
+	cfg.Set("log.sample.thereafter", 100)
+
+	if err := logger.Init(cfg); err != nil {
+		t.Fatalf("日志初始化失败: %v", err)
+	}
+
+	for i := 0; i < 5; i++ {
+		logger.Scene("http").Info("重复日志")
+	}
+
+	if err := logger.Close(); err != nil {
+		t.Fatalf("日志关闭失败: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(tmpDir, "http", "app.log"))
+	if err != nil {
+		t.Fatalf("读取 http 日志失败: %v", err)
+	}
+
+	count := bytes.Count(content, []byte("重复日志"))
+	if count >= 5 {
+		t.Fatalf("日志采样未生效: got=%d", count)
 	}
 }

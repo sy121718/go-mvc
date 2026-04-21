@@ -120,6 +120,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("log.max_backups", 10)
 	v.SetDefault("log.max_age", 30)
 	v.SetDefault("log.compress", false)
+	v.SetDefault("log.sample.enabled", false)
+	v.SetDefault("log.sample.initial", 100)
+	v.SetDefault("log.sample.thereafter", 100)
 }
 
 // GetViper 获取 viper 实例（供 pkg 使用）。

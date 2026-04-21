@@ -229,7 +229,7 @@
 - [x] `pkg/cache`：补缓存穿透、击穿、雪崩治理能力
   - 目标：包括空值缓存、TTL 抖动、`singleflight` 合并请求
 
-- [ ] `pkg/logger`：增加 HTTP 和 SQL 日志采样开关与场景级别控制
+- [x] `pkg/logger`：增加 HTTP 和 SQL 日志采样开关与场景级别控制
   - 目标：降低高并发下全量日志对吞吐的影响
 
 - [x] `pkg/queue/provider/asynq.go`：将队列权重改为配置项

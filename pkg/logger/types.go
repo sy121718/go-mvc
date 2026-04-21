@@ -14,12 +14,16 @@ const (
 )
 
 type runtimeConfig struct {
-	baseDir    string
-	level      zapcore.Level
-	maxSize    int
-	maxBackups int
-	maxAge     int
-	compress   bool
+	baseDir          string
+	level            zapcore.Level
+	sceneLevels      map[string]zapcore.Level
+	sampleEnabled    bool
+	sampleInitial    int
+	sampleThereafter int
+	maxSize          int
+	maxBackups       int
+	maxAge           int
+	compress         bool
 }
 
 // Entry 场景日志入口。
@@ -35,4 +39,5 @@ var (
 	inited       bool
 	cfg          runtimeConfig
 	sceneLoggers sync.Map // key: scene, value: *zap.Logger
+	sceneClosers sync.Map // key: scene, value: io.Closer
 )

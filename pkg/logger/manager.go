@@ -3,6 +3,7 @@ package logger
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,12 +17,16 @@ import (
 // Init 初始化 zap 日志运行时配置。
 func Init(v *viper.Viper) error {
 	next := runtimeConfig{
-		baseDir:    defaultBaseDir,
-		level:      zapcore.InfoLevel,
-		maxSize:    100,
-		maxBackups: 10,
-		maxAge:     30,
-		compress:   false,
+		baseDir:          defaultBaseDir,
+		level:            zapcore.InfoLevel,
+		sceneLevels:      map[string]zapcore.Level{},
+		sampleEnabled:    false,
+		sampleInitial:    100,
+		sampleThereafter: 100,
+		maxSize:          100,
+		maxBackups:       10,
+		maxAge:           30,
+		compress:         false,
 	}
 
 	if v != nil {
@@ -39,6 +44,19 @@ func Init(v *viper.Viper) error {
 			next.maxAge = age
 		}
 		next.compress = v.GetBool("log.compress")
+		next.sampleEnabled = v.GetBool("log.sample.enabled")
+		if initial := v.GetInt("log.sample.initial"); initial > 0 {
+			next.sampleInitial = initial
+		}
+		if thereafter := v.GetInt("log.sample.thereafter"); thereafter > 0 {
+			next.sampleThereafter = thereafter
+		}
+		if rawLevels := v.GetStringMapString("log.scene_levels"); len(rawLevels) > 0 {
+			next.sceneLevels = make(map[string]zapcore.Level, len(rawLevels))
+			for scene, levelText := range rawLevels {
+				next.sceneLevels[normalizeScene(scene)] = parseLevel(levelText)
+			}
+		}
 	}
 
 	next.baseDir = filepath.Clean(next.baseDir)
@@ -59,17 +77,11 @@ func Init(v *viper.Viper) error {
 
 // Close 刷新并落盘所有场景 logger。
 func Close() error {
-	var syncErr error
-	sceneLoggers.Range(func(key, value any) bool {
-		lg, ok := value.(*zap.Logger)
-		if !ok {
-			return true
-		}
-		err := syncOneLogger(key, lg)
-		syncErr = errors.Join(syncErr, err)
-		return true
-	})
-	return syncErr
+	mu.Lock()
+	inited = false
+	cfg = runtimeConfig{}
+	mu.Unlock()
+	return clearSceneLoggers()
 }
 
 func getSceneLogger(scene string) (*zap.Logger, error) {
@@ -81,7 +93,7 @@ func getSceneLogger(scene string) (*zap.Logger, error) {
 		}
 	}
 
-	lg, err := newSceneLogger(scene)
+	lg, closer, err := newSceneLogger(scene)
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +103,16 @@ func getSceneLogger(scene string) (*zap.Logger, error) {
 		if err := syncOneLogger(scene, lg); err != nil {
 			log.Printf("关闭重复创建的 logger 失败, scene=%s, err=%v", scene, err)
 		}
+		if closer != nil {
+			if err := closer.Close(); err != nil {
+				log.Printf("关闭重复创建的 logger writer 失败, scene=%s, err=%v", scene, err)
+			}
+		}
 		if existing, ok := actual.(*zap.Logger); ok {
 			return existing, nil
 		}
+	} else if closer != nil {
+		sceneClosers.Store(scene, closer)
 	}
 	return lg, nil
 }
@@ -104,6 +123,13 @@ func clearSceneLoggers() error {
 		if lg, ok := value.(*zap.Logger); ok {
 			err := syncOneLogger(key, lg)
 			syncErr = errors.Join(syncErr, err)
+		}
+		if closer, ok := sceneClosers.Load(key); ok {
+			if c, castOK := closer.(io.Closer); castOK {
+				err := c.Close()
+				syncErr = errors.Join(syncErr, err)
+			}
+			sceneClosers.Delete(key)
 		}
 		sceneLoggers.Delete(key)
 		return true
