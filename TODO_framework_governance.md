@@ -111,7 +111,7 @@
 - [x] 为业务模块增加统一入口文件，如 `module.go` / `bootstrap.go`
   - 目标：显式暴露模块路由注册、依赖初始化、ready 检查等能力
 
-- [ ] 将启动流程显式拆分为 `LoadConfig -> ValidateConfig -> InitCritical -> InitOptional -> BuildRouter -> StartServer`
+- [x] 将启动流程显式拆分为 `LoadConfig -> ValidateConfig -> InitCritical -> InitOptional -> BuildRouter -> StartServer`
   - 目标：减少启动逻辑耦合，便于后续拆分关键与扩展启动阶段
 
 - [x] `cmd/main.go`：由 `gin.Default()` 改为 `gin.New()` + 显式挂载中间件

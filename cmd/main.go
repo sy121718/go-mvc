@@ -44,21 +44,9 @@ func main() {
 }
 
 func run() error {
-	// 1) 读取配置文件，包含 server/database/redis 等全局配置。
-	if err := config.Init("config.yaml"); err != nil {
-		return fmt.Errorf("配置加载失败: %w", err)
-	}
-
-	// 2) 解析服务配置并设置 Gin 运行模式（debug/release/test）。
-	serverCfg, err := config.GetServer()
+	serverCfg, err := loadAndPrepareRuntime("config.yaml")
 	if err != nil {
 		return err
-	}
-	gin.SetMode(serverCfg.Mode)
-
-	// 3) 初始化基础组件（DB、i18n、cache、auth、upload、queue...）。
-	if err := config.InitComponents(); err != nil {
-		return fmt.Errorf("组件初始化失败: %w", err)
 	}
 
 	// 4) 构建 HTTP 路由。
@@ -79,25 +67,12 @@ func run() error {
 	addr := fmt.Sprintf(":%d", serverCfg.Port)
 	log.Printf("服务启动: http://localhost%s", addr)
 
-	srv := &http.Server{
-		Addr:              addr,
-		Handler:           router,
-		ReadHeaderTimeout: serverCfg.ReadHeaderTimeout,
-		ReadTimeout:       serverCfg.ReadTimeout,
-		WriteTimeout:      serverCfg.WriteTimeout,
-		IdleTimeout:       serverCfg.IdleTimeout,
-	}
+	srv := buildHTTPServer(serverCfg, router)
 
 	// 6) 在 goroutine 里启动 HTTP 服务：
 	// - 正常关闭时 ListenAndServe 会返回 http.ErrServerClosed（不是错误）
 	// - 非预期错误（如端口冲突）通过 channel 回传到主协程统一处理
-	serverErrCh := make(chan error, 1)
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serverErrCh <- err
-		}
-		close(serverErrCh)
-	}()
+	serverErrCh := serveHTTPServer(srv)
 
 	// 7) 等待两类信号：
 	// - 服务启动/运行期错误
@@ -137,6 +112,25 @@ func run() error {
 	return nil
 }
 
+func loadAndPrepareRuntime(configPath string) (config.ServerConfig, error) {
+	if err := config.Init(configPath); err != nil {
+		return config.ServerConfig{}, fmt.Errorf("配置加载失败: %w", err)
+	}
+
+	serverCfg, err := config.GetServer()
+	if err != nil {
+		return config.ServerConfig{}, err
+	}
+
+	gin.SetMode(serverCfg.Mode)
+
+	if err := config.InitComponents(); err != nil {
+		return config.ServerConfig{}, fmt.Errorf("组件初始化失败: %w", err)
+	}
+
+	return serverCfg, nil
+}
+
 func buildHTTPRouter(
 	serverCfg config.ServerConfig,
 	logCapture bool,
@@ -154,4 +148,26 @@ func buildHTTPRouter(
 	})
 	routers.SetupRoutes(router, modules, ready)
 	return router
+}
+
+func buildHTTPServer(serverCfg config.ServerConfig, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              fmt.Sprintf(":%d", serverCfg.Port),
+		Handler:           handler,
+		ReadHeaderTimeout: serverCfg.ReadHeaderTimeout,
+		ReadTimeout:       serverCfg.ReadTimeout,
+		WriteTimeout:      serverCfg.WriteTimeout,
+		IdleTimeout:       serverCfg.IdleTimeout,
+	}
+}
+
+func serveHTTPServer(srv *http.Server) chan error {
+	serverErrCh := make(chan error, 1)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErrCh <- err
+		}
+		close(serverErrCh)
+	}()
+	return serverErrCh
 }
