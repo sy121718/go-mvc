@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/spf13/viper"
 )
 
 const fallbackDefaultLang string = "zh-CN"
@@ -14,20 +17,45 @@ var (
 	defaultLang = fallbackDefaultLang
 )
 
-// Init initializes i18n cache data.
-func Init() error {
+// Init initializes i18n cache data and runtime behaviors from config.
+func Init(v *viper.Viper) error {
 	initMu.Lock()
-	defer initMu.Unlock()
-
+	lang := ""
+	autoRefresh := false
+	refreshInterval := 20 * time.Second
+	if v != nil {
+		lang = v.GetString("i18n.default_lang")
+		autoRefresh = v.GetBool("i18n.auto_refresh")
+		if raw := strings.TrimSpace(v.GetString("i18n.refresh_interval")); raw != "" {
+			duration, err := time.ParseDuration(raw)
+			if err != nil {
+				initMu.Unlock()
+				return fmt.Errorf("failed to parse i18n refresh interval: %w", err)
+			}
+			refreshInterval = duration
+		}
+	}
+	setDefaultLangLocked(lang)
 	if inited {
+		initMu.Unlock()
+		if autoRefresh {
+			StartAutoRefresh(refreshInterval)
+		}
 		return nil
 	}
+	initMu.Unlock()
 
 	if err := LoadCache(); err != nil {
 		return fmt.Errorf("failed to load i18n cache: %w", err)
 	}
 
+	initMu.Lock()
 	inited = true
+	initMu.Unlock()
+
+	if autoRefresh {
+		StartAutoRefresh(refreshInterval)
+	}
 	return nil
 }
 
@@ -35,14 +63,7 @@ func Init() error {
 func SetDefaultLang(lang string) {
 	initMu.Lock()
 	defer initMu.Unlock()
-
-	lang = strings.TrimSpace(lang)
-	if lang == "" {
-		defaultLang = fallbackDefaultLang
-		return
-	}
-
-	defaultLang = lang
+	setDefaultLangLocked(lang)
 }
 
 // GetDefaultLang returns default language code.
@@ -111,4 +132,25 @@ func IsInited() bool {
 	initMu.Lock()
 	defer initMu.Unlock()
 	return inited
+}
+
+// Close stops background refresh and resets runtime state.
+func Close() error {
+	StopAutoRefresh()
+
+	initMu.Lock()
+	inited = false
+	defaultLang = fallbackDefaultLang
+	initMu.Unlock()
+	return nil
+}
+
+func setDefaultLangLocked(lang string) {
+	lang = strings.TrimSpace(lang)
+	if lang == "" {
+		defaultLang = fallbackDefaultLang
+		return
+	}
+
+	defaultLang = lang
 }

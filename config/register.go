@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"time"
 
 	adminrouter "go-mvc/internal/module/backend/admin/router"
 	_ "go-mvc/internal/task"
@@ -51,24 +50,12 @@ func registeredComponents() []runtimeComponent {
 		{
 			Name: "i18n",
 			Init: func(cfg *viper.Viper) error {
-				i18n.SetDefaultLang(cfg.GetString("i18n.default_lang"))
-				if err := i18n.Init(); err != nil {
+				if err := i18n.Init(cfg); err != nil {
 					return fmt.Errorf("初始化多语言配置中心失败: %w", err)
 				}
-
-				if cfg.GetBool("i18n.auto_refresh") {
-					refreshInterval, err := time.ParseDuration(cfg.GetString("i18n.refresh_interval"))
-					if err != nil {
-						return fmt.Errorf("解析 i18n.refresh_interval 失败: %w", err)
-					}
-					i18n.StartAutoRefresh(refreshInterval)
-				}
 				return nil
 			},
-			Close: func() error {
-				i18n.StopAutoRefresh()
-				return nil
-			},
+			Close: i18n.Close,
 		},
 		{
 			Name: "casbin",

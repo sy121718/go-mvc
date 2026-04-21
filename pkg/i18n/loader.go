@@ -31,7 +31,7 @@ func LoadCache() error {
 	}
 
 	err = db.Table("sys_i18n").
-		Select("item_key", "lang", "item_value", "http_code").
+		Select("item_key AS key", "lang AS lang", "item_value AS value", "http_code AS http_code").
 		Where("status = ?", 1).
 		Scan(&rows).Error
 	if err != nil {
