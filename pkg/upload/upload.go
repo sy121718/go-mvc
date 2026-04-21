@@ -42,11 +42,6 @@ type validationRules struct {
 	allowedMIMETypes  map[string]struct{}
 }
 
-func init() {
-	_ = Register(uploadprovider.NewLocalProvider())
-	_ = Register(uploadprovider.NewQiniuProvider())
-}
-
 // File 上传文件参数。
 type File = uploadprovider.File
 
@@ -70,6 +65,8 @@ func Init(v *viper.Viper) error {
 	if v == nil {
 		return uploadprovider.NewErrorf(enums.ErrUploadConfigInvalid, "upload 初始化配置为空")
 	}
+
+	registerBuiltinProviders()
 
 	selected := normalizeProvider(v.GetString("upload.default_provider"))
 	if selected == "" {
@@ -420,4 +417,9 @@ func parseByteSize(raw string) (int64, error) {
 		return 0, fmt.Errorf("值必须大于 0")
 	}
 	return value, nil
+}
+
+func registerBuiltinProviders() {
+	_ = Register(uploadprovider.NewLocalProvider())
+	_ = Register(uploadprovider.NewQiniuProvider())
 }
