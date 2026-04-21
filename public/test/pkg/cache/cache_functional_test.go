@@ -164,3 +164,52 @@ func TestCacheRememberJSONUsesSingleflight(t *testing.T) {
 		t.Fatalf("singleflight 未生效: got=%d want=%d", loadCount, 1)
 	}
 }
+
+func TestCacheRememberJSONCachesZeroValueResult(t *testing.T) {
+	t.Cleanup(func() {
+		if err := cache.Close(); err != nil {
+			t.Fatalf("关闭缓存失败: %v", err)
+		}
+	})
+
+	miniRedis, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("启动 miniredis 失败: %v", err)
+	}
+	defer miniRedis.Close()
+
+	cfg := viper.New()
+	cfg.Set("redis.provider", "redis")
+	cfg.Set("redis.addrs", []string{miniRedis.Addr()})
+
+	if err := cache.Init(cfg); err != nil {
+		t.Fatalf("初始化缓存失败: %v", err)
+	}
+
+	ctx := context.Background()
+	loadCount := 0
+	loader := func(context.Context) (struct {
+		Value string `json:"value"`
+	}, error) {
+		loadCount++
+		return struct {
+			Value string `json:"value"`
+		}{}, nil
+	}
+
+	first, err := cache.RememberJSON(ctx, "zero:key", time.Minute, 0, loader)
+	if err != nil {
+		t.Fatalf("第一次 RememberJSON 失败: %v", err)
+	}
+	second, err := cache.RememberJSON(ctx, "zero:key", time.Minute, 0, loader)
+	if err != nil {
+		t.Fatalf("第二次 RememberJSON 失败: %v", err)
+	}
+
+	if first.Value != "" || second.Value != "" {
+		t.Fatalf("零值缓存结果不正确: first=%+v second=%+v", first, second)
+	}
+	if loadCount != 1 {
+		t.Fatalf("零值结果应被缓存: got=%d want=%d", loadCount, 1)
+	}
+}
