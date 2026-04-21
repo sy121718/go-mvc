@@ -207,7 +207,7 @@
 - [x] `pkg/queue`：补更高层任务门面
   - 目标：减少业务层手工拼 task type、payload、opts
 
-- [ ] `pkg/upload`：补统一上传校验门面
+- [x] `pkg/upload`：补统一上传校验门面
   - 目标：把 provider 调度和安全校验分层，业务直接调用更稳定
 
 - [x] `pkg/logger`：取消隐式自动初始化

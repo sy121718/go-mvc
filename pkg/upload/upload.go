@@ -92,6 +92,16 @@ type Client struct {
 	runtime  *RuntimeConfig
 }
 
+// Uploader 高层上传门面。
+//
+// 设计目的：
+// - 固定 provider 和 Request 参数
+// - 让业务层重复上传同类文件时少传一层 request
+type Uploader struct {
+	client  Client
+	request Request
+}
+
 // Init 初始化上传组件。
 //
 // 说明：
@@ -272,12 +282,33 @@ func UseCfg(runtime RuntimeConfig) Client {
 	return Client{provider: normalizeProvider(cfg.Provider), runtime: &cfg}
 }
 
+// NewUploader 创建一个固定 provider 和 Request 的高层上传门面。
+func NewUploader(provider string, request Request) Uploader {
+	return Uploader{
+		client:  Use(provider),
+		request: request,
+	}
+}
+
+// NewUploaderWithConfig 创建一个固定运行时配置和 Request 的高层上传门面。
+func NewUploaderWithConfig(runtime RuntimeConfig, request Request) Uploader {
+	return Uploader{
+		client:  UseCfg(runtime),
+		request: request,
+	}
+}
+
 // Upload 执行上传。
 func (c Client) Upload(ctx context.Context, file File, req Request) (Result, error) {
 	if c.runtime != nil {
 		return uploadWithProvider(ctx, c.provider, *c.runtime, file, req)
 	}
 	return uploadWithProvider(ctx, c.provider, RuntimeConfig{}, file, req)
+}
+
+// Upload 使用门面中固定的 Request 执行上传。
+func (u Uploader) Upload(ctx context.Context, file File) (Result, error) {
+	return u.client.Upload(ctx, file, u.request)
 }
 
 func uploadWithProvider(ctx context.Context, providerName string, runtime RuntimeConfig, file File, req Request) (Result, error) {
