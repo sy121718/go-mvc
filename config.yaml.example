@@ -9,6 +9,9 @@ server:
   idle_timeout: 60s
   request_body_limit: 2MB
   upload_body_limit: 32MB
+  rate_limit_enabled: true
+  rate_limit_limit: 120
+  rate_limit_window: 1m
 
 # 数据库配置
 database:

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"go-mvc/internal/middleware"
 	"go-mvc/pkg/response"
@@ -75,5 +76,36 @@ func TestRequestBodyLimitUsesUploadLimitForUploadRoute(t *testing.T) {
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("状态码不正确: got=%d want=%d", recorder.Code, http.StatusOK)
+	}
+}
+
+func TestRequestRateLimitBlocksRepeatedRequests(t *testing.T) {
+	engine := gin.New()
+	engine.GET("/limited-rate", middleware.RequestRateLimitMiddleware(2, time.Minute), func(c *gin.Context) {
+		response.Success(c, gin.H{"reached": true})
+	})
+
+	for i := 0; i < 2; i++ {
+		recorder, err := support.SendRequest(engine, support.RequestOptions{
+			Method: http.MethodGet,
+			Path:   "/limited-rate",
+		})
+		if err != nil {
+			t.Fatalf("发送请求失败: %v", err)
+		}
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("前两次请求应放行: got=%d want=%d", recorder.Code, http.StatusOK)
+		}
+	}
+
+	recorder, err := support.SendRequest(engine, support.RequestOptions{
+		Method: http.MethodGet,
+		Path:   "/limited-rate",
+	})
+	if err != nil {
+		t.Fatalf("发送请求失败: %v", err)
+	}
+	if recorder.Code != http.StatusTooManyRequests {
+		t.Fatalf("第三次请求应被限流: got=%d want=%d", recorder.Code, http.StatusTooManyRequests)
 	}
 }

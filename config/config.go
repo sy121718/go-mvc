@@ -29,6 +29,9 @@ type ServerConfig struct {
 	IdleTimeout       time.Duration
 	RequestBodyLimit  int64
 	UploadBodyLimit   int64
+	RateLimitEnabled  bool
+	RateLimitLimit    int
+	RateLimitWindow   time.Duration
 }
 
 // Init 初始化配置文件。
@@ -63,6 +66,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.idle_timeout", "60s")
 	v.SetDefault("server.request_body_limit", "2MB")
 	v.SetDefault("server.upload_body_limit", "32MB")
+	v.SetDefault("server.rate_limit_enabled", true)
+	v.SetDefault("server.rate_limit_limit", 120)
+	v.SetDefault("server.rate_limit_window", "1m")
 
 	v.SetDefault("database.driver", "mysql")
 	v.SetDefault("database.host", "127.0.0.1")
@@ -131,6 +137,9 @@ func GetServer() (ServerConfig, error) {
 		IdleTimeout       string `mapstructure:"idle_timeout"`
 		RequestBodyLimit  string `mapstructure:"request_body_limit"`
 		UploadBodyLimit   string `mapstructure:"upload_body_limit"`
+		RateLimitEnabled  bool   `mapstructure:"rate_limit_enabled"`
+		RateLimitLimit    int    `mapstructure:"rate_limit_limit"`
+		RateLimitWindow   string `mapstructure:"rate_limit_window"`
 	}
 
 	var raw serverConfigRaw
@@ -162,6 +171,13 @@ func GetServer() (ServerConfig, error) {
 	if err != nil {
 		return ServerConfig{}, err
 	}
+	rateLimitWindow, err := parseServerDuration("rate_limit_window", raw.RateLimitWindow)
+	if err != nil {
+		return ServerConfig{}, err
+	}
+	if raw.RateLimitLimit <= 0 {
+		return ServerConfig{}, fmt.Errorf("解析 server.rate_limit_limit 失败: 值必须大于 0")
+	}
 
 	return ServerConfig{
 		Port:              raw.Port,
@@ -173,6 +189,9 @@ func GetServer() (ServerConfig, error) {
 		IdleTimeout:       idleTimeout,
 		RequestBodyLimit:  requestBodyLimit,
 		UploadBodyLimit:   uploadBodyLimit,
+		RateLimitEnabled:  raw.RateLimitEnabled,
+		RateLimitLimit:    raw.RateLimitLimit,
+		RateLimitWindow:   rateLimitWindow,
 	}, nil
 }
 

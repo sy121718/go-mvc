@@ -65,6 +65,9 @@ func run() error {
 	router := gin.Default()
 	router.Use(middleware.SecurityHeadersMiddleware())
 	router.Use(middleware.RequestBodyLimitMiddleware(serverCfg.RequestBodyLimit, serverCfg.UploadBodyLimit))
+	if serverCfg.RateLimitEnabled {
+		router.Use(middleware.RequestRateLimitMiddleware(serverCfg.RateLimitLimit, serverCfg.RateLimitWindow))
+	}
 	router.Use(middleware.RequestLogCaptureMiddleware(config.GetViper().GetBool("log.capture.http")))
 	routers.SetupRoutes(router, config.ModuleRegistrars(), config.ValidateReady)
 
