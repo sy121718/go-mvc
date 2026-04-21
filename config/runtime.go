@@ -21,6 +21,11 @@ var (
 	runtimeInited       bool
 )
 
+const (
+	errComponentInitFailedPrefix = "component init failed"
+	errComponentNotReadyPrefix   = "component not ready"
+)
+
 // InitComponents 按注册顺序初始化运行时组件。
 func InitComponents() error {
 	runtimeMu.Lock()
@@ -49,7 +54,7 @@ func InitComponents() error {
 
 		if err := component.Init(cfg); err != nil {
 			_ = closeComponents(initialized)
-			return fmt.Errorf("初始化组件 %s 失败: %w", component.Name, err)
+			return fmt.Errorf("%s [%s]: %w", errComponentInitFailedPrefix, component.Name, err)
 		}
 		initialized = append(initialized, component)
 	}
@@ -89,30 +94,30 @@ func ValidateReady() error {
 	runtimeMu.Unlock()
 
 	if !ready {
-		return fmt.Errorf("runtime not initialized")
+		return fmt.Errorf("%s [runtime]: runtime not initialized", errComponentNotReadyPrefix)
 	}
 
 	cfg := GetViper()
 	if !database.IsInited() {
-		return fmt.Errorf("database not ready")
+		return fmt.Errorf("%s [database]: database not ready", errComponentNotReadyPrefix)
 	}
 	if err := auth.MustBeReady(); err != nil {
-		return fmt.Errorf("auth not ready: %w", err)
+		return fmt.Errorf("%s [auth]: %w", errComponentNotReadyPrefix, err)
 	}
 	if err := i18n.ValidateReady(); err != nil {
-		return fmt.Errorf("i18n not ready: %w", err)
+		return fmt.Errorf("%s [i18n]: %w", errComponentNotReadyPrefix, err)
 	}
 	if cfg.GetBool("redis.enabled") && !cache.IsInited() {
-		return fmt.Errorf("cache not ready")
+		return fmt.Errorf("%s [cache]: cache not ready", errComponentNotReadyPrefix)
 	}
 	if cfg.GetBool("casbin.enabled") && casbin.GetEnforcer() == nil {
-		return fmt.Errorf("casbin not ready")
+		return fmt.Errorf("%s [casbin]: casbin not ready", errComponentNotReadyPrefix)
 	}
 	if cfg.GetBool("upload.enabled") && !upload.IsInited() {
-		return fmt.Errorf("upload not ready")
+		return fmt.Errorf("%s [upload]: upload not ready", errComponentNotReadyPrefix)
 	}
 	if cfg.GetBool("queue.enabled") && !queue.IsInited() {
-		return fmt.Errorf("queue not ready")
+		return fmt.Errorf("%s [queue]: queue not ready", errComponentNotReadyPrefix)
 	}
 	return nil
 }

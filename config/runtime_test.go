@@ -2,6 +2,7 @@ package config
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -89,4 +90,73 @@ func TestInitComponentsAndCloseComponentsFollowRegisteredOrder(t *testing.T) {
 	if !reflect.DeepEqual(events, want) {
 		t.Fatalf("组件编排顺序不正确:\nwant=%v\ngot=%v", want, events)
 	}
+}
+
+func TestInitComponentsReturnsClassifiedInitError(t *testing.T) {
+	oldV := v
+	oldRuntimeInited := runtimeInited
+	oldInitializedRegistry := initializedRegistry
+	oldPreparers := runtimePreparers
+	oldComponents := runtimeComponents
+
+	t.Cleanup(func() {
+		v = oldV
+		runtimeInited = oldRuntimeInited
+		initializedRegistry = oldInitializedRegistry
+		runtimePreparers = oldPreparers
+		runtimeComponents = oldComponents
+	})
+
+	v = viper.New()
+	v.Set("server.mode", "test")
+	runtimeInited = false
+	initializedRegistry = nil
+	runtimePreparers = nil
+	runtimeComponents = []runtimeComponent{
+		{
+			Name: "cache",
+			Init: func(_ *viper.Viper) error {
+				return errString("dial tcp failed")
+			},
+		},
+	}
+
+	err := InitComponents()
+	if err == nil {
+		t.Fatalf("组件初始化失败时应返回错误")
+	}
+	if !strings.Contains(err.Error(), "component init failed") {
+		t.Fatalf("错误分类不正确: got=%v", err)
+	}
+	if !strings.Contains(err.Error(), "cache") {
+		t.Fatalf("错误中应包含组件名: got=%v", err)
+	}
+}
+
+func TestValidateReadyReturnsClassifiedReadyError(t *testing.T) {
+	oldV := v
+	oldRuntimeInited := runtimeInited
+
+	t.Cleanup(func() {
+		v = oldV
+		runtimeInited = oldRuntimeInited
+	})
+
+	v = viper.New()
+	v.Set("server.mode", "test")
+	runtimeInited = false
+
+	err := ValidateReady()
+	if err == nil {
+		t.Fatalf("runtime 未初始化时应返回错误")
+	}
+	if !strings.Contains(err.Error(), "component not ready") {
+		t.Fatalf("错误分类不正确: got=%v", err)
+	}
+}
+
+type errString string
+
+func (e errString) Error() string {
+	return string(e)
 }
