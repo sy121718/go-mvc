@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"go-mvc/pkg/defaults"
-
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 )
@@ -28,6 +26,12 @@ var (
 	jwtMu     sync.RWMutex
 )
 
+const (
+	defaultJWTSecret     = "default-secret-key-please-change-in-production"
+	defaultJWTExpireTime = 24
+	defaultJWTIssuer     = "go-mvc"
+)
+
 // Claims 自定义 claims。
 type Claims struct {
 	UserID   int64  `json:"user_id"`
@@ -37,9 +41,9 @@ type Claims struct {
 
 func getDefaultConfig() Config {
 	return Config{
-		Secret:     defaults.DefaultJWTSecret,
-		ExpireTime: defaults.DefaultJWTExpireTime,
-		Issuer:     defaults.DefaultJWTIssuer,
+		Secret:     defaultJWTSecret,
+		ExpireTime: defaultJWTExpireTime,
+		Issuer:     defaultJWTIssuer,
 	}
 }
 

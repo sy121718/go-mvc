@@ -9,7 +9,6 @@ import (
 	"time"
 
 	dbdriver "go-mvc/pkg/database/driver"
-	"go-mvc/pkg/defaults"
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -55,6 +54,17 @@ var (
 	db     *gorm.DB
 	mu     sync.RWMutex
 	inited bool
+)
+
+const (
+	defaultDatabaseDriver       = "mysql"
+	defaultDatabaseHost         = "127.0.0.1"
+	defaultDatabasePort         = 3306
+	defaultDatabaseUser         = "root"
+	defaultDatabasePassword     = ""
+	defaultDatabaseName         = ""
+	defaultDatabaseMaxIdleConns = 10
+	defaultDatabaseMaxOpenConns = 100
 )
 
 // GetDB 获取数据库实例；未初始化时返回错误。
@@ -117,14 +127,14 @@ func Ready() error {
 
 func getDefaultConfig() Config {
 	return Config{
-		Driver:                 defaults.DefaultDatabaseDriver,
-		Host:                   defaults.DefaultDatabaseHost,
-		Port:                   defaults.DefaultDatabasePort,
-		User:                   defaults.DefaultDatabaseUser,
-		Password:               defaults.DefaultDatabasePassword,
-		DBName:                 defaults.DefaultDatabaseName,
-		MaxIdleConns:           defaults.DefaultDatabaseMaxIdleConns,
-		MaxOpenConns:           defaults.DefaultDatabaseMaxOpenConns,
+		Driver:                 defaultDatabaseDriver,
+		Host:                   defaultDatabaseHost,
+		Port:                   defaultDatabasePort,
+		User:                   defaultDatabaseUser,
+		Password:               defaultDatabasePassword,
+		DBName:                 defaultDatabaseName,
+		MaxIdleConns:           defaultDatabaseMaxIdleConns,
+		MaxOpenConns:           defaultDatabaseMaxOpenConns,
 		LogLevel:               "",
 		PrepareStmt:            false,
 		SkipDefaultTransaction: false,
@@ -297,7 +307,7 @@ func ValidateConfig(v *viper.Viper, strict bool) error {
 	if cfg.DBName == "" {
 		return fmt.Errorf("database.dbname 不能为空")
 	}
-	if cfg.DBName == defaults.DefaultDatabaseName {
+	if cfg.DBName == defaultDatabaseName {
 		return fmt.Errorf("database.dbname 不能使用默认值")
 	}
 	if cfg.Password == "" {

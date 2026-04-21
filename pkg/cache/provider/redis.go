@@ -6,8 +6,6 @@ import (
 	"log"
 	"sync"
 
-	"go-mvc/pkg/defaults"
-
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
@@ -27,12 +25,19 @@ type redisProvider struct {
 	inited bool
 }
 
+const (
+	defaultRedisHost     = "127.0.0.1"
+	defaultRedisPort     = 6379
+	defaultRedisPassword = ""
+	defaultRedisDB       = 0
+)
+
 func getDefaultConfig() Config {
 	return Config{
-		Host:     defaults.DefaultRedisHost,
-		Port:     defaults.DefaultRedisPort,
-		Password: defaults.DefaultRedisPassword,
-		DB:       defaults.DefaultRedisDB,
+		Host:     defaultRedisHost,
+		Port:     defaultRedisPort,
+		Password: defaultRedisPassword,
+		DB:       defaultRedisDB,
 	}
 }
 

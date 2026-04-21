@@ -15,24 +15,25 @@ import (
 	"time"
 
 	cacheprovider "go-mvc/pkg/cache/provider"
-	"go-mvc/pkg/defaults"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/singleflight"
 )
 
+const defaultCacheProvider = "redis"
+
 func buildProvider(v *viper.Viper) (cacheprovider.Provider, error) {
-	providerName := "redis"
+	providerName := defaultCacheProvider
 	if v != nil {
 		providerName = strings.TrimSpace(strings.ToLower(v.GetString("redis.provider")))
 		if providerName == "" {
-			providerName = defaults.DefaultRedisProvider
+			providerName = defaultCacheProvider
 		}
 	}
 
 	switch providerName {
-	case defaults.DefaultRedisProvider:
+	case defaultCacheProvider:
 		return cacheprovider.NewRedisProvider(), nil
 	default:
 		return nil, fmt.Errorf("不支持的缓存 provider: %s", providerName)
