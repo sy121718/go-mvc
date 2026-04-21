@@ -1,20 +1,9 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"sync"
-	"time"
-
-	"go-mvc/internal/task"
-	"go-mvc/pkg/auth"
-	"go-mvc/pkg/cache"
-	"go-mvc/pkg/casbin"
-	"go-mvc/pkg/database"
-	"go-mvc/pkg/i18n"
-	pkglogger "go-mvc/pkg/logger"
-	"go-mvc/pkg/upload"
 
 	"github.com/spf13/viper"
 )
@@ -120,115 +109,4 @@ func GetServer() (ServerConfig, error) {
 		return ServerConfig{}, fmt.Errorf("解析 Server 配置失败: %w", err)
 	}
 	return cfg, nil
-}
-
-// InitComponents 初始化所有组件。
-func InitComponents() error {
-	cfg := GetViper()
-	log.Println("开始初始化组件...")
-
-	if err := pkglogger.Init(cfg); err != nil {
-		return fmt.Errorf("初始化日志组件失败: %w", err)
-	}
-
-	if err := database.InitDB(cfg); err != nil {
-		return err
-	}
-
-	log.Println("初始化多语言配置中心...")
-	i18n.SetDefaultLang(cfg.GetString("i18n.default_lang"))
-	if err := i18n.Init(); err != nil {
-		return fmt.Errorf("初始化多语言配置中心失败: %w", err)
-	}
-
-	if cfg.GetBool("i18n.auto_refresh") {
-		refreshInterval, err := time.ParseDuration(cfg.GetString("i18n.refresh_interval"))
-		if err != nil {
-			return fmt.Errorf("解析 i18n.refresh_interval 失败: %w", err)
-		}
-		i18n.StartAutoRefresh(refreshInterval)
-	}
-
-	if cfg.GetBool("casbin.enabled") {
-		log.Println("初始化 Casbin...")
-		db, err := database.GetDB()
-		if err != nil {
-			return fmt.Errorf("获取数据库实例失败: %w", err)
-		}
-		if err := casbin.InitCasbin(db); err != nil {
-			return fmt.Errorf("初始化 Casbin 失败: %w", err)
-		}
-	}
-
-	if cfg.GetBool("redis.enabled") {
-		if err := cache.InitRedis(cfg); err != nil {
-			return err
-		}
-	}
-
-	if err := auth.InitJWT(cfg); err != nil {
-		return err
-	}
-
-	if cfg.GetBool("upload.enabled") {
-		if err := upload.Init(cfg); err != nil {
-			return fmt.Errorf("初始化上传组件失败: %w", err)
-		}
-	}
-
-	if cfg.GetBool("queue.enabled") {
-		if err := task.Init(cfg); err != nil {
-			return fmt.Errorf("初始化任务队列失败: %w", err)
-		}
-		if cfg.GetBool("queue.run_worker") {
-			if err := task.StartQueue(); err != nil {
-				return fmt.Errorf("启动任务队列失败: %w", err)
-			}
-		}
-	}
-
-	log.Println("组件初始化完成")
-	return nil
-}
-
-// CloseComponents 关闭所有组件。
-func CloseComponents() error {
-	log.Println("开始关闭组件...")
-
-	var closeErr error
-
-	i18n.StopAutoRefresh()
-
-	if err := task.ShutdownQueue(); err != nil {
-		closeErr = errors.Join(closeErr, err)
-	}
-
-	if cache.IsInited() {
-		if err := cache.Close(); err != nil {
-			closeErr = errors.Join(closeErr, err)
-		}
-	}
-
-	if upload.IsInited() {
-		if err := upload.Close(); err != nil {
-			closeErr = errors.Join(closeErr, err)
-		}
-	}
-
-	if database.IsInited() {
-		if err := database.Close(); err != nil {
-			closeErr = errors.Join(closeErr, err)
-		}
-	}
-
-	if err := pkglogger.Sync(); err != nil {
-		closeErr = errors.Join(closeErr, err)
-	}
-
-	if closeErr != nil {
-		return closeErr
-	}
-
-	log.Println("组件关闭完成")
-	return nil
 }

@@ -3,7 +3,6 @@ package support
 import (
 	"fmt"
 	"go-mvc/config"
-	"go-mvc/internal/routers"
 	"os"
 	"path/filepath"
 	"strings"
@@ -56,7 +55,7 @@ func SetupTestBootstrap(options BootstrapOptions) (*gin.Engine, func() error, er
 	}
 
 	if useDefaultRoute {
-		routers.SetupRoutes(engine)
+		config.SetupRoutes(engine)
 	}
 
 	if options.RouteRegistrar != nil {
