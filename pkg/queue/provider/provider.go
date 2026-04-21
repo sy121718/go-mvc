@@ -21,6 +21,7 @@ type providerOptionBag struct {
 // Provider 任务队列实现接口
 type Provider interface {
 	Init(v *viper.Viper) error
+	IsInited() bool
 	Start() error
 	Shutdown() error
 	Enqueue(taskType string, payload any, opts ...Option) error

@@ -172,6 +172,12 @@ func (p *asynqProvider) Start() error {
 	return s.Start(m)
 }
 
+func (p *asynqProvider) IsInited() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.client != nil && p.server != nil && p.serveMux != nil
+}
+
 func (p *asynqProvider) Shutdown() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()

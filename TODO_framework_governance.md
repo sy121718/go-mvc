@@ -130,7 +130,7 @@
 - [x] `config/config.go`、`pkg/auth/jwt.go`：增加 release 模式 fail-fast 校验
   - 目标：禁止默认 JWT secret、默认数据库名、空关键配置在生产模式启动
 
-- [ ] `internal/routers/routes.go`：将 `/health` 拆分为 `/livez` 与 `/readyz`
+- [x] `internal/routers/routes.go`：将 `/health` 拆分为 `/livez` 与 `/readyz`
   - 目标：区分存活检查与依赖就绪检查，支撑部署与故障切换
 
 - [ ] 新增默认安全头中间件

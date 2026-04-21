@@ -56,6 +56,11 @@ func Close() error {
 	return Shutdown()
 }
 
+// IsInited 判断任务队列组件是否已完成初始化。
+func IsInited() bool {
+	return defaultProvider.IsInited()
+}
+
 // Enqueue 立即执行任务
 func Enqueue(taskType string, payload any, opts ...Option) error {
 	return defaultProvider.Enqueue(taskType, payload, opts...)

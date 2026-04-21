@@ -6,10 +6,17 @@ import (
 	"log"
 	"sync"
 
-	"go-mvc/pkg/enums"
+	"go-mvc/pkg/auth"
+	"go-mvc/pkg/cache"
+	"go-mvc/pkg/casbin"
+	"go-mvc/pkg/database"
+	"go-mvc/pkg/i18n"
+	"go-mvc/pkg/queue"
 	"go-mvc/pkg/response"
+	"go-mvc/pkg/upload"
 
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 var (
@@ -85,9 +92,34 @@ func SetupRoutes(router *gin.Engine) {
 		return
 	}
 
-	router.GET("/health", func(c *gin.Context) {
-		response.SuccessWithMessage(c, enums.MsgOperationSuccess, gin.H{
-			"status": "ok",
+	router.GET("/livez", func(c *gin.Context) {
+		c.JSON(http.StatusOK, response.Response{
+			Code:    "0",
+			Message: "ok",
+			Data: gin.H{
+				"status": "alive",
+			},
+		})
+	})
+
+	router.GET("/readyz", func(c *gin.Context) {
+		if err := ValidateReady(); err != nil {
+			c.JSON(http.StatusServiceUnavailable, response.Response{
+				Code:    "ErrNotReady",
+				Message: err.Error(),
+				Data: gin.H{
+					"status": "not_ready",
+				},
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, response.Response{
+			Code:    "0",
+			Message: "ok",
+			Data: gin.H{
+				"status": "ready",
+			},
 		})
 	})
 
@@ -99,6 +131,41 @@ func SetupRoutes(router *gin.Engine) {
 	router.NoRoute(func(c *gin.Context) {
 		response.NotFound(c, "请求的资源不存在")
 	})
+}
+
+// ValidateReady 检查当前运行时是否达到“可对外提供服务”的就绪状态。
+func ValidateReady() error {
+	runtimeMu.Lock()
+	ready := runtimeInited
+	runtimeMu.Unlock()
+
+	if !ready {
+		return fmt.Errorf("runtime not initialized")
+	}
+
+	cfg := GetViper()
+	if !database.IsInited() {
+		return fmt.Errorf("database not ready")
+	}
+	if err := auth.MustBeReady(); err != nil {
+		return fmt.Errorf("auth not ready: %w", err)
+	}
+	if err := i18n.ValidateReady(); err != nil {
+		return fmt.Errorf("i18n not ready: %w", err)
+	}
+	if cfg.GetBool("redis.enabled") && !cache.IsInited() {
+		return fmt.Errorf("cache not ready")
+	}
+	if cfg.GetBool("casbin.enabled") && casbin.GetEnforcer() == nil {
+		return fmt.Errorf("casbin not ready")
+	}
+	if cfg.GetBool("upload.enabled") && !upload.IsInited() {
+		return fmt.Errorf("upload not ready")
+	}
+	if cfg.GetBool("queue.enabled") && !queue.IsInited() {
+		return fmt.Errorf("queue not ready")
+	}
+	return nil
 }
 
 func closeComponents(components []runtimeComponent) error {
