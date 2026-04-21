@@ -40,6 +40,32 @@ func getDefaultConfig() Config {
 	}
 }
 
+// ValidateConfig 校验 JWT 配置。
+//
+// 说明：
+// - 用于框架启动前的 fail-fast 校验
+// - strict=true 时，会拒绝默认 secret 和空 secret
+func ValidateConfig(v *viper.Viper, strict bool) error {
+	cfg := getDefaultConfig()
+	if v != nil {
+		if err := v.UnmarshalKey("jwt", &cfg); err != nil {
+			return fmt.Errorf("解析 JWT 配置失败: %w", err)
+		}
+	}
+
+	if !strict {
+		return nil
+	}
+
+	if cfg.Secret == "" {
+		return fmt.Errorf("jwt.secret 不能为空")
+	}
+	if cfg.Secret == getDefaultConfig().Secret {
+		return fmt.Errorf("jwt.secret 不能使用默认值")
+	}
+	return nil
+}
+
 // InitJWT 初始化 JWT。
 func InitJWT(v *viper.Viper) error {
 	jwtMu.Lock()

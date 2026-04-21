@@ -27,6 +27,10 @@ func InitComponents() error {
 		return nil
 	}
 
+	if err := ValidateRuntimeConfig(); err != nil {
+		return err
+	}
+
 	cfg := GetViper()
 	for _, prepare := range runtimePreparers {
 		prepare()

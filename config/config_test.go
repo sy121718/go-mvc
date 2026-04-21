@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -39,5 +40,68 @@ func TestGetServerParsesHTTPTimeouts(t *testing.T) {
 	}
 	if serverCfg.IdleTimeout != 60*time.Second {
 		t.Fatalf("IdleTimeout 不正确: got=%s want=%s", serverCfg.IdleTimeout, 60*time.Second)
+	}
+}
+
+func TestValidateRuntimeConfigFailsForReleaseDefaultJWTSecret(t *testing.T) {
+	oldV := v
+	t.Cleanup(func() {
+		v = oldV
+	})
+
+	cfg := viper.New()
+	setDefaults(cfg)
+	cfg.Set("server.mode", "release")
+	cfg.Set("database.dbname", "base")
+	cfg.Set("database.password", "secret")
+	v = cfg
+
+	err := ValidateRuntimeConfig()
+	if err == nil {
+		t.Fatalf("release 模式下默认 JWT secret 应当校验失败")
+	}
+	if !strings.Contains(err.Error(), "jwt.secret") {
+		t.Fatalf("错误信息应包含 jwt.secret, got=%v", err)
+	}
+}
+
+func TestValidateRuntimeConfigFailsForReleaseDefaultDatabaseName(t *testing.T) {
+	oldV := v
+	t.Cleanup(func() {
+		v = oldV
+	})
+
+	cfg := viper.New()
+	setDefaults(cfg)
+	cfg.Set("server.mode", "release")
+	cfg.Set("jwt.secret", "custom-secret")
+	cfg.Set("database.password", "secret")
+	v = cfg
+
+	err := ValidateRuntimeConfig()
+	if err == nil {
+		t.Fatalf("release 模式下默认数据库名应当校验失败")
+	}
+	if !strings.Contains(err.Error(), "database.dbname") {
+		t.Fatalf("错误信息应包含 database.dbname, got=%v", err)
+	}
+}
+
+func TestValidateRuntimeConfigPassesForReleaseCustomValues(t *testing.T) {
+	oldV := v
+	t.Cleanup(func() {
+		v = oldV
+	})
+
+	cfg := viper.New()
+	setDefaults(cfg)
+	cfg.Set("server.mode", "release")
+	cfg.Set("jwt.secret", "custom-secret")
+	cfg.Set("database.dbname", "base")
+	cfg.Set("database.password", "secret")
+	v = cfg
+
+	if err := ValidateRuntimeConfig(); err != nil {
+		t.Fatalf("release 模式下自定义关键配置应通过校验: %v", err)
 	}
 }

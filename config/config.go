@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"go-mvc/pkg/auth"
+
 	"github.com/spf13/viper"
 )
 
@@ -162,4 +164,36 @@ func parseServerDuration(field string, raw string) (time.Duration, error) {
 		return 0, fmt.Errorf("解析 server.%s 失败: %w", field, err)
 	}
 	return duration, nil
+}
+
+// ValidateRuntimeConfig 在组件初始化前执行关键配置校验。
+//
+// 当前规则：
+// - 仅 release 模式启用严格 fail-fast
+// - 拒绝默认 JWT secret
+// - 拒绝默认数据库名
+// - 拒绝空数据库密码
+func ValidateRuntimeConfig() error {
+	cfg := GetViper()
+	if cfg.GetString("server.mode") != "release" {
+		return nil
+	}
+
+	if err := auth.ValidateConfig(cfg, true); err != nil {
+		return err
+	}
+
+	dbName := cfg.GetString("database.dbname")
+	if dbName == "" {
+		return fmt.Errorf("database.dbname 不能为空")
+	}
+	if dbName == "test" {
+		return fmt.Errorf("database.dbname 不能使用默认值")
+	}
+
+	if cfg.GetString("database.password") == "" {
+		return fmt.Errorf("database.password 不能为空")
+	}
+
+	return nil
 }
