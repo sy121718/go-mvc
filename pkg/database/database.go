@@ -9,6 +9,7 @@ import (
 	"time"
 
 	dbdriver "go-mvc/pkg/database/driver"
+	"go-mvc/pkg/defaults"
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -112,14 +113,14 @@ func Ready() error {
 
 func getDefaultConfig() Config {
 	return Config{
-		Driver:                 "mysql",
-		Host:                   "127.0.0.1",
-		Port:                   3306,
-		User:                   "root",
-		Password:               "",
-		DBName:                 "test",
-		MaxIdleConns:           10,
-		MaxOpenConns:           100,
+		Driver:                 defaults.DefaultDatabaseDriver,
+		Host:                   defaults.DefaultDatabaseHost,
+		Port:                   defaults.DefaultDatabasePort,
+		User:                   defaults.DefaultDatabaseUser,
+		Password:               defaults.DefaultDatabasePassword,
+		DBName:                 defaults.DefaultDatabaseName,
+		MaxIdleConns:           defaults.DefaultDatabaseMaxIdleConns,
+		MaxOpenConns:           defaults.DefaultDatabaseMaxOpenConns,
 		LogLevel:               "",
 		PrepareStmt:            false,
 		SkipDefaultTransaction: false,

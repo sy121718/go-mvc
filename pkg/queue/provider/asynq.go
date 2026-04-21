@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"go-mvc/pkg/defaults"
+
 	"github.com/hibiken/asynq"
 	"github.com/spf13/viper"
 )
@@ -39,17 +41,17 @@ type Config struct {
 
 func getDefaultConfig() Config {
 	cfg := Config{
-		Concurrency: 10,
+		Concurrency: defaults.DefaultQueueConcurrency,
 		Queues: map[string]int{
 			"critical": 6,
 			"default":  3,
 			"low":      1,
 		},
 	}
-	cfg.Redis.Host = "127.0.0.1"
-	cfg.Redis.Port = 6379
-	cfg.Redis.Password = ""
-	cfg.Redis.DB = 0
+	cfg.Redis.Host = defaults.DefaultRedisHost
+	cfg.Redis.Port = defaults.DefaultRedisPort
+	cfg.Redis.Password = defaults.DefaultRedisPassword
+	cfg.Redis.DB = defaults.DefaultRedisDB
 	return cfg
 }
 

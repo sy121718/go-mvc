@@ -237,7 +237,7 @@
 
 ### 可维护性与一致性
 
-- [ ] 收敛默认值定义位置
+- [x] 收敛默认值定义位置
   - 目标：减少 `config/config.go`、`pkg/database/driver/config.go`、`pkg/auth/jwt.go`、`pkg/cache/provider/redis.go`、`pkg/queue/provider/asynq.go` 之间的默认值漂移
 
 - [x] `pkg/i18n/cache.go`：避免将内部缓存 map 直接暴露给调用方

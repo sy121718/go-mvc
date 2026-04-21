@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"go-mvc/pkg/defaults"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 )
@@ -34,9 +36,9 @@ type Claims struct {
 
 func getDefaultConfig() Config {
 	return Config{
-		Secret:     "default-secret-key-please-change-in-production",
-		ExpireTime: 24,
-		Issuer:     "go-mvc",
+		Secret:     defaults.DefaultJWTSecret,
+		ExpireTime: defaults.DefaultJWTExpireTime,
+		Issuer:     defaults.DefaultJWTIssuer,
 	}
 }
 
