@@ -18,6 +18,7 @@ func CasbinMiddleware() gin.HandlerFunc {
 		userID, exists := c.Get("user_id")
 		if !exists {
 			response.ErrorWithMessage(c, enums.ErrUnauthorized, "未获取到用户信息")
+			c.Abort()
 			return
 		}
 
@@ -32,6 +33,7 @@ func CasbinMiddleware() gin.HandlerFunc {
 		enforcer := casbin.GetEnforcer()
 		if enforcer == nil {
 			response.ErrorWithMessage(c, enums.ErrSystemError, "权限系统未初始化")
+			c.Abort()
 			return
 		}
 
@@ -39,11 +41,13 @@ func CasbinMiddleware() gin.HandlerFunc {
 		ok, err := enforcer.Enforce(sub, obj, act)
 		if err != nil {
 			response.ErrorWithMessage(c, enums.ErrSystemError, "权限验证失败")
+			c.Abort()
 			return
 		}
 
 		if !ok {
 			response.ErrorWithMessage(c, enums.ErrPermissionDenied, "无权限访问")
+			c.Abort()
 			return
 		}
 

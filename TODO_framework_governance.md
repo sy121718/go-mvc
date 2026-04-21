@@ -124,7 +124,7 @@
 - [x] `internal/middleware/auth.go`：错误响应后统一执行 `c.Abort()`
   - 目标：避免后续 handler 继续执行造成鉴权绕过
 
-- [ ] `internal/middleware/casbin.go`：错误响应后统一执行 `c.Abort()`
+- [x] `internal/middleware/casbin.go`：错误响应后统一执行 `c.Abort()`
   - 目标：避免权限校验失败时请求链继续向下执行
 
 - [ ] `config/config.go`、`pkg/auth/jwt.go`：增加 release 模式 fail-fast 校验
