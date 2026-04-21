@@ -57,6 +57,10 @@ queue:
   provider: asynq
   run_worker: false
   concurrency: 10
+  queues:
+    critical: 6
+    default: 3
+    low: 1
 
 # 日志配置
 log:

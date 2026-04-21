@@ -27,7 +27,8 @@ type handlerRegistration struct {
 }
 
 type Config struct {
-	Concurrency int `mapstructure:"concurrency"`
+	Concurrency int            `mapstructure:"concurrency"`
+	Queues      map[string]int `mapstructure:"queues"`
 	Redis       struct {
 		Host     string `mapstructure:"host"`
 		Port     int    `mapstructure:"port"`
@@ -37,7 +38,14 @@ type Config struct {
 }
 
 func getDefaultConfig() Config {
-	cfg := Config{Concurrency: 10}
+	cfg := Config{
+		Concurrency: 10,
+		Queues: map[string]int{
+			"critical": 6,
+			"default":  3,
+			"low":      1,
+		},
+	}
 	cfg.Redis.Host = "127.0.0.1"
 	cfg.Redis.Port = 6379
 	cfg.Redis.Password = ""
@@ -58,6 +66,9 @@ func parseConfig(v *viper.Viper) Config {
 	defaultCfg := getDefaultConfig()
 	if cfg.Concurrency <= 0 {
 		cfg.Concurrency = defaultCfg.Concurrency
+	}
+	if len(cfg.Queues) == 0 {
+		cfg.Queues = defaultCfg.Queues
 	}
 	if cfg.Redis.Host == "" {
 		cfg.Redis.Host = v.GetString("redis.host")
@@ -136,11 +147,7 @@ func (p *asynqProvider) Init(v *viper.Viper) error {
 		redisOpt,
 		asynq.Config{
 			Concurrency: cfg.Concurrency,
-			Queues: map[string]int{
-				"critical": 6,
-				"default":  3,
-				"low":      1,
-			},
+			Queues:      cfg.Queues,
 		},
 	)
 

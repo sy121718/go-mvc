@@ -232,7 +232,7 @@
 - [ ] `pkg/logger`：增加 HTTP 和 SQL 日志采样开关与场景级别控制
   - 目标：降低高并发下全量日志对吞吐的影响
 
-- [ ] `pkg/queue/provider/asynq.go`：将队列权重改为配置项
+- [x] `pkg/queue/provider/asynq.go`：将队列权重改为配置项
   - 目标：避免 `critical/default/low` 权重写死
 
 ### 可维护性与一致性
