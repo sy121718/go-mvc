@@ -107,6 +107,40 @@ func TestReadyzReturnsServiceUnavailableWhenComponentsNotInitialized(t *testing.
 	}
 }
 
+func TestDefaultRoutesSetSecurityHeaders(t *testing.T) {
+	engine, cleanup, err := support.SetupTestBootstrap(support.BootstrapOptions{
+		UseDefaultRoute: true,
+		InitComponents:  false,
+	})
+	if err != nil {
+		t.Fatalf("初始化测试引擎失败: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if closeErr := cleanup(); closeErr != nil {
+			t.Errorf("清理测试资源失败: %v", closeErr)
+		}
+	})
+
+	recorder, err := support.SendRequest(engine, support.RequestOptions{
+		Method: http.MethodGet,
+		Path:   "/livez",
+	})
+	if err != nil {
+		t.Fatalf("发送请求失败: %v", err)
+	}
+
+	if got := recorder.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+		t.Fatalf("X-Content-Type-Options 不正确: got=%s want=%s", got, "nosniff")
+	}
+	if got := recorder.Header().Get("X-Frame-Options"); got != "DENY" {
+		t.Fatalf("X-Frame-Options 不正确: got=%s want=%s", got, "DENY")
+	}
+	if got := recorder.Header().Get("Content-Security-Policy"); got == "" {
+		t.Fatalf("Content-Security-Policy 不应为空")
+	}
+}
+
 func TestJWTAuthMiddlewareAbortsOnMissingAuthorization(t *testing.T) {
 	engine, cleanup, err := support.SetupTestBootstrap(support.BootstrapOptions{
 		UseDefaultRoute: false,

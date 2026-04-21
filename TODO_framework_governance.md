@@ -137,7 +137,7 @@
 - [x] `internal/routers/routes.go`：将 `/health` 拆分为 `/livez` 与 `/readyz`
   - 目标：区分存活检查与依赖就绪检查，支撑部署与故障切换
 
-- [ ] 新增默认安全头中间件
+- [x] 新增默认安全头中间件
   - 目标：统一输出 `X-Content-Type-Options`、`X-Frame-Options`、基础 `Content-Security-Policy`
 
 - [ ] `internal/middleware/auth.go`：收敛 JWT 对外错误文案

@@ -63,6 +63,7 @@ func run() error {
 
 	// 4) 构建 HTTP 路由。
 	router := gin.Default()
+	router.Use(middleware.SecurityHeadersMiddleware())
 	router.Use(middleware.RequestLogCaptureMiddleware(config.GetViper().GetBool("log.capture.http")))
 	routers.SetupRoutes(router, config.ModuleRegistrars(), config.ValidateReady)
 
@@ -120,7 +121,7 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// 8) 优雅关闭 HTTP：给在途请求最多 5 秒收尾时间。
+	// 8) 关闭 HTTP：给在途请求最多 5 秒收尾时间。
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("HTTP Server 关闭失败: %v", err)
 	}
