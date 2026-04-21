@@ -17,7 +17,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// 1. 从 Header 获取 Token
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			response.ErrorWithMessage(c, enums.ErrUnauthorized, "缺少认证信息")
+			response.Error(c, enums.ErrUnauthorized)
 			c.Abort()
 			return
 		}
@@ -26,7 +26,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// 格式：Bearer <token>
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			response.ErrorWithMessage(c, enums.ErrUnauthorized, "认证格式错误")
+			response.Error(c, enums.ErrUnauthorized)
 			c.Abort()
 			return
 		}
@@ -36,7 +36,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// 3. 解析 Token
 		claims, err := auth.ParseToken(tokenString)
 		if err != nil {
-			response.ErrorWithMessage(c, enums.ErrInvalidToken, "Token 无效或已过期")
+			response.Error(c, enums.ErrUnauthorized)
 			c.Abort()
 			return
 		}

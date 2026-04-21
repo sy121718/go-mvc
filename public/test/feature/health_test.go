@@ -186,6 +186,54 @@ func TestJWTAuthMiddlewareAbortsOnMissingAuthorization(t *testing.T) {
 	}
 }
 
+func TestJWTAuthMiddlewareReturnsUnifiedUnauthorizedOnInvalidToken(t *testing.T) {
+	engine, cleanup, err := support.SetupTestBootstrap(support.BootstrapOptions{
+		UseDefaultRoute: false,
+		InitComponents:  false,
+		RouteRegistrar: func(engine *gin.Engine) {
+			engine.GET("/protected", middleware.JWTAuthMiddleware(), func(c *gin.Context) {
+				response.Success(c, gin.H{"reached": true})
+			})
+		},
+	})
+	if err != nil {
+		t.Fatalf("初始化测试引擎失败: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if closeErr := cleanup(); closeErr != nil {
+			t.Errorf("清理测试资源失败: %v", closeErr)
+		}
+	})
+
+	recorder, err := support.SendRequest(engine, support.RequestOptions{
+		Method: http.MethodGet,
+		Path:   "/protected",
+		Headers: map[string]string{
+			"Authorization": "Bearer invalid-token",
+		},
+	})
+	if err != nil {
+		t.Fatalf("发送请求失败: %v", err)
+	}
+
+	resp, err := support.ParseStandardResponse(recorder)
+	if err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if resp.Code != "ErrUnauthorized" {
+		t.Fatalf("错误码不正确: got=%s want=%s", resp.Code, "ErrUnauthorized")
+	}
+
+	var data struct {
+		Reached bool `json:"reached"`
+	}
+	if err := support.DecodeResponseData(recorder, &data); err == nil {
+		t.Fatalf("handler 不应继续执行，但返回了 data")
+	}
+}
+
 func TestCasbinMiddlewareAbortsOnMissingUserContext(t *testing.T) {
 	engine, cleanup, err := support.SetupTestBootstrap(support.BootstrapOptions{
 		UseDefaultRoute: false,

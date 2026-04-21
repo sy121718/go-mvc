@@ -140,7 +140,7 @@
 - [x] 新增默认安全头中间件
   - 目标：统一输出 `X-Content-Type-Options`、`X-Frame-Options`、基础 `Content-Security-Policy`
 
-- [ ] `internal/middleware/auth.go`：收敛 JWT 对外错误文案
+- [x] `internal/middleware/auth.go`：收敛 JWT 对外错误文案
   - 目标：统一返回“未认证”或“认证失效”，减少探测面
 
 ### 请求与输入防护
