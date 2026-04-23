@@ -2,7 +2,16 @@ package adminrouter
 
 import "github.com/gin-gonic/gin"
 
-// SetupAdminRoutes 注册 admin 模块路由
 func SetupAdminRoutes(rg *gin.RouterGroup) {
-	rg.Group("/admin")
+	if rg == nil {
+		return
+	}
+
+	handle, err := newAdminHandle()
+	if err != nil {
+		return
+	}
+
+	admin := rg.Group("/admin")
+	admin.GET("/list", handle.List)
 }

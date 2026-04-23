@@ -24,14 +24,14 @@ func LoadCache() error {
 	}
 
 	var rows []struct {
-		Key      string
+		ItemKey  string `gorm:"column:item_key"`
 		Lang     string
 		Value    string
 		HttpCode *int
 	}
 
 	err = db.Table("sys_i18n").
-		Select("item_key AS key", "lang AS lang", "item_value AS value", "http_code AS http_code").
+		Select("item_key", "lang", "item_value AS value", "http_code").
 		Where("status = ?", 1).
 		Scan(&rows).Error
 	if err != nil {
@@ -42,13 +42,13 @@ func LoadCache() error {
 	newHttpCodes := make(map[string]int)
 
 	for _, r := range rows {
-		if newData[r.Key] == nil {
-			newData[r.Key] = make(map[string]string)
+		if newData[r.ItemKey] == nil {
+			newData[r.ItemKey] = make(map[string]string)
 		}
-		newData[r.Key][r.Lang] = r.Value
+		newData[r.ItemKey][r.Lang] = r.Value
 
-		if r.HttpCode != nil && newHttpCodes[r.Key] == 0 {
-			newHttpCodes[r.Key] = *r.HttpCode
+		if r.HttpCode != nil && newHttpCodes[r.ItemKey] == 0 {
+			newHttpCodes[r.ItemKey] = *r.HttpCode
 		}
 	}
 

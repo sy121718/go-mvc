@@ -11,6 +11,7 @@ import (
 	pkglogger "go-mvc/pkg/logger"
 	"go-mvc/pkg/queue"
 	"go-mvc/pkg/upload"
+	pkgvalidate "go-mvc/pkg/validate"
 )
 
 type runtimeComponent struct {
@@ -33,6 +34,13 @@ var runtimeComponents = []runtimeComponent{
 		Init:     pkglogger.Init,
 		Ready:    pkglogger.Ready,
 		Close:    pkglogger.Close,
+	},
+	{
+		Name:     "validate",
+		Critical: true,
+		Init: func(_ *viper.Viper) error {
+			return pkgvalidate.RegisterCustomRules()
+		},
 	},
 	{
 		Name:     "database",

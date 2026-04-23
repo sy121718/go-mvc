@@ -25,6 +25,8 @@ func Msg(err error) string {
 				return f + "只能含字母和数字"
 			case "email":
 				return f + "格式错误"
+			case "email_strict":
+				return f + "邮箱格式不合法"
 			case "url":
 				return f + "格式错误"
 			case "ip":
