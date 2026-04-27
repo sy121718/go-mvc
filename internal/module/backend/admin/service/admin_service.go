@@ -82,3 +82,8 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 
 	return res, nil
 }
+
+func (s *Service) Save(c context.Context, req *admindto.SaveReq) (res *admindto.SaveResp, err error) {
+
+	return nil, nil
+}
