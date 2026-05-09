@@ -3,6 +3,7 @@ package casbin
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 
 	"go-mvc/pkg/database"
@@ -20,7 +21,16 @@ import (
 var (
 	enforcer *casbinlib.Enforcer
 	mu       sync.RWMutex
+
+	// urlCodeMap 内存映射：URL+Method → code
+	// 用于例外查询时快速找到请求 URL 对应的 code，避免每次 deny 都查数据库
+	urlCodeMap sync.Map
 )
+
+// urlCodeKey 生成 URL+Method 的映射 key
+func urlCodeKey(url, method string) string {
+	return url + "||" + strings.ToUpper(method)
+}
 
 // rbacModel RBAC 权限模型定义
 const rbacModel = `
@@ -45,6 +55,17 @@ func GetEnforcer() *casbinlib.Enforcer {
 	mu.RLock()
 	defer mu.RUnlock()
 	return enforcer
+}
+
+// GetCodeByURL 根据 URL+Method 查询对应的权限 code。
+// 从内存映射中查找，不涉及数据库查询。
+// 返回 code 和是否存在。用于例外查询场景：Casbin deny 后查此映射拿到 code，再查例外表。
+func GetCodeByURL(url, method string) (string, bool) {
+	val, ok := urlCodeMap.Load(urlCodeKey(url, method))
+	if !ok {
+		return "", false
+	}
+	return val.(string), true
 }
 
 // Init 初始化 Casbin 组件。
@@ -112,5 +133,37 @@ func initCasbin(db *gorm.DB) (*casbinlib.Enforcer, error) {
 		return nil, fmt.Errorf("加载 Casbin 策略失败: %w", err)
 	}
 
+	rebuildURLCodeMap(instance)
 	return instance, nil
+}
+
+// rebuildURLCodeMap 从 Casbin 策略中重建 URL+Method → code 内存映射。
+// 遍历所有 p 规则，提取 v1（URL）、v2（Method）、v3（code）建立映射。
+func rebuildURLCodeMap(e *casbinlib.Enforcer) {
+	urlCodeMap = sync.Map{}
+
+	policies, err := e.GetPolicy()
+	if err != nil {
+		log.Printf("Casbin 获取策略失败: %v", err)
+		return
+	}
+
+	for _, rule := range policies {
+		// p 规则格式：[sub, obj, act, code]
+		if len(rule) < 4 {
+			continue
+		}
+		url := rule[1]   // obj = URL
+		method := rule[2] // act = Method
+		code := rule[3]   // code
+		if code == "" {
+			continue
+		}
+		urlCodeMap.Store(urlCodeKey(url, method), code)
+	}
+	log.Printf("Casbin URL→code 映射已加载: %d 条", func() int {
+		count := 0
+		urlCodeMap.Range(func(_, _ interface{}) bool { count++; return true })
+		return count
+	}())
 }
