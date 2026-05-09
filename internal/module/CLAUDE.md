@@ -10,19 +10,21 @@ module_name/
 ├── handle/
 ├── service/
 ├── model/
-├── dto/      # 按需启用
-├── enums/    # 按需启用
-└── client/   # 按需启用
+├── dto/      # 必须启用
+├── enums/    # 按需启用-错误码+响应的多语言-基于表sys_i18n
+└── client/   # 按需启用-用于内部通信如微服务
 ```
 
 ## 命名规则
 
-- 文件名统一使用“模块名 + 分层名”
+- 文件名统一使用"模块名 + 分层名"
 - 例如：
   - `admin_router.go`
   - `admin_handle.go`
   - `admin_service.go`
   - `admin_model.go`
+  - `admin_req.go`（请求 DTO）
+  - `admin_resp.go`（响应 DTO）
 
 ## 分层职责
 
@@ -49,6 +51,42 @@ module_name/
 - 只负责数据库访问
 - 不放业务逻辑
 
+## DTO 文件约定
+
+`dto/` 目录按输入输出拆分为两个文件：
+
+- `*_req.go` — 请求参数结构体（Req），由 **handler（控制器）** 绑定和校验
+- `*_resp.go` — 响应结构体（Resp），由 **service（业务层）** 返回
+
+数据流：
+
+```
+handler 接收请求 → 绑定到 Req → 调用 service(Req) → service 返回 (Resp, error) → handler 输出 Resp
+```
+
+```go
+// handler：只用 Req 接收参数，Resp 由 service 返回
+func (h *AdminHandle) List(c *gin.Context) {
+    var req dto.ListReq
+    if err := c.ShouldBindQuery(&req); err != nil {
+        response.ErrorWithMessage(c, 400, "请求参数错误")
+        return
+    }
+    res, err := h.as.List(c.Request.Context(), &req)
+    if err != nil {
+        response.ErrorWithMessage(c, 500, err.Error())
+        return
+    }
+    response.Success(c, res) // res 是 *dto.ListResp
+}
+
+// service：接收 Req，返回 Resp
+func (s *Service) List(ctx context.Context, req *dto.ListReq) (*dto.ListResp, error) {
+    // 业务逻辑...
+    return &dto.ListResp{Total: total, List: list}, nil
+}
+```
+
 ## 响应约定
 
 当前项目不再推荐在 handler 里走统一错误码中转。
@@ -60,6 +98,7 @@ response.Success(c, data)
 response.SuccessWithMessage(c, "保存成功", data)
 response.ErrorWithMessage(c, 400, "请求参数错误")
 response.ErrorWithMessage(c, 401, "未登录或登录已过期")
+response.ErrorWithMessage(c, 403, "无权限访问")
 response.ErrorWithMessage(c, 404, "数据不存在")
 ```
 
@@ -74,18 +113,18 @@ response.SuccessWithMessage(c, enums.MsgSaveSuccess, data)
 
 ```go
 func (h *AdminHandle) Create(c *gin.Context) {
-	var req dto.CreateAdminReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorWithMessage(c, 400, "请求体格式错误")
-		return
-	}
+    var req dto.SaveReq
+    if err := c.ShouldBindJSON(&req); err != nil {
+        response.ErrorWithMessage(c, 400, "请求体格式错误")
+        return
+    }
 
-	if err := h.service.Create(&req); err != nil {
-		response.ErrorWithMessage(c, 500, err.Error())
-		return
-	}
+    if err := h.service.Create(&req); err != nil {
+        response.ErrorWithMessage(c, 500, err.Error())
+        return
+    }
 
-	response.SuccessWithMessage(c, "保存成功", nil)
+    response.SuccessWithMessage(c, "保存成功", nil)
 }
 ```
 
@@ -96,20 +135,20 @@ service 直接返回错误，不要求统一返回错误码字符串。
 推荐：
 
 ```go
-func (s *AdminService) Create(req *dto.CreateAdminReq) error {
-	exists, err := s.model.ExistsByUsername(req.Username)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return fmt.Errorf("用户名已存在")
-	}
+func (s *AdminService) Create(req *dto.SaveReq) error {
+    exists, err := s.model.ExistsByUsername(req.Username)
+    if err != nil {
+        return err
+    }
+    if exists {
+        return fmt.Errorf("用户名已存在")
+    }
 
-	if err := s.model.Insert(req); err != nil {
-		return err
-	}
+    if err := s.model.Insert(req); err != nil {
+        return err
+    }
 
-	return nil
+    return nil
 }
 ```
 
@@ -139,14 +178,14 @@ httpCode := i18n.GetHttpCode("ErrAdminNotFound")
 
 ```go
 func SetupAdminRoutes(rg *gin.RouterGroup) {
-	admin := rg.Group("/admin")
-	{
-		admin.GET("/list", handle.List)
-		admin.GET("/detail", handle.Detail)
-		admin.POST("/create", handle.Create)
-		admin.POST("/update", handle.Update)
-		admin.POST("/delete", handle.Delete)
-	}
+    admin := rg.Group("/admin")
+    {
+        admin.GET("/list", handle.List)
+        admin.GET("/detail", handle.Detail)
+        admin.POST("/create", handle.Create)
+        admin.POST("/update", handle.Update)
+        admin.POST("/delete", handle.Delete)
+    }
 }
 ```
 
