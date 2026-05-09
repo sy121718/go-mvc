@@ -173,6 +173,21 @@ return err
 - 接口完成后优先维护 feature/usecase 测试
 - 只有定位复杂函数问题时，再补定向单测
 
+## git 提交约定
+
+每次 git commit 必须在 message 中注明：
+
+- 改了哪个文件（路径）
+- 改了什么（一句话简述）
+
+格式示例：
+
+```text
+feat: add code field to Casbin policy definition
+
+pkg/casbin/casbin.go | p = sub, obj, act → p = sub, obj, act, code
+```
+
 ## 模块开发
 
 涉及业务模块开发时，先看：
