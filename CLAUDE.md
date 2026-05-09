@@ -86,8 +86,9 @@ go test ./internal/module/backend/...
 
 当前实现已经调整为：
 
-- `pkg` 和系统相关的包不使用国际化翻译
+- `pkg` 和系统相关的包（config、cmd、middleware）不使用国际化翻译
 - `pkg` 默认错误提示直接写最终中文，或直接返回原始系统错误
+- 业务模块（internal/module）可以直接使用 `pkg/i18n` 读取多语文案
 - `pkg/response` 使用数字状态码
 - `pkg/response` 不再维护字符串错误码
 - `pkg/response` 不再做国际化翻译
@@ -123,16 +124,17 @@ response.ErrorWithMessage(c, enums.ErrInvalidParams, "请求已过期")
 
 ## i18n 约定
 
-`pkg/i18n` 仍然保留，但用途已经收窄：
+`pkg/i18n` 仍然保留，业务模块（internal/module）可以直接使用：
 
-- 用于直接读取数据库中的多语言文本
-- 用于 UI 文案、字典、业务明确指定的文本查询
+- 读取数据库中的多语言文本（UI 文案、字典、业务文案）
+- 查询指定语言下的文本内容
 
-不再作为以下内容的默认出口：
+以下场景**仍然不使用** i18n（直接写中文提示或原始错误）：
 
 - `pkg` 默认错误返回
 - 系统中间件默认错误返回
 - `pkg/response` 文案翻译
+- config / cmd 等系统层初始化错误返回
 
 ## 错误处理约定
 
