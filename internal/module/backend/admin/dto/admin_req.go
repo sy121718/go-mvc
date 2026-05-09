@@ -26,23 +26,13 @@ type ListReq struct {
 	SortOrder string `form:"sort_order" json:"sort_order" binding:"omitempty,oneof=asc desc" validate:"omitempty,oneof=asc desc"`                                                             // 排序方向，asc 升序 / desc 降序，不传则默认 id DESC
 }
 
-// SaveReq 管理员新增/编辑请求参数
+// CreateReq 管理员新增请求参数
 //
-// 同时用于新增和编辑两个场景：
-//   - ID 为空时表示新增，创建新管理员
-//   - ID 不为空时表示编辑，更新已有管理员的信息
-//
-// 字段说明：
-//   - ID：编辑时必传，新增时不传
-//   - Email / Name：必填字段
-//   - Phone：可选
-//   - Status：必填，0=启用 1=禁用
-//   - Password：编辑时不传则保持原密码不变
-type SaveReq struct {
-	ID       *int   `json:"id" binding:"omitempty,gte=1" validate:"omitempty,gte=1"`                                // 管理员ID，新增时为空，编辑时必传
-	Email    string `json:"email" binding:"required,email_strict,max=100" validate:"required,email_strict,max=100"` // 邮箱，必填，需合法邮箱格式，最长 100 字符
-	Name     string `json:"name" binding:"required,max=50" validate:"required,max=50"`                              // 姓名，必填，最长 50 字符
-	Phone    string `json:"phone" binding:"omitempty,max=20" validate:"omitempty,max=20"`                           // 手机号，可选，最长 20 字符
-	Status   int    `json:"status" binding:"required,oneof=0 1" validate:"required,oneof=0 1"`                      // 状态，必填，0=启用 1=禁用
-	Password string `json:"password" binding:"omitempty,min=6,max=100" validate:"omitempty,min=6,max=100"`          // 密码，新增时必传，编辑时不传则保持原密码
+// 新增管理员，所有必填字段均为 required。
+type CreateReq struct {
+	Avatar   string `json:"avatar" binding:"omitempty,max=255" validate:"omitempty,max=255"`
+	Email    string `json:"email"  binding:"required,email_strict,max=100" validate:"required,email_strict,max=100"` // 邮箱，必填
+	Username string `json:"username" binding:"required,max=50" validate:"required,max=50"`                           // 姓名，必填
+	Phone    string `json:"phone" binding:"omitempty,max=20" validate:"omitempty,max=20"`                            // 手机号，可选
+	Password string `json:"password" binding:"required,min=6,max=100" validate:"required,min=6,max=100"`             // 密码，必填
 }

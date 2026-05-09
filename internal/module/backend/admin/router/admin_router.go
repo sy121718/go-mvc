@@ -14,4 +14,5 @@ func SetupAdminRoutes(rg *gin.RouterGroup) {
 
 	admin := rg.Group("/admin")
 	admin.GET("/list", handle.List)
+	admin.POST("/create", handle.Create)
 }

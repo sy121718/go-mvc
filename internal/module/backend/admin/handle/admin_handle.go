@@ -37,3 +37,19 @@ func (h *Handle) List(c *gin.Context) {
 
 	r.Success(c, res)
 }
+
+func (h *Handle) Create(c *gin.Context) {
+	var req admindto.CreateReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		r.ErrorWithMessage(c, 400, "请求参数错误:"+err.Error())
+		return
+	}
+
+	res, err := h.as.Create(c.Request.Context(), &req)
+	if err != nil {
+		r.ErrorWithMessage(c, 500, err.Error())
+		return
+	}
+
+	r.Success(c, res)
+}

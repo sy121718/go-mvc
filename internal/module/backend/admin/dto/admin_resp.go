@@ -15,6 +15,8 @@ type ListResp struct {
 	List  []adminmodel.AdminEntity `json:"list"`  // 当前页的管理员数据列表
 }
 
-// SaveResp 管理员保存响应
-type SaveResp struct {
+// CreateResp 管理员新增响应
+type CreateResp struct {
+	ID       uint64 `json:"id"` // 新增的管理员 ID，表示添加成功
+	Username string `json:"username"`
 }

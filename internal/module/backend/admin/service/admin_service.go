@@ -7,6 +7,9 @@ import (
 
 	admindto "go-mvc/internal/module/backend/admin/dto"
 	adminmodel "go-mvc/internal/module/backend/admin/model"
+	"go-mvc/pkg/database"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Service 定义了 Admin 模块的业务逻辑
@@ -83,7 +86,66 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 	return res, nil
 }
 
-func (s *Service) Save(c context.Context, req *admindto.SaveReq) (res *admindto.SaveResp, err error) {
+// 新增管理员
+func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (*admindto.CreateResp, error) {
+	// 检查邮箱是否已存在
+	var existCount int64
+	if err := s.am.Query(ctx).Where("email = ? AND deleted_time IS NULL", req.Email).Count(&existCount).Error; err != nil {
+		return nil, err
+	}
+	if existCount > 0 {
+		return nil, errors.New("该邮箱已被占用")
+	}
+	if emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email); err != nil {
+		return nil, err
+	} else if emailExists {
+		return nil, errors.New("该邮箱已存在")
+	}
+	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "name", req.Username); err != nil {
+		return nil, err
+	} else if nameExists {
+		return nil, errors.New("用户名已存在，请修改")
+	}
+	//可以用下面这种，就是不方便阅读，但是更好调试
+	// emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email)
+	// if err != nil {
+	// 	fmt.Print("666")
+	// 	return nil, err
+	// }
+	// if emailExists {
+	// 	return nil, errors.New("该邮箱已存在")
+	// }
 
-	return nil, nil
+	// 加密密码
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构造实体
+	//取值问题：数据库设计的可以为空，然后在模型里面设置的*开头的类型，只能取内存地址，不能直接放值进去
+	entity := &adminmodel.AdminEntity{
+		Username: req.Username,
+		Password: string(hashed),
+		Email:    &req.Email,
+		Status:   adminmodel.AdminStatusActive,
+		Name:     &req.Username, // 反正一定有值，直接写里面
+	}
+	//有接收的，都必须判断是否存在
+	if req.Phone != "" {
+		entity.Phone = &req.Phone
+	}
+	if req.Avatar != "" {
+		entity.Avatar = &req.Avatar
+	}
+
+	if err := s.am.Query(ctx).Create(entity).Error; err != nil {
+		return nil, err
+	}
+	res := &admindto.CreateResp{
+		ID:       entity.ID,
+		Username: entity.Username,
+	}
+
+	return res, nil
 }
