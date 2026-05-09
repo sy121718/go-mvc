@@ -1,17 +1,17 @@
 /*
- Navicat Premium Data Transfer
+ Navicat Premium Dump SQL
 
- Source Server         : 本地-mysql8
+ Source Server         : WSL_Ubuntu
  Source Server Type    : MySQL
- Source Server Version : 80012
- Source Host           : localhost:3306
+ Source Server Version : 80408 (8.4.8)
+ Source Host           : 127.0.0.1:3306
  Source Schema         : base
 
  Target Server Type    : MySQL
- Target Server Version : 80012
+ Target Server Version : 80408 (8.4.8)
  File Encoding         : 65001
 
- Date: 17/04/2026 14:01:46
+ Date: 09/05/2026 09:45:53
 */
 
 SET NAMES utf8mb4;
@@ -22,8 +22,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `email_send_recipient`;
 CREATE TABLE `email_send_recipient`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `record_id` bigint(20) UNSIGNED NOT NULL COMMENT '发送记录ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `record_id` bigint UNSIGNED NOT NULL COMMENT '发送记录ID',
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '收件人邮箱',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '收件人姓名',
   `status` enum('pending','sent','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT '发送状态',
@@ -47,17 +47,17 @@ CREATE TABLE `email_send_recipient`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `email_send_record`;
 CREATE TABLE `email_send_record`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `template_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '模板ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `template_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '模板ID',
   `subject` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '邮件主题',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '邮件内容',
   `status` enum('pending','sending','success','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT '发送状态',
-  `total_recipients` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '总收件人数',
-  `success_count` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '成功数',
-  `failed_count` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '失败数',
+  `total_recipients` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '总收件人数',
+  `success_count` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '成功数',
+  `failed_count` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '失败数',
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误信息',
   `sent_time` datetime(3) NULL DEFAULT NULL COMMENT '发送时间',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
   `create_time` datetime(3) NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -76,16 +76,16 @@ CREATE TABLE `email_send_record`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `email_template`;
 CREATE TABLE `email_template`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `template_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模板名称',
   `template_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模板编码',
   `subject` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '邮件主题',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '邮件内容（支持变量）',
   `template_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'html' COMMENT '模板类型: html/text',
   `variables` json NULL COMMENT '可用变量列表',
-  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态: 0=禁用,1=启用',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
-  `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态: 0=禁用,1=启用',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
+  `update_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
   `create_time` datetime(3) NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -102,15 +102,15 @@ CREATE TABLE `email_template`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `ip_blacklist`;
 CREATE TABLE `ip_blacklist`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IP地址',
   `error_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '错误类型',
   `ban_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '拉黑原因',
-  `ban_duration` int(11) NOT NULL COMMENT '封禁时长(分钟)',
+  `ban_duration` int NOT NULL COMMENT '封禁时长(分钟)',
   `banned_time` datetime(3) NOT NULL COMMENT '封禁时间',
   `banned_until_time` datetime(3) NOT NULL COMMENT '解封时间',
-  `ban_count` int(10) UNSIGNED NOT NULL DEFAULT 1 COMMENT '拉黑次数',
-  `operator_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '操作人ID',
+  `ban_count` int UNSIGNED NOT NULL DEFAULT 1 COMMENT '拉黑次数',
+  `operator_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '操作人ID',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态 0=过期,1=生效',
   `create_time` datetime(3) NOT NULL COMMENT '创建时间',
@@ -129,19 +129,19 @@ CREATE TABLE `ip_blacklist`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `notice`;
 CREATE TABLE `notice`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标题',
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '内容',
-  `notice_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '类型：1系统通知、2公告、3消息、4警告',
-  `is_top` tinyint(4) NULL DEFAULT 0 COMMENT '是否置顶：1是、0否',
-  `is_popup` tinyint(4) NULL DEFAULT 0 COMMENT '是否弹窗提醒：1是、0否',
+  `notice_type` tinyint NOT NULL DEFAULT 1 COMMENT '类型：1系统通知、2公告、3消息、4警告',
+  `is_top` tinyint NULL DEFAULT 0 COMMENT '是否置顶：1是、0否',
+  `is_popup` tinyint NULL DEFAULT 0 COMMENT '是否弹窗提醒：1是、0否',
   `publish_time` datetime(3) NULL DEFAULT NULL COMMENT '发布时间',
   `expire_time` datetime(3) NULL DEFAULT NULL COMMENT '过期时间',
-  `read_count` int(11) NULL DEFAULT 0 COMMENT '阅读次数',
-  `status` tinyint(4) NULL DEFAULT 0 COMMENT '状态：0草稿、1已发布、2已撤回',
-  `create_by` bigint(20) UNSIGNED NOT NULL COMMENT '创建人ID',
+  `read_count` int NULL DEFAULT 0 COMMENT '阅读次数',
+  `status` tinyint NULL DEFAULT 0 COMMENT '状态：0草稿、1已发布、2已撤回',
+  `create_by` bigint UNSIGNED NOT NULL COMMENT '创建人ID',
   `create_time` datetime(3) NOT NULL COMMENT '创建时间',
-  `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
+  `update_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   `deleted_time` datetime(3) NULL DEFAULT NULL COMMENT '软删除时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -159,14 +159,14 @@ CREATE TABLE `notice`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `notice_read`;
 CREATE TABLE `notice_read`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `notice_id` bigint(20) UNSIGNED NOT NULL COMMENT '通知ID',
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `notice_id` bigint UNSIGNED NOT NULL COMMENT '通知ID',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户ID',
   `read_time` datetime(3) NOT NULL COMMENT '阅读时间',
   PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_notice_read_notice_user`(`notice_id` ASC, `user_id` ASC) USING BTREE,
   INDEX `idx_notice_id`(`notice_id` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
-  UNIQUE INDEX `uk_notice_read_notice_user`(`notice_id` ASC, `user_id` ASC) USING BTREE,
   CONSTRAINT `fk_notice_read_notice_id` FOREIGN KEY (`notice_id`) REFERENCES `notice` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '通知阅读记录表' ROW_FORMAT = DYNAMIC;
 
@@ -179,10 +179,10 @@ CREATE TABLE `notice_read`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `notice_target`;
 CREATE TABLE `notice_target`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `notice_id` bigint(20) UNSIGNED NOT NULL COMMENT '通知ID（关联notice.id）',
-  `target_type` tinyint(4) NOT NULL COMMENT '目标类型：1全部用户、2指定角色、3指定用户',
-  `target_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '目标ID（根据target_type关联对应表）',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `notice_id` bigint UNSIGNED NOT NULL COMMENT '通知ID（关联notice.id）',
+  `target_type` tinyint NOT NULL COMMENT '目标类型：1全部用户、2指定角色、3指定用户',
+  `target_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '目标ID（根据target_type关联对应表）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_notice_id`(`notice_id` ASC) USING BTREE,
   INDEX `idx_target_type`(`target_type` ASC) USING BTREE,
@@ -198,16 +198,16 @@ CREATE TABLE `notice_target`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_admin`;
 CREATE TABLE `sys_admin`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '用户ID（唯一）',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '用户ID（唯一）',
   `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录账号用户名',
   `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '加密密码（如bcrypt）',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户姓名',
   `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像URL',
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '邮箱',
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号',
-  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态：1启用、2禁用、3密码错误封禁',
-  `is_admin` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否管理员：0否、1是',
-  `login_failure_count` smallint(5) UNSIGNED NOT NULL DEFAULT 0 COMMENT '连续登录失败次数（达到阈值后临时锁定）',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态：1启用、2禁用、3密码错误封禁',
+  `is_admin` tinyint NOT NULL DEFAULT 0 COMMENT '是否管理员：0否、1是',
+  `login_failure_count` smallint UNSIGNED NOT NULL DEFAULT 0 COMMENT '连续登录失败次数（达到阈值后临时锁定）',
   `locked_until_time` datetime(3) NULL DEFAULT NULL COMMENT '封禁至（NULL表示未封禁）',
   `last_failure_time` datetime(3) NULL DEFAULT NULL COMMENT '最后一次登录失败时间',
   `register_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '注册IP地址',
@@ -216,9 +216,9 @@ CREATE TABLE `sys_admin`  (
   `last_login_location` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最后登录地理位置',
   `last_login_isp` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最后登录网络运营商',
   `last_login_time` datetime(3) NULL DEFAULT NULL COMMENT '最后登录时间',
-  `create_by` bigint(20) UNSIGNED NOT NULL COMMENT '创建人ID（0=系统创建）',
+  `create_by` bigint UNSIGNED NOT NULL COMMENT '创建人ID（0=系统创建）',
   `create_time` datetime(3) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) UNSIGNED NOT NULL COMMENT '更新人ID（0=系统更新）',
+  `update_by` bigint UNSIGNED NOT NULL COMMENT '更新人ID（0=系统更新）',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   `deleted_time` datetime(3) NULL DEFAULT NULL COMMENT '软删除时间（NULL表示未删除）',
   PRIMARY KEY (`id`) USING BTREE,
@@ -226,7 +226,7 @@ CREATE TABLE `sys_admin`  (
   INDEX `idx_email`(`email` ASC) USING BTREE,
   INDEX `idx_phone`(`phone` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统管理员表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统管理员表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_admin
@@ -238,8 +238,8 @@ INSERT INTO `sys_admin` VALUES (1, 'admin', '123456', '管理员', NULL, NULL, N
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_admin_sessions`;
 CREATE TABLE `sys_admin_sessions`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '会话ID',
-  `admin_id` bigint(20) UNSIGNED NOT NULL COMMENT '管理员ID（关联sys_admin.id）',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '会话ID',
+  `admin_id` bigint UNSIGNED NOT NULL COMMENT '管理员ID（关联sys_admin.id）',
   `device_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '设备类型：desktop,mobile,tablet',
   `device_info` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '设备简要信息（如：Chrome浏览器、iPhone、iPad）',
   `jwt_token` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'JWT Token',
@@ -247,10 +247,10 @@ CREATE TABLE `sys_admin_sessions`  (
   `login_time` datetime(3) NOT NULL COMMENT '登录时间',
   `last_active_time` datetime(3) NOT NULL COMMENT '最后活跃时间',
   `expires_time` datetime(3) NOT NULL COMMENT 'Token过期时间',
-  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态：1有效，0无效',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态：1有效，0无效',
   `create_time` datetime(3) NOT NULL COMMENT '创建时间',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_admin_id`(`admin_id` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE,
@@ -268,13 +268,13 @@ CREATE TABLE `sys_admin_sessions`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_admin_social`;
 CREATE TABLE `sys_admin_social`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `admin_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '关联管理员ID（sys_admin.id）',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `admin_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '关联管理员ID（sys_admin.id）',
   `provider_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '第三方平台标识（关联social_login_providers.provider_code，如wechat/qq/google）',
   `open_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '第三方平台用户唯一标识（如微信openid、谷歌sub）',
   `union_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '多平台统一标识（如微信unionid，非必填）',
   `access_token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '访问令牌（加密存储）',
-  `expires_in` int(11) NULL DEFAULT NULL COMMENT '令牌有效期（秒）',
+  `expires_in` int NULL DEFAULT NULL COMMENT '令牌有效期（秒）',
   `refresh_token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷新令牌（加密存储）',
   `bind_time` datetime(3) NULL DEFAULT NULL COMMENT '绑定时间',
   `last_login_time` datetime(3) NULL DEFAULT NULL COMMENT '最后通过该平台登录的时间',
@@ -294,11 +294,11 @@ CREATE TABLE `sys_admin_social`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_attachment`;
 CREATE TABLE `sys_attachment`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `category_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '分类ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `category_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '分类ID',
   `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件名',
   `file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件路径',
-  `file_size` bigint(20) NOT NULL COMMENT '文件大小(字节)',
+  `file_size` bigint NOT NULL COMMENT '文件大小(字节)',
   `file_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件类型',
   `mime_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'MIME类型',
   `storage_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'local' COMMENT '存储类型',
@@ -307,8 +307,8 @@ CREATE TABLE `sys_attachment`  (
   `md5` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件MD5',
   `extra_info` json NULL COMMENT '额外信息',
   `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态 0=禁用,1=启用',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
-  `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
+  `update_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
   `create_time` datetime(3) NOT NULL COMMENT '创建时间',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -334,7 +334,7 @@ CREATE TABLE `sys_attachment`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_casbin_rule`;
 CREATE TABLE `sys_casbin_rule`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `ptype` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `v0` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `v1` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
@@ -344,7 +344,7 @@ CREATE TABLE `sys_casbin_rule`  (
   `v5` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `idx_sys_casbin_rule`(`ptype` ASC, `v0` ASC, `v1` ASC, `v2` ASC, `v3` ASC, `v4` ASC, `v5` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Casbin 权限策略表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Casbin 权限策略表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_casbin_rule
@@ -355,19 +355,19 @@ CREATE TABLE `sys_casbin_rule`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_config`;
 CREATE TABLE `sys_config`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `group_key` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '配置分组键名',
   `group_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '配置分组名称',
   `config_data` json NOT NULL COMMENT '配置数据(JSON格式)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注说明',
-  `status` tinyint(4) NULL DEFAULT 1 COMMENT '状态：1-启用，0-禁用',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态：1-启用，0-禁用',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
   `create_time` datetime(3) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
+  `update_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_group_key`(`group_key` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统配置表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_config
@@ -379,17 +379,17 @@ INSERT INTO `sys_config` VALUES (1, 'cache_version', '缓存版本控制', '{\"v
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_cron_job`;
 CREATE TABLE `sys_cron_job`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `job_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '任务名称',
   `job_category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '任务分类',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '任务描述',
   `cron_expression` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Cron表达式',
   `command` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '执行命令',
   `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态 0=禁用,1=启用',
-  `sort_order` int(11) NULL DEFAULT NULL COMMENT '排序',
+  `sort_order` int NULL DEFAULT NULL COMMENT '排序',
   `last_sync_time` datetime(3) NULL DEFAULT NULL COMMENT '上次执行时间',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
-  `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人ID',
+  `update_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '更新人ID',
   `create_time` datetime(3) NOT NULL COMMENT '创建时间',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -405,15 +405,15 @@ CREATE TABLE `sys_cron_job`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_file_category`;
 CREATE TABLE `sys_file_category`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类名称',
   `category_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类编码',
-  `parent_id` bigint(20) UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级ID',
-  `sort_order` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
+  `parent_id` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT '父级ID',
+  `sort_order` int UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
   `icon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '图标',
-  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人',
-  `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人',
+  `update_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '更新人',
   `create_time` datetime(3) NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -433,11 +433,11 @@ CREATE TABLE `sys_file_category`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_i18n`;
 CREATE TABLE `sys_i18n`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `item_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '键（错误码/UI文本/字典/提示等）',
   `lang` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '语言（zh-CN/en-US/ja-JP等）',
   `item_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '翻译文本',
-  `http_code` int(11) NULL DEFAULT 200 COMMENT '状态码',
+  `http_code` int NULL DEFAULT 200 COMMENT '状态码',
   `category` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类（error/ui/dict/msg，可选）',
   `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注说明',
   `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态',
@@ -448,7 +448,7 @@ CREATE TABLE `sys_i18n`  (
   INDEX `idx_lang`(`lang` ASC) USING BTREE,
   INDEX `idx_category`(`category` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 59 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '多语言文本表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 81 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '多语言文本表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_i18n
@@ -539,11 +539,11 @@ INSERT INTO `sys_i18n` VALUES (80, 'ErrUploadResponseInvalid', 'en-US', 'Upload 
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_logs`;
 CREATE TABLE `sys_logs`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `log_type` tinyint(4) NOT NULL COMMENT '日志类型：1=登录 2=操作',
-  `admin_id` bigint(20) UNSIGNED NOT NULL COMMENT '管理员ID',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `log_type` tinyint NOT NULL COMMENT '日志类型：1=登录 2=操作',
+  `admin_id` bigint UNSIGNED NOT NULL COMMENT '管理员ID',
   `ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IP地址',
-  `status` tinyint(4) NOT NULL COMMENT '状态：1=成功 0=失败',
+  `status` tinyint NOT NULL COMMENT '状态：1=成功 0=失败',
   `api_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请求接口路径',
   `http_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请求方法：GET/POST',
   `operation` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作名称：登录/登出/创建用户等',
@@ -558,11 +558,12 @@ CREATE TABLE `sys_logs`  (
   INDEX `idx_ip_time`(`ip` ASC, `created_at` ASC) USING BTREE,
   INDEX `idx_created_at`(`created_at` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统日志表（分区）' ROW_FORMAT = DYNAMIC PARTITION BY RANGE COLUMNS (`created_at`)
-PARTITIONS 4
-(PARTITION `p202603` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
-PARTITION `p202604` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
-PARTITION `p202605` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
-PARTITION `p_future` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 )
+PARTITIONS 5
+(PARTITION `p202603` VALUES LESS THAN ('2026-04-01 00:00:00') ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
+PARTITION `p202604` VALUES LESS THAN ('2026-05-01 00:00:00') ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
+PARTITION `p202605` VALUES LESS THAN ('2026-06-01 00:00:00') ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
+PARTITION `p202606` VALUES LESS THAN ('2026-07-01 00:00:00') ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 ,
+PARTITION `p_future` VALUES LESS THAN (MAXVALUE) ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 )
 ;
 
 -- ----------------------------
@@ -574,32 +575,32 @@ PARTITION `p_future` ENGINE = InnoDB MAX_ROWS = 0 MIN_ROWS = 0 )
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_menus`;
 CREATE TABLE `sys_menus`  (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
   `menu_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单编码，唯一标识',
   `permission_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '权限编码，对应 Casbin obj 字段',
   `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '菜单标题',
-  `parent_id` bigint(20) NULL DEFAULT 0 COMMENT '父级ID，0为顶级',
-  `type` tinyint(4) NOT NULL DEFAULT 2 COMMENT '类型：1=目录 2=菜单 3=按钮 4=iframe 5=外链',
+  `parent_id` bigint NULL DEFAULT 0 COMMENT '父级ID，0为顶级',
+  `type` tinyint NOT NULL DEFAULT 2 COMMENT '类型：1=目录 2=菜单 3=按钮 4=iframe 5=外链',
   `path` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '前端路由路径',
   `component` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '前端组件路径',
   `external_url` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '外链/iframe地址',
   `icon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '菜单图标',
-  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态：0=禁用 1=启用',
-  `is_hidden` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否隐藏：0=显示 1=隐藏',
-  `is_public` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否公开：0=需权限 1=无需权限',
-  `is_system` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否系统内置：0=否 1=是（不可删除）',
-  `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态：0=禁用 1=启用',
+  `is_hidden` tinyint NOT NULL DEFAULT 0 COMMENT '是否隐藏：0=显示 1=隐藏',
+  `is_public` tinyint NOT NULL DEFAULT 0 COMMENT '是否公开：0=需权限 1=无需权限',
+  `is_system` tinyint NOT NULL DEFAULT 0 COMMENT '是否系统内置：0=否 1=是（不可删除）',
+  `sort_order` int NULL DEFAULT 0 COMMENT '排序',
   `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
-  `create_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '创建人',
+  `create_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(3) NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
-  `update_by` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '更新人',
+  `update_by` bigint UNSIGNED NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(3) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   `deleted_time` datetime(3) NULL DEFAULT NULL COMMENT '软删除时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_menu_code`(`menu_code` ASC) USING BTREE,
   INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统菜单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统菜单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menus
@@ -645,5 +646,70 @@ COMMENT '每月自动为 sys_logs 添加新分区'
 DO CALL sys_logs_add_partition()
 ;;
 delimiter ;
+
+-- ----------------------------
+-- Table structure for sys_user_permission_exception
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user_permission_exception`;
+CREATE TABLE `sys_user_permission_exception` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `admin_id` bigint unsigned NOT NULL COMMENT '用户ID',
+  `perm_code` varchar(100) NOT NULL COMMENT '权限编码',
+  `effect` varchar(10) NOT NULL DEFAULT 'allow' COMMENT 'allow 放行',
+  `create_by` bigint unsigned DEFAULT NULL COMMENT '创建人ID',
+  `create_time` datetime(3) DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_admin_perm` (`admin_id`, `perm_code`),
+  KEY `idx_admin_id` (`admin_id`)
+) ENGINE=InnoDB COMMENT='用户权限例外表';
+
+-- ----------------------------
+-- Records of sys_user_permission_exception
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_rule`;
+CREATE TABLE `sys_rule` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `rule_name` varchar(100) NOT NULL COMMENT '规则名称',
+  `domain` varchar(50) NOT NULL COMMENT '数据域标识（ORDERS / NOTICE / ADMIN 等）',
+  `config` json NOT NULL COMMENT '规则配置JSON（含 omit_fields + condition_groups）',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态: 0=禁用 1=启用',
+  `remark` varchar(200) DEFAULT NULL COMMENT '备注',
+  `create_by` bigint unsigned DEFAULT NULL COMMENT '创建人ID',
+  `create_time` datetime(3) DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint unsigned DEFAULT NULL COMMENT '更新人ID',
+  `update_time` datetime(3) DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_domain` (`domain`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB COMMENT='数据权限规则表';
+
+-- ----------------------------
+-- Records of sys_rule
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_rule_assignment
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_rule_assignment`;
+CREATE TABLE `sys_rule_assignment` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `rule_id` bigint unsigned NOT NULL COMMENT '规则ID',
+  `target_type` tinyint NOT NULL COMMENT '目标类型: 1=角色 2=用户',
+  `target_id` bigint unsigned NOT NULL COMMENT '目标ID（role_id 或 admin_id）',
+  `create_by` bigint unsigned DEFAULT NULL,
+  `create_time` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_rule_id` (`rule_id`),
+  KEY `idx_target` (`target_type`, `target_id`),
+  CONSTRAINT `fk_rule_assign` FOREIGN KEY (`rule_id`) REFERENCES `sys_rule` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='规则分配表';
+
+-- ----------------------------
+-- Records of sys_rule_assignment
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;

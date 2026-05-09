@@ -25,6 +25,10 @@ dist/
 # IDE
 .idea/
 .vscode/
+.cursor/
+.claude/
+.github/
+
 *.swp
 *.swo
 *~
@@ -54,3 +58,4 @@ temp/
 
 # Docs
 docs/
+.gitignore
