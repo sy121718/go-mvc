@@ -28,7 +28,7 @@ const rbacModel = `
 r = sub, obj, act
 
 [policy_definition]
-p = sub, obj, act
+p = sub, obj, act, code
 
 [role_definition]
 g = _, _
