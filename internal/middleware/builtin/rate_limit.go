@@ -1,4 +1,4 @@
-package middleware
+package builtin
 
 import (
 	"net/http"
@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// rateLimitEntry 限流记录，记录窗口内的请求计数和重置时刻。
 type rateLimitEntry struct {
 	count   int
 	resetAt time.Time
@@ -21,6 +22,21 @@ var (
 	rateLimitStore = map[string]rateLimitEntry{}
 )
 
+// RequestRateLimitMiddleware 固定窗口限流中间件。
+//
+// 限流策略：
+//   - 按 key（客户端 IP + 请求路径）维度计数
+//   - 每个窗口结束后自动重置计数
+//   - 超过限制的请求返回 429 Too Many Requests
+//
+// 参数：
+//   - limit：每个时间窗口内允许的最大请求数
+//   - window：时间窗口长度（如 time.Minute）
+//
+// 注意：rateLimitStore 是进程内内存存储，重启会丢失计数。
+// 如需分布式限流，应替换为 Redis 实现。
+//
+// 适用位置：可以全局挂载，也可以只在敏感路由（登录、注册）挂载。
 func RequestRateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if limit <= 0 || window <= 0 {
@@ -55,6 +71,11 @@ func RequestRateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc
 	}
 }
 
+// buildRateLimitKey 根据请求构建限流 key。
+//
+// 格式：clientIP|请求路径
+// 优先使用 Gin 的 FullPath（注册路径，含 :param 占位符），
+// 取不到时回退到 URL.RawPath。
 func buildRateLimitKey(c *gin.Context) string {
 	if c == nil || c.Request == nil {
 		return "unknown"
@@ -66,7 +87,9 @@ func buildRateLimitKey(c *gin.Context) string {
 	return c.ClientIP() + "|" + path
 }
 
-func resetRateLimitStore() {
+// ResetRateLimitStore 清空限流计数存储。
+// 主要用于测试场景，确保每个测试用例从干净的计数开始。
+func ResetRateLimitStore() {
 	rateLimitMu.Lock()
 	defer rateLimitMu.Unlock()
 	rateLimitStore = map[string]rateLimitEntry{}

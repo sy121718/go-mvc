@@ -1,4 +1,4 @@
-package middleware
+package builtin
 
 import (
 	"strconv"
@@ -9,6 +9,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CasbinMiddleware Casbin RBAC 鉴权中间件。
+//
+// 前置条件：必须先经过 JWTAuthMiddleware，确保 user_id 已写入 Context。
+//
+// 鉴权流程：
+//  1. 从 Context 获取 user_id（路由匹配时 JWT 中间件已写入）
+//  2. 构造 Casbin 请求三元组：sub=用户ID, obj=请求路径, act=HTTP方法
+//  3. 调用 casbin.GetEnforcer().Enforce() 执行权限判断
+//
+// 失败场景：
+//   - 未获取到 user_id → 返回 401 "未获取到用户信息"（通常意味着未挂 JWT 中间件）
+//   - Casbin Enforcer 未初始化 → 返回 500 "权限系统未初始化"
+//   - Enforce 返回 false → 返回 403 "无权限访问"
+//   - Enforce 执行出错 → 返回 500 "权限验证失败"
+//
+// 适用位置：需要细粒度权限控制的路由组或单路由。
 func CasbinMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("user_id")
@@ -46,6 +62,8 @@ func CasbinMiddleware() gin.HandlerFunc {
 	}
 }
 
+// GetUserID 从 gin.Context 中提取已认证的用户 ID。
+// 如果未找到则返回 0，由调用方自行处理空值。
 func GetUserID(c *gin.Context) int64 {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -54,6 +72,8 @@ func GetUserID(c *gin.Context) int64 {
 	return userID.(int64)
 }
 
+// GetUsername 从 gin.Context 中提取已认证的用户名。
+// 如果未找到则返回空字符串，由调用方自行处理空值。
 func GetUsername(c *gin.Context) string {
 	username, exists := c.Get("username")
 	if !exists {

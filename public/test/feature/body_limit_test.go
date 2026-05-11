@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"go-mvc/internal/middleware"
+	"go-mvc/internal/middleware/builtin"
 	"go-mvc/pkg/response"
 	"go-mvc/public/test/support"
 
@@ -18,7 +18,7 @@ func TestRequestBodyLimitRejectsLargeJSONBody(t *testing.T) {
 		UseDefaultRoute: false,
 		InitComponents:  false,
 		RouteRegistrar: func(engine *gin.Engine) {
-			engine.POST("/limited", middleware.RequestBodyLimitMiddleware(10, 100), func(c *gin.Context) {
+			engine.POST("/limited", builtin.RequestBodyLimitMiddleware(10, 100), func(c *gin.Context) {
 				response.Success(c, gin.H{"reached": true})
 			})
 		},
@@ -58,7 +58,7 @@ func TestRequestBodyLimitUsesUploadLimitForUploadRoute(t *testing.T) {
 		UseDefaultRoute: false,
 		InitComponents:  false,
 		RouteRegistrar: func(engine *gin.Engine) {
-			engine.POST("/upload/file", middleware.RequestBodyLimitMiddleware(10, 100), func(c *gin.Context) {
+			engine.POST("/upload/file", builtin.RequestBodyLimitMiddleware(10, 100), func(c *gin.Context) {
 				response.Success(c, gin.H{"reached": true})
 			})
 		},
@@ -88,7 +88,7 @@ func TestRequestBodyLimitUsesUploadLimitForUploadRoute(t *testing.T) {
 
 func TestRequestRateLimitBlocksRepeatedRequests(t *testing.T) {
 	engine := gin.New()
-	engine.GET("/limited-rate", middleware.RequestRateLimitMiddleware(2, time.Minute), func(c *gin.Context) {
+	engine.GET("/limited-rate", builtin.RequestRateLimitMiddleware(2, time.Minute), func(c *gin.Context) {
 		response.Success(c, gin.H{"reached": true})
 	})
 

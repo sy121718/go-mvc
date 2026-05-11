@@ -51,18 +51,7 @@ func SetupTestBootstrap(options BootstrapOptions) (*gin.Engine, func() error, er
 	}
 
 	engine := gin.New()
-	serverCfg, err := config.GetServer()
-	if err != nil {
-		return nil, nil, fmt.Errorf("获取服务配置失败: %w", err)
-	}
-	middleware.UseDefaultMiddlewares(engine, middleware.DefaultOptions{
-		RequestBodyLimit: serverCfg.RequestBodyLimit,
-		UploadBodyLimit:  serverCfg.UploadBodyLimit,
-		RateLimitEnabled: serverCfg.RateLimitEnabled,
-		RateLimitLimit:   serverCfg.RateLimitLimit,
-		RateLimitWindow:  serverCfg.RateLimitWindow,
-		LogCapture:       false,
-	})
+	middleware.Setup(engine)
 
 	useDefaultRoute := options.UseDefaultRoute
 	if !useDefaultRoute && options.RouteRegistrar == nil {

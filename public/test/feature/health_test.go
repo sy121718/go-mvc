@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"go-mvc/internal/middleware"
+	"go-mvc/internal/middleware/builtin"
 	"go-mvc/pkg/response"
 	"go-mvc/public/test/support"
 
@@ -146,7 +146,7 @@ func TestJWTAuthMiddlewareAbortsOnMissingAuthorization(t *testing.T) {
 		UseDefaultRoute: false,
 		InitComponents:  false,
 		RouteRegistrar: func(engine *gin.Engine) {
-			engine.GET("/protected", middleware.JWTAuthMiddleware(), func(c *gin.Context) {
+			engine.GET("/protected", builtin.JWTAuthMiddleware(), func(c *gin.Context) {
 				response.Success(c, gin.H{"reached": true})
 			})
 		},
@@ -191,7 +191,7 @@ func TestJWTAuthMiddlewareReturnsUnifiedUnauthorizedOnInvalidToken(t *testing.T)
 		UseDefaultRoute: false,
 		InitComponents:  false,
 		RouteRegistrar: func(engine *gin.Engine) {
-			engine.GET("/protected", middleware.JWTAuthMiddleware(), func(c *gin.Context) {
+			engine.GET("/protected", builtin.JWTAuthMiddleware(), func(c *gin.Context) {
 				response.Success(c, gin.H{"reached": true})
 			})
 		},
@@ -239,7 +239,7 @@ func TestCasbinMiddlewareAbortsOnMissingUserContext(t *testing.T) {
 		UseDefaultRoute: false,
 		InitComponents:  false,
 		RouteRegistrar: func(engine *gin.Engine) {
-			engine.GET("/casbin-protected", middleware.CasbinMiddleware(), func(c *gin.Context) {
+			engine.GET("/casbin-protected", builtin.CasbinMiddleware(), func(c *gin.Context) {
 				response.Success(c, gin.H{"reached": true})
 			})
 		},
