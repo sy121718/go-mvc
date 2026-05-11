@@ -34,8 +34,9 @@ const (
 
 // Claims 自定义 claims。
 type Claims struct {
-	UserID   int64  `json:"user_id"`
-	Username string `json:"username"`
+	UserID     int64  `json:"user_id"`
+	Username   string `json:"username"`
+	RememberMe bool   `json:"remember_me"`
 	jwt.RegisteredClaims
 }
 
@@ -147,8 +148,9 @@ func GenerateTokenPair(userID int64, username string, rememberMe bool) (accessTo
 
 	// accessToken
 	accessClaims := Claims{
-		UserID:   userID,
-		Username: username,
+		UserID:     userID,
+		Username:   username,
+		RememberMe: rememberMe,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(accessHours) * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(now),
