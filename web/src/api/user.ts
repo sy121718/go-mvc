@@ -1,3 +1,4 @@
+//登录和获取信息
 import { http } from "@/utils/http";
 
 export type UserResult = {
@@ -20,7 +21,7 @@ export type UserResult = {
     avatar: string;
   };
 };
-
+// 获取验证码
 export type CaptchaResult = {
   code: number;
   message?: string;
@@ -29,6 +30,7 @@ export type CaptchaResult = {
     captcha: string;
   };
 };
+
 
 /** 登录 */
 export const getLogin = (data?: object) => {
@@ -39,3 +41,4 @@ export const getLogin = (data?: object) => {
 export const getCaptcha = () => {
   return http.request<CaptchaResult>("get", "/api/captcha");
 };
+
