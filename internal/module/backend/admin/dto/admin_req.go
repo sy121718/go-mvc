@@ -45,3 +45,7 @@ type LoginReq struct {
 	Captcha    string `json:"captcha" binding:"required" validate:"required"`    // 验证码
 	RememberMe bool   `json:"remember_me"`                                       // 是否保持登录，true 时 token 过期时间为 7 天
 }
+
+type FindReq struct {
+	Id uint64 `json:"id" binding:"required" validate:"required"`
+}

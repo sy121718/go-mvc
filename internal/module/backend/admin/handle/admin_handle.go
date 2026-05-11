@@ -59,3 +59,20 @@ func (h *Handle) Create(c *gin.Context) {
 	r.Success(c, res)
 
 }
+
+// Login 管理员登录
+func (h *Handle) Login(c *gin.Context) {
+	var req admindto.LoginReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		r.ErrorWithMessage(c, 400, "请求参数错误："+err.Error())
+		return
+	}
+
+	res, err := h.as.Login(c.Request.Context(), &req, c.ClientIP())
+	if err != nil {
+		r.ErrorWithMessage(c, 500, err.Error())
+		return
+	}
+
+	r.Success(c, res)
+}

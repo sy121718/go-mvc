@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import Motion from "./utils/motion";
+import TypeIt from "@/components/ReTypeit";
+import { ReImageVerify } from "@/components/ReImageVerify";
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
 import { loginRules } from "./utils/rule";
-import { ref, reactive, toRaw } from "vue";
+import { ref, reactive, toRaw, watch } from "vue";
 import { debounce } from "@pureadmin/utils";
 import { useNav } from "@/layout/hooks/useNav";
 import { useEventListener } from "@vueuse/core";
 import type { FormInstance } from "element-plus";
-import { $t, transformI18n } from "@/plugins/i18n";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter, getTopMenu } from "@/router/utils";
@@ -24,15 +25,22 @@ import globalization from "@/assets/svg/globalization.svg?component";
 import Lock from "~icons/ri/lock-fill";
 import Check from "~icons/ep/check";
 import User from "~icons/ri/user-3-fill";
+import Info from "~icons/ri/information-line";
+import Keyhole from "~icons/ri/shield-keyhole-line";
 
 defineOptions({
   name: "Login"
 });
 
+const rememberDays = 7;
 const router = useRouter();
 const loading = ref(false);
+const checked = ref(false);
 const disabled = ref(false);
 const ruleFormRef = ref<FormInstance>();
+const captchaRef = ref<{ captchaKey?: string; getImgCode?: () => void } | null>(
+  null
+);
 
 const { initStorage } = useLayout();
 initStorage();
@@ -44,39 +52,64 @@ const { title, getDropdownItemStyle, getDropdownItemClass } = useNav();
 const { locale, translationCh, translationEn } = useTranslationLang();
 
 const ruleForm = reactive({
-  username: "admin",
-  password: "admin123"
+  username: "",
+  password: "",
+  verifyCode: ""
 });
+
+watch(checked, value => {
+  useUserStoreHook().SET_ISREMEMBERED(value);
+});
+useUserStoreHook().SET_LOGINDAY(rememberDays);
+
+const trimInput = (field: keyof typeof ruleForm) => {
+  ruleForm[field] = ruleForm[field].trim();
+};
 
 const onLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
-  await formEl.validate(valid => {
-    if (valid) {
-      loading.value = true;
-      useUserStoreHook()
-        .loginByUsername({
-          username: ruleForm.username,
-          password: ruleForm.password
-        })
-        .then(res => {
-          if (res.success) {
-            // 获取后端路由
-            return initRouter().then(() => {
-              disabled.value = true;
-              router
-                .push(getTopMenu(true).path)
-                .then(() => {
-                  message(t("login.pureLoginSuccess"), { type: "success" });
-                })
-                .finally(() => (disabled.value = false));
-            });
-          } else {
-            message(t("login.pureLoginFail"), { type: "error" });
-          }
-        })
-        .finally(() => (loading.value = false));
+
+  trimInput("username");
+  trimInput("password");
+  trimInput("verifyCode");
+
+  const valid = await formEl
+    .validate()
+    .then(() => true)
+    .catch(() => false);
+
+  if (!valid) return;
+
+  loading.value = true;
+  disabled.value = true;
+
+  try {
+    const res = await useUserStoreHook().loginByUsername({
+      username: ruleForm.username,
+      password: ruleForm.password,
+      captcha_id: captchaRef.value?.captchaKey || "",
+      captcha: ruleForm.verifyCode,
+      remember_me: checked.value
+    });
+
+    if (res.code !== 200) {
+      message(res.message || t("login.pureLoginFail"), { type: "error" });
+      captchaRef.value?.getImgCode?.();
+      return;
     }
-  });
+
+    await initRouter();
+    await router.push(getTopMenu(true).path);
+    message(t("login.pureLoginSuccess"), { type: "success" });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : t("login.pureLoginFail");
+    message(errorMessage, { type: "error" });
+    captchaRef.value?.getImgCode?.();
+  } finally {
+    loading.value = false;
+    disabled.value = false;
+  }
 };
 
 const immediateDebounce: any = debounce(
@@ -90,8 +123,9 @@ useEventListener(document, "keydown", ({ code }) => {
     ["Enter", "NumpadEnter"].includes(code) &&
     !disabled.value &&
     !loading.value
-  )
+  ) {
     immediateDebounce(ruleFormRef.value);
+  }
 });
 </script>
 
@@ -99,7 +133,6 @@ useEventListener(document, "keydown", ({ code }) => {
   <div class="select-none">
     <img :src="bg" class="wave" />
     <div class="flex-c absolute right-5 top-3">
-      <!-- 主题 -->
       <el-switch
         v-model="dataTheme"
         inline-prompt
@@ -107,10 +140,9 @@ useEventListener(document, "keydown", ({ code }) => {
         :inactive-icon="darkIcon"
         @change="dataThemeChange"
       />
-      <!-- 国际化 -->
       <el-dropdown trigger="click">
         <globalization
-          class="hover:text-primary hover:bg-[transparent]! w-[20px] h-[20px] ml-1.5 cursor-pointer outline-hidden duration-300"
+          class="hover:text-primary hover:bg-[transparent]! ml-1.5 h-[20px] w-[20px] cursor-pointer outline-hidden duration-300"
         />
         <template #dropdown>
           <el-dropdown-menu class="translation">
@@ -140,15 +172,19 @@ useEventListener(document, "keydown", ({ code }) => {
         </template>
       </el-dropdown>
     </div>
+
     <div class="login-container">
       <div class="img">
         <component :is="toRaw(illustration)" />
       </div>
+
       <div class="login-box">
         <div class="login-form">
           <avatar class="avatar" />
           <Motion>
-            <h2 class="outline-hidden">{{ title }}</h2>
+            <h2 class="outline-hidden">
+              <TypeIt :text="title" :speed="100" />
+            </h2>
           </Motion>
 
           <el-form
@@ -158,21 +194,13 @@ useEventListener(document, "keydown", ({ code }) => {
             size="large"
           >
             <Motion :delay="100">
-              <el-form-item
-                :rules="[
-                  {
-                    required: true,
-                    message: transformI18n($t('login.pureUsernameReg')),
-                    trigger: 'blur'
-                  }
-                ]"
-                prop="username"
-              >
+              <el-form-item prop="username">
                 <el-input
                   v-model="ruleForm.username"
                   clearable
                   :placeholder="t('login.pureUsername')"
                   :prefix-icon="useRenderIcon(User)"
+                  @blur="trimInput('username')"
                 />
               </el-form-item>
             </Motion>
@@ -185,21 +213,55 @@ useEventListener(document, "keydown", ({ code }) => {
                   show-password
                   :placeholder="t('login.purePassword')"
                   :prefix-icon="useRenderIcon(Lock)"
+                  @blur="trimInput('password')"
                 />
               </el-form-item>
             </Motion>
 
+            <Motion :delay="200">
+              <el-form-item prop="verifyCode">
+                <el-input
+                  v-model="ruleForm.verifyCode"
+                  clearable
+                  :placeholder="t('login.pureVerifyCode')"
+                  :prefix-icon="useRenderIcon(Keyhole)"
+                  @blur="trimInput('verifyCode')"
+                >
+                  <template #append>
+                    <ReImageVerify ref="captchaRef" />
+                  </template>
+                </el-input>
+              </el-form-item>
+            </Motion>
+
             <Motion :delay="250">
-              <el-button
-                class="w-full mt-4!"
-                size="default"
-                type="primary"
-                :loading="loading"
-                :disabled="disabled"
-                @click="onLogin(ruleFormRef)"
-              >
-                {{ t("login.pureLogin") }}
-              </el-button>
+              <el-form-item>
+                <div class="flex h-[20px] w-full items-center justify-between">
+                  <el-checkbox v-model="checked">
+                    <span class="flex items-center">
+                      {{ rememberDays }}{{ t("login.pureRemember") }}
+                      <IconifyIconOffline
+                        v-tippy="{
+                          content: t('login.pureRememberInfo'),
+                          placement: 'top'
+                        }"
+                        :icon="Info"
+                        class="ml-1"
+                      />
+                    </span>
+                  </el-checkbox>
+                </div>
+                <el-button
+                  class="mt-4! w-full"
+                  size="default"
+                  type="primary"
+                  :loading="loading"
+                  :disabled="disabled"
+                  @click="onLogin(ruleFormRef)"
+                >
+                  {{ t("login.pureLogin") }}
+                </el-button>
+              </el-form-item>
             </Motion>
           </el-form>
         </div>

@@ -27,6 +27,7 @@ type CreateResp struct {
 type LoginResp struct {
 	AccessToken  string `json:"accessToken"`  // JWT token，后续请求带在 Authorization 头
 	RefreshToken string `json:"refreshToken"` // 刷新 token，accessToken 过期后用它续期
+	Expires      string `json:"expires"`      // token 过期时间，格式 "2006/01/02 15:04:05"
 	Username     string `json:"username"`     // 登录账号
 	Nickname     string `json:"nickname"`     // 显示昵称（对应 admin_entity.name）
 	Email        string `json:"email"`        //邮箱

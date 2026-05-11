@@ -86,6 +86,11 @@ login:
   pureLogin: Login
   pureLoginSuccess: Login Success
   pureLoginFail: Login Fail
+  pureCaptcha: Captcha
+  pureVerifyCode: Verify Code
   pureUsernameReg: Please enter username
   purePassWordReg: Please enter password
+  pureVerifyCodeReg: Please enter verify code
   purePassWordRuleReg: The password format should be any combination of 8-18 digits
+  pureRemember: days no need to login
+  pureRememberInfo: Keep the current login state for 7 days
