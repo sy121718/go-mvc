@@ -86,7 +86,7 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 	return res, nil
 }
 
-// 新增管理员
+// 新增管理员业务层方法-只新增，不管编辑更新
 func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (*admindto.CreateResp, error) {
 	// 检查邮箱是否已存在
 	var existCount int64
@@ -101,7 +101,7 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (*admindt
 	} else if emailExists {
 		return nil, errors.New("该邮箱已存在")
 	}
-	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "name", req.Username); err != nil {
+	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "username", req.Username); err != nil {
 		return nil, err
 	} else if nameExists {
 		return nil, errors.New("用户名已存在，请修改")
@@ -123,15 +123,15 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (*admindt
 	}
 
 	// 构造实体
-	//取值问题：数据库设计的可以为空，然后在模型里面设置的*开头的类型，只能取内存地址，不能直接放值进去
+	// *string 类型的字段不能直接赋 string 值，需要用 & 取地址
 	entity := &adminmodel.AdminEntity{
 		Username: req.Username,
 		Password: string(hashed),
 		Email:    &req.Email,
 		Status:   adminmodel.AdminStatusActive,
-		Name:     &req.Username, // 反正一定有值，直接写里面
+		Name:     &req.Username, // Username 必填，直接赋值
 	}
-	//有接收的，都必须判断是否存在
+	// 只要有接收值并且可选字段的（omitempty）：有值才写，没值保持 nil → 数据库写 NULL，
 	if req.Phone != "" {
 		entity.Phone = &req.Phone
 	}
