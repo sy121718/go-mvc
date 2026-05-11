@@ -5,6 +5,7 @@ import (
 
 	adminrouter "go-mvc/internal/module/backend/admin/router"
 	userrouter "go-mvc/internal/module/backend/user/router"
+	captcharouter "go-mvc/internal/module/common/captcha/router"
 	"go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -49,6 +50,7 @@ func SetupRoutes(router *gin.Engine, ready func() error) {
 	})
 
 	api := router.Group("/api")
+	captcharouter.SetupCaptchaRoutes(api)
 	adminrouter.SetupAdminRoutes(api)
 	userrouter.SetupUserRoutes(api)
 

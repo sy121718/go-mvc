@@ -5,6 +5,7 @@ import (
 	internaltask "go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
+	"go-mvc/pkg/captcha"
 	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/database"
 	"go-mvc/pkg/i18n"
@@ -98,5 +99,14 @@ var runtimeComponents = []runtimeComponent{
 		Init:  queue.Init,
 		Ready: queue.Ready,
 		Close: queue.Close,
+	},
+	{
+		Name:     "captcha",
+		Critical: false,
+		Init: func(_ *viper.Viper) error {
+			captcha.Init(nil)
+			return nil
+		},
+		Close: captcha.Close,
 	},
 }

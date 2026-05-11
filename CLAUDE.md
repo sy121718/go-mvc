@@ -177,7 +177,7 @@ return err
 
 ## git 提交约定
 
-每次 git commit 必须在 message 中注明：
+每次 git commit 必须在 message 中用中文注明：
 
 - 改了哪个文件（路径）
 - 改了什么（一句话简述）
@@ -185,7 +185,7 @@ return err
 格式示例：
 
 ```text
-feat: add code field to Casbin policy definition
+feat: 添加 Casbin 策略的 code 字段
 
 pkg/casbin/casbin.go | p = sub, obj, act → p = sub, obj, act, code
 ```

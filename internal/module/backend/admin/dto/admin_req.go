@@ -36,3 +36,12 @@ type CreateReq struct {
 	Phone    string `json:"phone" binding:"omitempty,max=20" validate:"omitempty,max=20"`                            // 手机号，可选
 	Password string `json:"password" binding:"required,min=6,max=100" validate:"required,min=6,max=100"`             // 密码，必填
 }
+
+// LoginReq 管理员登录请求参数
+type LoginReq struct {
+	Username   string `json:"username" binding:"required" validate:"required"`               // 登录账号
+	Password   string `json:"password" binding:"required" validate:"required"`               // 登录密码
+	CaptchaID  string `json:"captcha_id" binding:"required" validate:"required"`             // 验证码标识
+	Captcha    string `json:"captcha" binding:"required" validate:"required"`                 // 验证码
+	RememberMe bool   `json:"remember_me"`                                                    // 是否保持登录，true 时 token 过期时间为 7 天
+}

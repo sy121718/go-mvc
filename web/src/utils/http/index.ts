@@ -10,7 +10,7 @@ import type {
   PureHttpRequestConfig
 } from "./types.d";
 import { stringify } from "qs";
-import { getToken, formatToken } from "@/utils/auth";
+import { getToken, formatToken, setToken } from "@/utils/auth";
 import { useUserStoreHook } from "@/store/modules/user";
 
 // 相关配置请参考：www.axios-js.com/zh-cn/docs/#axios-request-config-1
@@ -128,6 +128,14 @@ class PureHttp {
         if (PureHttp.initConfig.beforeResponseCallback) {
           PureHttp.initConfig.beforeResponseCallback(response);
           return response.data;
+        }
+        // 后端响应头 X-New-Token 中携带新 token 时自动更新本地存储（无感续期）
+        const newToken = response.headers["x-new-token"];
+        if (newToken) {
+          const current = getToken();
+          if (current) {
+            setToken({ ...current, accessToken: newToken, refreshToken: current.refreshToken, expires: current.expires } as any);
+          }
         }
         return response.data;
       },

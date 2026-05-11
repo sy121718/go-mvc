@@ -123,27 +123,62 @@ func Close() error {
 	return nil
 }
 
-// GenerateToken 生成 Token。
-func GenerateToken(userID int64, username string) (string, error) {
+// GenerateTokenPair 生成 token 对：accessToken（短期）+ refreshToken（长期）。
+//
+// accessToken  使用配置的默认过期时间（24 小时）
+// refreshToken 勾选记住我时为 7 天（168h），否则与 accessToken 相同
+// 返回 accessToken、refreshToken、accessToken 的过期时间字符串。
+func GenerateTokenPair(userID int64, username string, rememberMe bool) (accessToken, refreshToken string, expires string, err error) {
 	secret, cfg, err := snapshotState()
 	if err != nil {
-		return "", err
+		return "", "", "", err
 	}
 
 	now := time.Now()
-	claims := Claims{
+	accessHours := cfg.ExpireTime
+	if accessHours <= 0 {
+		accessHours = defaultJWTExpireTime
+	}
+
+	refreshHours := accessHours
+	if rememberMe {
+		refreshHours = 168 // 7 天
+	}
+
+	// accessToken
+	accessClaims := Claims{
 		UserID:   userID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(cfg.ExpireTime) * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(accessHours) * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Issuer:    cfg.Issuer,
 		},
 	}
+	accessToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims).SignedString(secret)
+	if err != nil {
+		return "", "", "", err
+	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secret)
+	// refreshToken（用不同过期时间）
+	refreshClaims := Claims{
+		UserID:   userID,
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(refreshHours) * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    cfg.Issuer,
+		},
+	}
+	refreshToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString(secret)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	expires = now.Add(time.Duration(accessHours) * time.Hour).Format("2006/01/02 15:04:05")
+	return accessToken, refreshToken, expires, nil
 }
 
 // ParseToken 解析 Token。
@@ -171,13 +206,13 @@ func ParseToken(tokenString string) (*Claims, error) {
 }
 
 // RefreshToken 刷新 Token。
-func RefreshToken(tokenString string) (string, error) {
+func RefreshToken(tokenString string) (string, string, string, error) {
 	claims, err := ParseToken(tokenString)
 	if err != nil {
-		return "", err
+		return "", "", "", err
 	}
 
-	return GenerateToken(claims.UserID, claims.Username)
+	return GenerateTokenPair(claims.UserID, claims.Username, false)
 }
 
 // GetExpireTime 获取过期时间（小时）。
