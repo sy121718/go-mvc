@@ -42,7 +42,6 @@ type AdminEntity struct {
 	CreateTime        *time.Time `gorm:"column:create_time;type:datetime(3)"`                         // 创建时间
 	UpdateBy          uint64     `gorm:"column:update_by;type:bigint unsigned"`                       // 更新人ID
 	UpdateTime        *time.Time `gorm:"column:update_time;type:datetime(3)"`                         // 更新时间
-	DeletedTime       *time.Time `gorm:"column:deleted_time;type:datetime(3)"`                        // 软删除时间
 }
 
 // AdminModel 持有 gorm 连接，供 service 层调用。

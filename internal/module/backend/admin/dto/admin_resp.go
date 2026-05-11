@@ -25,12 +25,10 @@ type CreateResp struct {
 //
 // 登录成功后返回 token 和用户基本信息，前端会根据此信息写入 localStorage。
 type LoginResp struct {
-	AccessToken  string   `json:"accessToken"`                                           // JWT token，后续请求带在 Authorization 头
-	RefreshToken string   `json:"refreshToken"`                                          // 刷新 token，accessToken 过期后用它续期
-	Expires      string   `json:"expires"`                                               // token 过期时间，格式 "2006/01/02 15:04:05"
-	Username     string   `json:"username"`                                              // 登录账号
-	Nickname     string   `json:"nickname"`                                              // 显示昵称（对应 admin_entity.name）
-	Avatar       string   `json:"avatar"`                                                // 头像URL
-	Roles        []string `json:"roles"`                                                 // 角色列表，用于前端页面级权限判断
-	Permissions  []string `json:"permissions"`                                           // 按钮权限列表，前端按钮级别显隐控制
+	AccessToken  string `json:"accessToken"`  // JWT token，后续请求带在 Authorization 头
+	RefreshToken string `json:"refreshToken"` // 刷新 token，accessToken 过期后用它续期
+	Username     string `json:"username"`     // 登录账号
+	Nickname     string `json:"nickname"`     // 显示昵称（对应 admin_entity.name）
+	Email        string `json:"email"`        //邮箱
+	Avatar       string `json:"avatar"`       // 头像URL
 }

@@ -32,16 +32,16 @@ type ListReq struct {
 type CreateReq struct {
 	Avatar   string `json:"avatar" binding:"omitempty,max=255" validate:"omitempty,max=255"`
 	Email    string `json:"email"  binding:"required,email_strict,max=100" validate:"required,email_strict,max=100"` // 邮箱，必填
-	Username string `json:"username" binding:"required,max=50" validate:"required,max=50"`                           // 姓名，必填
+	Username string `json:"username" binding:"required,max=50" validate:"required,max=50"`                           // 用户名，必填
 	Phone    string `json:"phone" binding:"omitempty,max=20" validate:"omitempty,max=20"`                            // 手机号，可选
 	Password string `json:"password" binding:"required,min=6,max=100" validate:"required,min=6,max=100"`             // 密码，必填
 }
 
 // LoginReq 管理员登录请求参数
 type LoginReq struct {
-	Username   string `json:"username" binding:"required" validate:"required"`               // 登录账号
-	Password   string `json:"password" binding:"required" validate:"required"`               // 登录密码
-	CaptchaID  string `json:"captcha_id" binding:"required" validate:"required"`             // 验证码标识
-	Captcha    string `json:"captcha" binding:"required" validate:"required"`                 // 验证码
-	RememberMe bool   `json:"remember_me"`                                                    // 是否保持登录，true 时 token 过期时间为 7 天
+	Username   string `json:"username" binding:"required" validate:"required"`   // 登录账号
+	Password   string `json:"password" binding:"required" validate:"required"`   // 登录密码
+	CaptchaID  string `json:"captcha_id" binding:"required" validate:"required"` // 验证码标识
+	Captcha    string `json:"captcha" binding:"required" validate:"required"`    // 验证码
+	RememberMe bool   `json:"remember_me"`                                       // 是否保持登录，true 时 token 过期时间为 7 天
 }
