@@ -122,20 +122,10 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 }
 
 func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.ListResp, err error) {
-	if req == nil {
-		return nil, errors.New("请求参数不能为空")
-	}
-
+	//返回的总条数，go需要提前准备容器
 	var total int64
-	page := 1
-	if req.Page != nil {
-		page = *req.Page
-	}
-
-	limit := 10
-	if req.Limit != nil {
-		limit = *req.Limit
-	}
+	page := req.GetPage()
+	limit := req.GetLimit()
 
 	query := s.am.Query(c).Where("deleted_time IS NULL")
 
@@ -175,11 +165,9 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 		List:  list,
 	}
 
-	return res, nil
+	return
 }
-
-// 新增管理员业务层方法-只新增，不管编辑更新
-func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (*admindto.CreateResp, error) {
+func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *admindto.CreateResp, err error) {
 	// // 检查邮箱是否已存在
 	// var existCount int64
 	// if err := s.am.Query(ctx).Where("email = ? AND deleted_time IS NULL", req.Email).Count(&existCount).Error; err != nil {
@@ -234,12 +222,18 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (*admindt
 	if err := s.am.Query(ctx).Create(entity).Error; err != nil {
 		return nil, err
 	}
-	res := &admindto.CreateResp{
+	res = &admindto.CreateResp{
 		ID:       entity.ID,
 		Username: entity.Username,
 	}
 
-	return res, nil
+	return
+}
+
+// 查询管理员详情
+func (s *Service) Detail(ctx context.Context, req *admindto.DetailReq) (*admindto.DetailResp, error) {
+
+	return nil, nil
 }
 
 // recordLoginFailure 记录登录失败：累加次数，连续 5 次封禁 30 分钟。

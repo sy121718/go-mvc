@@ -277,6 +277,7 @@ useEventListener(document, "keydown", ({ code }) => {
 <style lang="scss" scoped>
 :deep(.el-input-group__append, .el-input-group__prepend) {
   padding: 0;
+  background-color: transparent;
 }
 
 .translation {

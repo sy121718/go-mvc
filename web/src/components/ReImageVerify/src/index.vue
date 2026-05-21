@@ -63,13 +63,12 @@ defineExpose({ getImgCode, captchaKey });
 .captcha-container {
   position: relative;
   display: inline-block;
-  margin-left: 8px;
 }
 
 .captcha-image {
-  border: 1px solid #dcdfe6;
+  border: 0;
   border-radius: 4px;
-  background-color: #ffffff;
+  background-color: transparent;
   display: block;
   object-fit: contain;
   transition: all 0.3s ease;

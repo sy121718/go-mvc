@@ -5,7 +5,11 @@
 // 确保进入 service 层的数据是合法、完整的。
 package admindto
 
-import adminmodel "go-mvc/internal/module/backend/admin/model"
+import (
+	"time"
+
+	adminmodel "go-mvc/internal/module/backend/admin/model"
+)
 
 // ListResp 管理员列表查询响应
 //
@@ -32,4 +36,28 @@ type LoginResp struct {
 	Nickname     string `json:"nickname"`     // 显示昵称（对应 admin_entity.name）
 	Email        string `json:"email"`        //邮箱
 	Avatar       string `json:"avatar"`       // 头像URL
+}
+
+// DetailResp 管理员详情响应
+//
+// 一个管理员查看另一个管理员的详细信息。
+// 不包含 password、login_failure_count 等内部安全字段，不含 update_by / update_time。
+type DetailResp struct {
+	ID                uint64     `json:"id"`
+	Username          string     `json:"username"`
+	Nickname          string     `json:"nickname"` // 对应 admin_entity.name
+	Avatar            string     `json:"avatar"`
+	Email             string     `json:"email"`
+	Phone             string     `json:"phone"`
+	Status            int        `json:"status"`   // 1启用 2禁用 3密码错误封禁
+	IsAdmin           int        `json:"is_admin"` // 是否超管
+	Roles             []any      `json:"roles"`    // 角色列表（由 service 层组装）
+	Menus             []any      `json:"menus"`    // 菜单列表（由 service 层组装）
+	RegisterIP        string     `json:"register_ip"`
+	RegisterLocation  string     `json:"register_location"`
+	LastLoginIP       string     `json:"last_login_ip"`
+	LastLoginLocation string     `json:"last_login_location"`
+	LastLoginTime     *time.Time `json:"last_login_time"`
+	CreateBy          uint64     `json:"create_by"`
+	CreateTime        *time.Time `json:"create_time"`
 }

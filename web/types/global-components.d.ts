@@ -8,6 +8,7 @@ declare module "vue" {
     FontIcon: (typeof import("../src/components/ReIcon"))["FontIcon"];
     Auth: (typeof import("../src/components/ReAuth"))["Auth"];
     Perms: (typeof import("../src/components/RePerms"))["Perms"];
+    RePureTableBar: (typeof import("../src/components/RePureTableBar"))["PureTableBar"];
   }
 }
 
