@@ -56,6 +56,9 @@ temp/
 *.db
 *.sqlite
 
+# Graphify output
+graphify-out/
+
 # Docs
 docs/
 .gitignore
