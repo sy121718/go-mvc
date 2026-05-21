@@ -59,6 +59,9 @@ temp/
 # Graphify output
 graphify-out/
 
+# Package manager cache
+.pnpm-store/
+
 # Docs
 docs/
 .gitignore

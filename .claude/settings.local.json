@@ -60,7 +60,9 @@
       "Bash(graphify --help)",
       "Bash(graphify update *)",
       "Bash(bash *)",
-      "Bash(sh *)"
+      "Bash(sh *)",
+      "Bash(rtk find *)",
+      "Bash(rtk read *)"
     ]
   }
 }
