@@ -32,6 +32,7 @@ import (
 // 适用位置：需要登录认证的路由组或单路由。
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		//提取请求头中的 Authorization 字段
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			response.ErrorWithMessage(c, 401, "未登录或登录已过期")
@@ -39,20 +40,21 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		//分割 Authorization 字段，格式为 Bearer <token>
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			response.ErrorWithMessage(c, 401, "未登录或登录已过期")
 			c.Abort()
 			return
 		}
-
 		claims, err := auth.ParseToken(parts[1])
+		//解析 token 失败
 		if err != nil {
-			response.ErrorWithMessage(c, 401, "未登录或登录已过期")
+			response.ErrorWithMessage(c, 401, "环境异常,请重新登录")
 			c.Abort()
 			return
 		}
-
+		//blocked 封禁标记
 		// 检查 Redis 封禁标记
 		blocked, err := auth.IsBlocked(c.Request.Context(), uint64(claims.UserID), claims.IssuedAt.Unix())
 		if err == nil && blocked {
@@ -63,7 +65,6 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
-
 		c.Next()
 
 		// 自动续期：token 剩余不足 10 分钟，生成新 token 通过响应头返回

@@ -124,6 +124,19 @@ func RefreshOnline(ctx context.Context, userID uint64, ttl time.Duration) error 
 	return client.Set(ctx, onlineKey(userID), "1", ttl).Err()
 }
 
+// IsOnline 检查用户是否在线。
+func IsOnline(ctx context.Context, userID uint64) (bool, error) {
+	client, err := cache.GetRedis()
+	if err != nil {
+		return false, err
+	}
+	n, err := client.Exists(ctx, onlineKey(userID)).Result()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}
+
 // GetOnlineUsers 返回所有在线用户 ID 列表。
 func GetOnlineUsers(ctx context.Context) ([]uint64, error) {
 	client, err := cache.GetRedis()

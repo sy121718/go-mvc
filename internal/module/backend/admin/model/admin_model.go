@@ -2,6 +2,8 @@ package adminmodel
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -11,12 +13,34 @@ import (
 const tableNameSysAdmin = "sys_admin"
 
 const (
-	AdminStatusActive        = 1 // 启用
-	AdminStatusInactive      = 2 //禁用
-	AdminStatusPasswordError = 3 // 密码错误封禁
+	AdminStatusActive   = 1 // 启用
+	AdminStatusInactive = 2 // 禁用
+	AdminStatusBanned   = 3 // 封禁
 )
 
 const allowModifyIsAdminKey string = "allow_modify_is_admin"
+
+// JSONMap 可序列化的 JSON 扩展字段，实现 sql.Scanner 和 driver.Valuer。
+type JSONMap map[string]any
+
+func (j JSONMap) Value() (driver.Value, error) {
+	if j == nil {
+		return nil, nil
+	}
+	return json.Marshal(j)
+}
+
+func (j *JSONMap) Scan(value any) error {
+	if value == nil {
+		*j = nil
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("JSONMap Scan: 类型不是 []byte")
+	}
+	return json.Unmarshal(bytes, j)
+}
 
 // AdminEntity 对应 sys_admin 表字段。
 type AdminEntity struct {
@@ -27,10 +51,11 @@ type AdminEntity struct {
 	Avatar            *string    `gorm:"column:avatar;type:varchar(255)"`                             // 头像URL
 	Email             *string    `gorm:"column:email;type:varchar(100);index"`                        // 邮箱
 	Phone             *string    `gorm:"column:phone;type:varchar(20);index"`                         // 手机号
-	Status            int        `gorm:"column:status;type:tinyint(4);default:1;index"`               // 状态：1启用 2禁用 3密码错误封禁
+	Status            int        `gorm:"column:status;type:tinyint(4);default:1;index"`               // 状态：1启用 2禁用 3封禁
 	IsAdmin           int        `gorm:"column:is_admin;type:tinyint(4);default:0"`                   // 是否管理员：0否 1是
 	LoginFailureCount uint16     `gorm:"column:login_failure_count;type:smallint unsigned;default:0"` // 连续登录失败次数
 	LockedUntilTime   *time.Time `gorm:"column:locked_until_time;type:datetime(3)"`                   // 封禁至
+	Metadata          JSONMap    `gorm:"column:metadata;type:json"`                                   // 扩展元数据
 	LastFailureTime   *time.Time `gorm:"column:last_failure_time;type:datetime(3)"`                   // 最后一次登录失败时间
 	RegisterIP        *string    `gorm:"column:register_ip;type:varchar(50)"`                         // 注册IP地址
 	RegisterLocation  *string    `gorm:"column:register_location;type:varchar(100)"`                  // 注册地理位置

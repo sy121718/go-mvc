@@ -279,7 +279,7 @@ func recordLoginFailure(ctx context.Context, am *adminmodel.AdminModel, entity *
 	entity.LastFailureTime = &now
 
 	if entity.LoginFailureCount >= 5 {
-		entity.Status = adminmodel.AdminStatusPasswordError
+		entity.Status = adminmodel.AdminStatusBanned
 		lockedUntil := now.Add(30 * time.Minute)
 		entity.LockedUntilTime = &lockedUntil
 	}
