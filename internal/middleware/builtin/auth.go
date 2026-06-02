@@ -53,6 +53,14 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 检查 Redis 封禁标记
+		blocked, err := auth.IsBlocked(c.Request.Context(), uint64(claims.UserID), claims.IssuedAt.Unix())
+		if err == nil && blocked {
+			response.ErrorWithMessage(c, 401, "账号已被强制下线")
+			c.Abort()
+			return
+		}
+
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
 
@@ -66,6 +74,11 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 				return
 			}
 			c.Header("X-New-Token", newToken)
+		}
+
+		// 刷新在线心跳
+		if err := auth.RefreshOnline(c.Request.Context(), uint64(claims.UserID), 0); err != nil {
+			log.Printf("刷新在线心跳失败: %v", err)
 		}
 	}
 }
