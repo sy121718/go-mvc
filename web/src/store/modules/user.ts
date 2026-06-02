@@ -9,21 +9,20 @@ import {
 } from "../utils";
 import { getLogin } from "@/api/user";
 import { useMultiTagsStoreHook } from "./multiTags";
-import { type DataInfo, setToken, removeToken, userKey } from "@/utils/auth";
+import { removeToken } from "@/utils/auth";
 
 export const useUserStore = defineStore("pure-user", {
   state: (): userType => ({
     // 头像
-    avatar: storageLocal().getItem<DataInfo<number>>(userKey)?.avatar ?? "",
+    avatar: "",
     // 用户名
-    username: storageLocal().getItem<DataInfo<number>>(userKey)?.username ?? "",
+    username: "",
     // 昵称
-    nickname: storageLocal().getItem<DataInfo<number>>(userKey)?.nickname ?? "",
+    nickname: "",
     // 页面级别权限
-    roles: storageLocal().getItem<DataInfo<number>>(userKey)?.roles ?? [],
+    roles: [],
     // 按钮级别权限
-    permissions:
-      storageLocal().getItem<DataInfo<number>>(userKey)?.permissions ?? [],
+    permissions: [],
     // 是否勾选了登录页的免登录
     isRemembered: false,
     // 登录页的免登录存储几天，默认7天
@@ -75,6 +74,8 @@ export const useUserStore = defineStore("pure-user", {
       this.username = "";
       this.roles = [];
       this.permissions = [];
+      this.avatar = "";
+      this.nickname = "";
       removeToken();
       useMultiTagsStoreHook().handleTags("equal", [...routerArrays]);
       resetRouter();

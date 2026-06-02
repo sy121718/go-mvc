@@ -55,10 +55,10 @@ class PureHttp {
           return config;
         }
 
-        const data = getToken();
-        if (data?.accessToken) {
+        const token = getToken();
+        if (token) {
           config.headers = config.headers || {};
-          config.headers["Authorization"] = formatToken(data.accessToken);
+          config.headers["Authorization"] = formatToken(token);
         }
         return config;
       },
@@ -83,11 +83,10 @@ class PureHttp {
           PureHttp.initConfig.beforeResponseCallback(response);
           return response.data;
         }
-        // 后端响应头 X-New-Token 中携带新 token 时自动更新本地存储
+        // 后端响应头 X-New-Token 中携带新 token 时自动更新
         const newToken = response.headers["x-new-token"];
         if (newToken) {
-          const current = getToken() || {} as any;
-          setToken({ ...current, accessToken: newToken } as any);
+          setToken(newToken);
         }
         return response.data;
       },
