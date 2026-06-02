@@ -13,7 +13,8 @@ import { useEventListener } from "@vueuse/core";
 import type { FormInstance } from "element-plus";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
-import { initRouter, getTopMenu } from "@/router/utils";
+import { initRouter } from "@/router/utils";
+import { getProfile } from "@/api/user";
 import { bg, avatar, illustration } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { useTranslationLang } from "@/layout/hooks/useTranslationLang";
@@ -98,8 +99,17 @@ const onLogin = async (formEl: FormInstance | undefined) => {
       return;
     }
 
+    // 获取用户信息
+    const profile = await getProfile();
+    const store = useUserStoreHook();
+    if (profile.data) {
+      store.SET_USERNAME(profile.data.username);
+      store.SET_NICKNAME(profile.data.name);
+      store.SET_AVATAR(profile.data.avatar);
+    }
+
     await initRouter();
-    await router.push(getTopMenu(true).path);
+    await router.push("/welcome");
     message(t("login.pureLoginSuccess"), { type: "success" });
   } catch (error) {
     const errorMessage =

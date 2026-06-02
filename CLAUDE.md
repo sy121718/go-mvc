@@ -4,18 +4,24 @@
 
 ## 项目概览
 
-- 项目类型：Go MVC Web 项目
-- 核心框架：Gin
+- 项目类型：Go + Vue 3 全栈 Web 项目
+- 后端框架：Gin
+- 前端框架：vue-pure-admin (Vue 3 + TypeScript + Vite)
 - 运行模式：显式组件生命周期
-- 目录结构：`cmd` / `config` / `internal` / `pkg` / `public`
+- 目录结构：`cmd` / `config` / `internal` / `pkg` / `web` / `public`
 
 ## 常用命令
 
 ```bash
+# 后端
 go run cmd/main.go
 go build -o app cmd/main.go
 go test ./...
 go test ./internal/module/backend/...
+
+# 前端
+cd web && pnpm dev
+cd web && pnpm build
 ```
 
 ## 架构约定
@@ -48,11 +54,57 @@ go test ./internal/module/backend/...
 
 已有代表：
 
-- `pkg/cache`
-- `pkg/database`
-- `pkg/queue`
-- `pkg/upload`
-- `pkg/lock`
+- `pkg/auth` — JWT 认证 + Redis 用户会话（封禁、在线心跳、踢人）
+- `pkg/casbin` — RBAC 权限引擎（策略存 DB，启动加载到内存）
+- `pkg/cache` — Redis 缓存 facade
+- `pkg/database` — 数据库 facade
+- `pkg/queue` — 任务队列 facade
+- `pkg/upload` — 文件上传 facade
+- `pkg/lock` — 分布式锁 facade
+
+## 认证与鉴权架构
+
+### 三层分工
+
+```
+JWT    → 认证（验签 + 解析 user_id，写入 gin.Context）
+Casbin → 鉴权（内存 enforcer，Enforce(user_id, path, method)）
+Redis  → 运行时状态（封禁标记、在线心跳、用户信息缓存）
+```
+
+### 认证流程
+
+```
+登录 → 验密 → JWT(含 user_id) → 写 Redis session → 返回 token
+请求 → JWTAuthMiddleware → ParseToken → c.Set("user_id") → c.Next()
+     → RefreshOnline(写心跳) → X-New-Token(自动续期)
+```
+
+### 鉴权流程
+
+```
+CasbinMiddleware:
+  c.Get("user_id") → casbin.GetEnforcer().Enforce(user_id, path, method)
+  → Casbin 内存 enforcer（启动时从 sys_casbin_rule 加载）
+  → g 映射自动合并用户直接权限 + 角色继承权限
+```
+
+### 权限设计（菜单 = 权限的可视化）
+
+- `sys_menus`: type 1=目录 2=菜单 3=按钮 4=外链。type=2,3 必含 permission_code
+- 给角色/用户分配菜单 → 收集 type=2,3 的 permission_code → 去重 → 写入 sys_casbin_rule
+- Casbin 策略: `p, target_id, path, method, code`
+- 不需要 sys_menu_permission、sys_user_permission_exception
+
+### Redis 用途
+
+| Key | 用途 |
+|-----|------|
+| `user:blocked:{id}` | 封禁标记（中间件每次请求检查） |
+| `online:{id}` | 在线心跳（5 分钟 TTL，管理后台展示） |
+| `user:session:{id}` | 用户信息（Profile 接口优先查 Redis） |
+
+---
 
 ## 配置约定
 
@@ -74,13 +126,11 @@ go test ./internal/module/backend/...
 
 ### 默认中间件
 
-当前默认框架能力包括：
+当前已实现的中间件能力：
 
-- 安全响应头
-- 请求体大小限制
-- 固定窗口限流
-- 签名中间件防重放
-- Recovery
+- JWTAuthMiddleware — JWT 验签、封禁检查、自动续期、在线心跳
+- CasbinMiddleware — RBAC 鉴权（需 JWT 前置）
+- 安全响应头、请求体大小限制、固定窗口限流、Recovery
 
 ## 响应约定
 
@@ -191,6 +241,13 @@ pkg/casbin/casbin.go | p = sub, obj, act → p = sub, obj, act, code
 ```
 
 ## 模块开发
+
+已实现的业务模块：
+
+| 模块 | 路由前缀 | 说明 |
+|------|---------|------|
+| `internal/module/backend/admin` | `/api/admin` | 管理员 CRUD、登录、Profile |
+| `internal/module/common/captcha` | `/api/captcha` | 图形验证码 |
 
 涉及业务模块开发时，先看：
 

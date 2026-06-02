@@ -1,6 +1,18 @@
 import { useUserStoreHook } from "@/store/modules/user";
 import { isString, isIncludeAllChildren } from "@pureadmin/utils";
 
+/** 用户信息存储 key */
+export const userKey = "user-info";
+
+/** 多标签页存储 key */
+export const multipleTabsKey = "multiple-tabs";
+
+/** localStorage 中存储的数据结构 */
+export type DataInfo<T> = {
+  roles?: string[];
+  expires?: T;
+};
+
 /** token 内存变量，不持久化到 cookie/localStorage */
 let accessToken: string | null = null;
 

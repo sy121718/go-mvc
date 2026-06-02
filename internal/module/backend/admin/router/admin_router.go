@@ -1,6 +1,10 @@
 package adminrouter
 
-import "github.com/gin-gonic/gin"
+import (
+	"go-mvc/internal/middleware/builtin"
+
+	"github.com/gin-gonic/gin"
+)
 
 func SetupAdminRoutes(rg *gin.RouterGroup) {
 	if rg == nil {
@@ -19,4 +23,6 @@ func SetupAdminRoutes(rg *gin.RouterGroup) {
 	admin.POST("/create", handle.Create)
 	// 登录
 	admin.POST("/login", handle.Login)
+	// 获取当前用户信息（需登录）
+	admin.GET("/profile", builtin.JWTAuthMiddleware(), handle.Profile)
 }

@@ -89,7 +89,7 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 	if clientIP != "" {
 		entity.LastLoginIP = &clientIP
 	}
-	if err := s.am.Query(ctx).Select(
+	if err := s.am.Query(ctx).Where("id = ?", entity.ID).Select(
 		"login_failure_count", "locked_until_time", "last_failure_time",
 		"last_login_time", "last_login_ip").
 		Updates(&entity).Error; err != nil {
@@ -134,15 +134,14 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 	}
 
 	if err := auth.SaveUserSession(ctx, &auth.UserSession{
-		ID:          entity.ID,
-		Username:    entity.Username,
-		Name:        name,
-		Avatar:      avatar,
-		Email:       email,
-		Phone:       phone,
-		Status:      entity.Status,
-		IsAdmin:     entity.IsAdmin,
-		Permissions: permissions,
+		ID:       entity.ID,
+		Username: entity.Username,
+		Name:     name,
+		Avatar:   avatar,
+		Email:    email,
+		Phone:    phone,
+		Status:   entity.Status,
+		IsAdmin:  entity.IsAdmin,
 	}, 0); err != nil {
 		return nil, fmt.Errorf("写入用户会话失败: %w", err)
 	}
@@ -154,6 +153,74 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 
 	return &admindto.LoginResp{
 		AccessToken: accessToken,
+	}, nil
+}
+
+// Profile 获取当前登录用户信息。
+// 优先从 Redis 读取，不存在时查询数据库并回填 Redis。
+func (s *Service) Profile(ctx context.Context, userID uint64) (*admindto.ProfileResp, error) {
+	// 1) 优先从 Redis 获取会话
+	session, err := auth.GetUserSession(ctx, userID)
+	if err == nil && session != nil {
+		return &admindto.ProfileResp{
+			ID:       session.ID,
+			Username: session.Username,
+			Name:     session.Name,
+			Avatar:   session.Avatar,
+			Email:    session.Email,
+			Phone:    session.Phone,
+			Status:   session.Status,
+		}, nil
+	}
+
+	// 2) Redis 未命中，查询数据库
+	entity, err := s.am.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if entity == nil {
+		return nil, fmt.Errorf("用户不存在")
+	}
+
+	name := ""
+	if entity.Name != nil {
+		name = *entity.Name
+	}
+	avatar := ""
+	if entity.Avatar != nil {
+		avatar = *entity.Avatar
+	}
+	email := ""
+	if entity.Email != nil {
+		email = *entity.Email
+	}
+	phone := ""
+	if entity.Phone != nil {
+		phone = *entity.Phone
+	}
+
+	// 3) 回填 Redis（menus 暂返回空，前端检测到空走静态路由）
+	if err := auth.SaveUserSession(ctx, &auth.UserSession{
+		ID:       entity.ID,
+		Username: entity.Username,
+		Name:     name,
+		Avatar:   avatar,
+		Email:    email,
+		Phone:    phone,
+		Status:   entity.Status,
+		IsAdmin:  entity.IsAdmin,
+	}, 0); err != nil {
+		return nil, fmt.Errorf("写入用户会话失败: %w", err)
+	}
+
+	return &admindto.ProfileResp{
+		ID:       entity.ID,
+		Username: entity.Username,
+		Name:     name,
+		Avatar:   avatar,
+		Email:    email,
+		Phone:    phone,
+		Status:   entity.Status,
 	}, nil
 }
 
@@ -284,6 +351,7 @@ func recordLoginFailure(ctx context.Context, am *adminmodel.AdminModel, entity *
 		entity.LockedUntilTime = &lockedUntil
 	}
 
-	am.Query(ctx).Select("login_failure_count", "last_failure_time", "status", "locked_until_time").
+	am.Query(ctx).Where("id = ?", entity.ID).
+		Select("login_failure_count", "last_failure_time", "status", "locked_until_time").
 		Updates(entity)
 }

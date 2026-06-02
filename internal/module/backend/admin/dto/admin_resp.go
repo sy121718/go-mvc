@@ -43,7 +43,7 @@ type DetailResp struct {
 	Avatar            string     `json:"avatar"`
 	Email             string     `json:"email"`
 	Phone             string     `json:"phone"`
-	Status            int        `json:"status"`   // 1启用 2禁用 3密码错误封禁
+	Status            int        `json:"status"`   // 1启用 2禁用 3封禁
 	IsAdmin           int        `json:"is_admin"` // 是否超管
 	Roles             []any      `json:"roles"`    // 角色列表（由 service 层组装）
 	Menus             []any      `json:"menus"`    // 菜单列表（由 service 层组装）
@@ -54,4 +54,16 @@ type DetailResp struct {
 	LastLoginTime     *time.Time `json:"last_login_time"`
 	CreateBy          uint64     `json:"create_by"`
 	CreateTime        *time.Time `json:"create_time"`
+}
+
+// ProfileResp 当前登录用户信息响应（从 Redis 会话或数据库获取）。
+type ProfileResp struct {
+	ID       uint64 `json:"id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Avatar   string `json:"avatar"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Status   int    `json:"status"`
+	Menus    []any  `json:"menus"`
 }

@@ -88,9 +88,22 @@ func NewAdminModel(db *gorm.DB) *AdminModel {
 	return &AdminModel{db: db}
 }
 
-// BaseQuery 返回基础查询入口。
+// Query 返回基础查询入口。
 func (m *AdminModel) Query(ctx context.Context) *gorm.DB {
 	return m.db.WithContext(ctx).Model(&AdminEntity{})
+}
+
+// GetByID 根据 ID 查询管理员，不存在返回 nil。
+func (m *AdminModel) GetByID(ctx context.Context, id uint64) (*AdminEntity, error) {
+	var entity AdminEntity
+	err := m.Query(ctx).Where("id = ?", id).First(&entity).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &entity, nil
 }
 
 // TableName 指定表名。

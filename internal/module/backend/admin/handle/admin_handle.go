@@ -70,10 +70,33 @@ func (h *Handle) Login(c *gin.Context) {
 
 	res, err := h.as.Login(c.Request.Context(), &req, c.ClientIP())
 	if err != nil {
-		r.ErrorWithMessage(c, 500, err.Error())
+		r.ErrorWithMessage(c, 400, err.Error())
 		return
 	}
 
 	c.Header("X-New-Token", res.AccessToken)
 	r.SuccessWithMessage(c, "success", nil)
+}
+
+// Profile 获取当前登录用户信息。
+func (h *Handle) Profile(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		r.ErrorWithMessage(c, 401, "未登录或登录已过期")
+		return
+	}
+
+	uid, ok := userID.(int64)
+	if !ok {
+		r.ErrorWithMessage(c, 500, "用户ID类型错误")
+		return
+	}
+
+	res, err := h.as.Profile(c.Request.Context(), uint64(uid))
+	if err != nil {
+		r.ErrorWithMessage(c, 500, err.Error())
+		return
+	}
+
+	r.Success(c, res)
 }

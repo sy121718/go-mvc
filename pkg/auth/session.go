@@ -23,15 +23,14 @@ const (
 
 // UserSession 用户会话信息，登录成功后写入 Redis。
 type UserSession struct {
-	ID          uint64   `json:"id"`
-	Username    string   `json:"username"`
-	Name        string   `json:"name"`
-	Avatar      string   `json:"avatar"`
-	Email       string   `json:"email"`
-	Phone       string   `json:"phone"`
-	Status      int      `json:"status"`
-	IsAdmin     int      `json:"is_admin"`
-	Permissions []string `json:"permissions"`
+	ID       uint64 `json:"id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Avatar   string `json:"avatar"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Status   int    `json:"status"`
+	IsAdmin  int    `json:"is_admin"`
 }
 
 func sessionKey(userID uint64) string {

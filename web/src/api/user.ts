@@ -21,3 +21,8 @@ export const getCaptcha = () => {
   return http.request<CaptchaResult>("get", "/api/captcha");
 };
 
+/** 获取当前用户信息 */
+export const getProfile = () => {
+  return http.request<any>("get", "/api/admin/profile");
+};
+

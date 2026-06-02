@@ -196,8 +196,15 @@ function handleAsyncRoutes(routeList) {
   addPathMatch();
 }
 
-/** 初始化路由（`new Promise` 写法防止在异步请求中造成无限循环）*/
+/** 初始化路由（暂用静态路由，动态路由接口未实现） */
 function initRouter() {
+  return new Promise(resolve => {
+    handleAsyncRoutes([]);
+    resolve(router);
+  });
+}
+/** 初始化路由（`new Promise` 写法防止在异步请求中造成无限循环）*/
+function _initRouter() {
   if (getConfig()?.CachingAsyncRoutes) {
     // 开启动态路由缓存本地localStorage
     const key = "async-routes";
