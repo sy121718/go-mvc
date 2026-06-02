@@ -118,6 +118,9 @@ CasbinMiddleware:
 ### 路由
 
 - 只使用 `GET` 和 `POST`
+- RESTful 路径参数一律禁止，全部改为 Query 参数
+  - ❌ `GET /api/admin/123`
+  - ✅ `GET /api/admin?id=123`
 - 主路由聚合在 `internal/routers/routes.go`
 - 模块路由各自维护在模块自己的 `router/` 目录
 - 当前默认健康检查路由：

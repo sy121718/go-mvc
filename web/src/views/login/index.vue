@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Cookies from "js-cookie";
 import { useI18n } from "vue-i18n";
 import Motion from "./utils/motion";
 import TypeIt from "@/components/ReTypeit";
@@ -7,7 +8,7 @@ import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
 import { loginRules } from "./utils/rule";
 import { ref, reactive, toRaw, watch } from "vue";
-import { debounce } from "@pureadmin/utils";
+import { debounce, storageLocal } from "@pureadmin/utils";
 import { useNav } from "@/layout/hooks/useNav";
 import { useEventListener } from "@vueuse/core";
 import type { FormInstance } from "element-plus";
@@ -15,6 +16,7 @@ import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter } from "@/router/utils";
 import { getProfile } from "@/api/user";
+import { userKey, multipleTabsKey } from "@/utils/auth";
 import { bg, avatar, illustration } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { useTranslationLang } from "@/layout/hooks/useTranslationLang";
@@ -99,14 +101,21 @@ const onLogin = async (formEl: FormInstance | undefined) => {
       return;
     }
 
-    // 获取用户信息
+    // 获取当前用户信息，当前阶段只依赖个人信息完成静态路由登录态
     const profile = await getProfile();
-    const store = useUserStoreHook();
-    if (profile.data) {
-      store.SET_USERNAME(profile.data.username);
-      store.SET_NICKNAME(profile.data.name);
-      store.SET_AVATAR(profile.data.avatar);
+    if (profile.code !== 200 || !profile.data) {
+      message(profile.message || t("login.pureLoginFail"), { type: "error" });
+      captchaRef.value?.getImgCode?.();
+      return;
     }
+
+    const store = useUserStoreHook();
+    store.SET_USERNAME(profile.data.username || "");
+    store.SET_NICKNAME(profile.data.name || "");
+    store.SET_AVATAR(profile.data.avatar || "");
+
+    storageLocal().setItem(userKey, {});
+    Cookies.set(multipleTabsKey, "true");
 
     await initRouter();
     await router.push("/welcome");

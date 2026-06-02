@@ -9,7 +9,6 @@ export const multipleTabsKey = "multiple-tabs";
 
 /** localStorage 中存储的数据结构 */
 export type DataInfo<T> = {
-  roles?: string[];
   expires?: T;
 };
 
