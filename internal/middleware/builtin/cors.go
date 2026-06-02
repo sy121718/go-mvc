@@ -55,11 +55,12 @@ func defaultCORSConfig() CORSConfig {
 //   - 普通请求 → 追加跨域响应头后继续
 //
 // 响应头：
-//   Access-Control-Allow-Origin      — 回显请求 Origin 或 *
-//   Access-Control-Allow-Methods     — 允许的方法列表
-//   Access-Control-Allow-Headers     — 允许的请求头列表
-//   Access-Control-Allow-Credentials — true，允许携带 Cookie
-//   Access-Control-Max-Age           — 86400 秒（24 小时），预检结果缓存时间
+//
+//	Access-Control-Allow-Origin      — 回显请求 Origin 或 *
+//	Access-Control-Allow-Methods     — 允许的方法列表
+//	Access-Control-Allow-Headers     — 允许的请求头列表
+//	Access-Control-Allow-Credentials — true，允许携带 Cookie
+//	Access-Control-Max-Age           — 86400 秒（24 小时），预检结果缓存时间
 //
 // 适用位置：全局 engine.Use()，必须在所有业务路由之前。
 func CORS(cfg ...CORSConfig) gin.HandlerFunc {
@@ -79,7 +80,7 @@ func CORS(cfg ...CORSConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
-		// OPTIONS 预检请求：不执行业务处理器，直接返回 204
+		// 预检请求：不执行业务处理器，直接返回 204
 		if c.Request.Method == http.MethodOptions {
 			setCORSHeaders(c, origin, config)
 			c.AbortWithStatus(http.StatusNoContent)
@@ -92,9 +93,6 @@ func CORS(cfg ...CORSConfig) gin.HandlerFunc {
 }
 
 // setCORSHeaders 根据配置向响应头写入 CORS 字段。
-//
-// 当 AllowedOrigins 为空时，有 Origin 则回显，无则用 *。
-// 当 AllowedOrigins 有值时，只对匹配的来源写入，不匹配的不会写入（浏览器将拒绝跨域）。
 func setCORSHeaders(c *gin.Context, origin string, config CORSConfig) {
 	if len(config.AllowedOrigins) == 0 {
 		if origin != "" {
@@ -113,6 +111,7 @@ func setCORSHeaders(c *gin.Context, origin string, config CORSConfig) {
 
 	c.Header("Access-Control-Allow-Methods", strings.Join(config.AllowedMethods, ", "))
 	c.Header("Access-Control-Allow-Headers", strings.Join(config.AllowedHeaders, ", "))
+	c.Header("Access-Control-Expose-Headers", "X-New-Token")
 	c.Header("Access-Control-Allow-Credentials", "true")
 	c.Header("Access-Control-Max-Age", "86400")
 }

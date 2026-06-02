@@ -27,15 +27,9 @@ type CreateResp struct {
 
 // LoginResp 管理员登录响应
 //
-// 登录成功后返回 token 和用户基本信息，前端会根据此信息写入 localStorage。
+// token 通过响应头 X-New-Token 下发，body 只返回成功状态。
 type LoginResp struct {
-	AccessToken  string `json:"accessToken"`  // JWT token，后续请求带在 Authorization 头
-	RefreshToken string `json:"refreshToken"` // 刷新 token，accessToken 过期后用它续期
-	Expires      string `json:"expires"`      // token 过期时间，格式 "2006/01/02 15:04:05"
-	Username     string `json:"username"`     // 登录账号
-	Nickname     string `json:"nickname"`     // 显示昵称（对应 admin_entity.name）
-	Email        string `json:"email"`        //邮箱
-	Avatar       string `json:"avatar"`       // 头像URL
+	AccessToken string `json:"accessToken"` // JWT token
 }
 
 // DetailResp 管理员详情响应

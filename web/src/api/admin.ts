@@ -76,15 +76,15 @@ export type AdminDetailResp = {
 // ──────── API 函数 ────────
 
 export const getAdminList = (params?: AdminListReq) => {
-  return http.request<AdminListResp>("get", "/admin/list", { params });
+  return http.request<AdminListResp>("get", "/api/admin/list", { params });
 };
 
 export const createAdmin = (data: AdminCreateReq) => {
-  return http.request<AdminCreateResp>("post", "/admin/create", { data });
+  return http.request<AdminCreateResp>("post", "/api/admin/create", { data });
 };
 
 export const getAdminDetail = (id: number) => {
-  return http.request<AdminDetailResp>("get", "/admin/detail", {
+  return http.request<AdminDetailResp>("get", "/api/admin/detail", {
     params: { id }
   });
 };

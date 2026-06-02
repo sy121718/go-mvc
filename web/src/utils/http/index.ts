@@ -83,18 +83,11 @@ class PureHttp {
           PureHttp.initConfig.beforeResponseCallback(response);
           return response.data;
         }
-        // 后端响应头 X-New-Token 中携带新 token 时自动更新本地存储（无感续期）
+        // 后端响应头 X-New-Token 中携带新 token 时自动更新本地存储
         const newToken = response.headers["x-new-token"];
         if (newToken) {
-          const current = getToken();
-          if (current) {
-            setToken({
-              ...current,
-              accessToken: newToken,
-              refreshToken: current.refreshToken,
-              expires: current.expires
-            } as any);
-          }
+          const current = getToken() || {} as any;
+          setToken({ ...current, accessToken: newToken } as any);
         }
         return response.data;
       },

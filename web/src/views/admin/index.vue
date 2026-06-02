@@ -26,7 +26,7 @@ const {
 
     <div class="main">
         <!-- 把这个 el-form 组件实例赋给你在 <script setup> 里定义的 const formRef = ref()，之后就能在 JS 里调它的方法。 -->
-        <el-from ref="formRef" :model="form" label-width="80px" @keyup.enter="onSearch">
+        <el-form ref="formRef" :model="form" label-width="80px" @keyup.enter="onSearch">
             <el-row :gutter="20">
                 <el-col :span="6">
                     <el-form-item label="邮箱" prop="email">
@@ -65,36 +65,29 @@ const {
 
                 </el-col>
             </el-row>
-        </el-from>
+        </el-form>
         <!-- 表格 -->
 
 
         <RePureTableBar title="管理员列表" :columns="columns">
-            <template #defailt="{ size, dynamicColumns }">
+            <template #default="{ size, dynamicColumns }">
                 <el-table ref="tableRef" :data="dataList" :columns="dynamicColumns" :size="size" row-key="id" stripe
                     @sort-change="handleSortChange">
 
                     <template v-for="col in dynamicColumns" :key="col.prop">
-                        <el-table-colum 
-                        v-if="col.slot === 'operation'"
-                        :label="col.label"
-                        :fixed="col.fixed"
-                        :width="col.width"
-                        v-bind="col"
-                        >
-                 <template #defaull="{row}">
-                    <el-button type="primary" link size="small">
-                        编辑
+                        <el-table-column v-if="col.slot === 'operation'" :label="col.label" :fixed="col.fixed"
+                            :width="col.width" v-bind="col">
+                            <template #default="{ row }">
+                                <el-button type="primary" link size="small">
+                                    编辑
+                                </el-button>
+                                <el-button type="danger" link size="small">
+                                    删除
+                                </el-button>
+                            </template>
 
-                    </el-button> 
-                    <el-button type="danger" link size="small">
-                        删除
 
-                    </el-button> 
-                 </template>
-                    
-                    
-                    </el-table-colum>
+                        </el-table-column>
                     </template>
 
 
@@ -106,7 +99,7 @@ const {
         </RePureTableBar>
 
 
-        <el-pagination/>
+        <el-pagination />
 
     </div>
 

@@ -2,6 +2,17 @@
 
 一个基于 Gin 的 Go MVC 项目，当前采用显式组件生命周期、模块化目录结构和 `pkg` facade 入口。
 
+## 认证机制
+
+项目采用**单 Token + 后端自动续期**方案：
+
+- **登录**：后端生成 `accessToken`，通过响应头 `X-New-Token` 下发，body 只返回 `{code:200, message:"success"}`
+- **请求**：前端从 cookie 读取 token，塞入 `Authorization: Bearer <token>` 请求头
+- **续期**：`JWTAuthMiddleware` 在每个请求处理完后检查 token 剩余时间，不足 10 分钟时自动生成新 token 通过 `X-New-Token` 响应头返回
+- **过期**：token 过期后后端返回 401，前端清除存储跳转 `/login`
+- **记住我**：勾选后 token 有效期为 7 天（默认 24h），在 `config.yaml` 的 `jwt.expire_time` 配置
+- **安全**：所有请求经过 `SignatureMiddleware`（时间戳 + nonce + HMAC 签名）防重放防篡改
+
 ## 当前重点
 
 - 启动流程已经拆成显式步骤：`config.Init()`、`config.InitComponents()`、路由注册、HTTP 服务启动

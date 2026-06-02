@@ -95,29 +95,14 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 		return nil, err
 	}
 
-	// 7) 生成 token 对 传入
-	accessToken, refreshToken, expires, err := auth.GenerateTokenPair(int64(entity.ID), entity.Username, req.RememberMe)
+	// 7) 生成 token
+	accessToken, err := auth.GenerateToken(int64(entity.ID), entity.Username, req.RememberMe)
 	if err != nil {
 		return nil, fmt.Errorf("生成 token 失败: %w", err)
 	}
-	nickname := *entity.Name
-	avatar := ""
-	if entity.Avatar != nil {
-		avatar = *entity.Avatar
-	}
-	email := ""
-	if entity.Email != nil {
-		email = *entity.Email
-	}
 
 	return &admindto.LoginResp{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		Expires:      expires,
-		Username:     entity.Username,
-		Nickname:     nickname,
-		Email:        email,
-		Avatar:       avatar,
+		AccessToken: accessToken,
 	}, nil
 }
 

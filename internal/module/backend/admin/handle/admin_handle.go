@@ -74,5 +74,6 @@ func (h *Handle) Login(c *gin.Context) {
 		return
 	}
 
-	r.Success(c, res)
+	c.Header("X-New-Token", res.AccessToken)
+	r.SuccessWithMessage(c, "success", nil)
 }

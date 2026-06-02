@@ -60,14 +60,12 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 
 		// 自动续期：token 剩余不足 10 分钟，生成新 token 通过响应头返回
 		if claims.ExpiresAt != nil && time.Until(claims.ExpiresAt.Time) <= 10*time.Minute {
-			newToken, _, _, err := auth.GenerateTokenPair(claims.UserID, claims.Username, claims.RememberMe)
+			newToken, err := auth.GenerateToken(claims.UserID, claims.Username, claims.RememberMe)
 			if err != nil {
 				log.Printf("JWT 自动续期失败: %v", err)
 				return
 			}
-			//请求里面插入新的toekn
 			c.Header("X-New-Token", newToken)
-			c.Header("Access-Control-Expose-Headers", "X-New-Token")
 		}
 	}
 }

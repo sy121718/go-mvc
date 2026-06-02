@@ -183,6 +183,42 @@ func GenerateTokenPair(userID int64, username string, rememberMe bool) (accessTo
 	return accessToken, refreshToken, expires, nil
 }
 
+// GenerateToken 生成单个 accessToken（单 token 方案）。
+//
+// 使用配置的默认过期时间（如 24h）。
+// 只返回 token 字符串，不返回 refreshToken 和 expires。
+func GenerateToken(userID int64, username string, rememberMe bool) (string, error) {
+	secret, cfg, err := snapshotState()
+	if err != nil {
+		return "", err
+	}
+
+	now := time.Now()
+	accessHours := cfg.ExpireTime
+	if accessHours <= 0 {
+		accessHours = defaultJWTExpireTime
+	}
+
+	claims := Claims{
+		UserID:     userID,
+		Username:   username,
+		RememberMe: rememberMe,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(accessHours) * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    cfg.Issuer,
+		},
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
 // ParseToken 解析 Token。
 func ParseToken(tokenString string) (*Claims, error) {
 	secret, _, err := snapshotState()
