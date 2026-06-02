@@ -11,6 +11,7 @@ import (
 	adminmodel "go-mvc/internal/module/backend/admin/model"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/captcha"
+	"go-mvc/pkg/casbin"
 	"go-mvc/pkg/database"
 
 	"golang.org/x/crypto/bcrypt"
@@ -99,6 +100,56 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 	accessToken, err := auth.GenerateToken(int64(entity.ID), entity.Username, req.RememberMe)
 	if err != nil {
 		return nil, fmt.Errorf("生成 token 失败: %w", err)
+	}
+
+	// 8) 从 Casbin 获取用户权限
+	var permissions []string
+	e := casbin.GetEnforcer()
+	if e != nil {
+		perms, _ := e.GetPermissionsForUser(entity.Username)
+		for _, p := range perms {
+			// p 格式：[sub, obj, act, code]
+			if len(p) >= 4 && p[3] != "" {
+				permissions = append(permissions, p[3])
+			}
+		}
+	}
+
+	// 9) 写入 Redis 会话
+	name := ""
+	if entity.Name != nil {
+		name = *entity.Name
+	}
+	avatar := ""
+	if entity.Avatar != nil {
+		avatar = *entity.Avatar
+	}
+	email := ""
+	if entity.Email != nil {
+		email = *entity.Email
+	}
+	phone := ""
+	if entity.Phone != nil {
+		phone = *entity.Phone
+	}
+
+	if err := auth.SaveUserSession(ctx, &auth.UserSession{
+		ID:          entity.ID,
+		Username:    entity.Username,
+		Name:        name,
+		Avatar:      avatar,
+		Email:       email,
+		Phone:       phone,
+		Status:      entity.Status,
+		IsAdmin:     entity.IsAdmin,
+		Permissions: permissions,
+	}, 0); err != nil {
+		return nil, fmt.Errorf("写入用户会话失败: %w", err)
+	}
+
+	// 10) 刷新在线心跳
+	if err := auth.RefreshOnline(ctx, entity.ID, 0); err != nil {
+		return nil, fmt.Errorf("刷新在线状态失败: %w", err)
 	}
 
 	return &admindto.LoginResp{
