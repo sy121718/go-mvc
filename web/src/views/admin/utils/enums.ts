@@ -9,9 +9,9 @@ export const adminIsAdminOptions = [
   { value: 1, label: "是" }
 ];
 
-export const getAdminStatusTagType = (status: number) => {
+export const getAdminStatusTagType = (status: number): "info" | "success" | "warning" | "danger" | "primary" => {
   const opt = adminStatusOptions.find(o => o.value === status);
-  return opt?.tagType ?? "info";
+  return (opt?.tagType as "info" | "success" | "warning" | "danger" | "primary") ?? "info";
 };
 
 export const getAdminStatusLabel = (status: number) => {

@@ -230,7 +230,7 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 	page := req.GetPage()
 	limit := req.GetLimit()
 
-	query := s.am.Query(c).Where("deleted_time IS NULL")
+	query := s.am.Query(c).Where("is_admin = ?", 1)
 
 	if email := strings.TrimSpace(req.Email); email != "" {
 		query = query.Where("email LIKE ?", "%"+email+"%")
@@ -263,9 +263,23 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 		return nil, err
 	}
 
+	items := make([]admindto.AdminItem, len(list))
+	for i, entity := range list {
+		items[i] = admindto.AdminItem{
+			ID:         entity.ID,
+			Username:   entity.Username,
+			Name:       entity.Name,
+			Avatar:     entity.Avatar,
+			Email:      entity.Email,
+			Phone:      entity.Phone,
+			Status:     entity.Status,
+			CreateTime: entity.CreateTime,
+		}
+	}
+
 	res = &admindto.ListResp{
 		Total: total,
-		List:  list,
+		List:  items,
 	}
 
 	return

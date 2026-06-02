@@ -7,16 +7,26 @@ package admindto
 
 import (
 	"time"
-
-	adminmodel "go-mvc/internal/module/backend/admin/model"
 )
 
 // ListResp 管理员列表查询响应
 //
 // 返回符合查询条件的总记录数和当前页的数据列表。
 type ListResp struct {
-	Total int64                    `json:"total"` // 符合条件的总记录数，用于前端分页组件
-	List  []adminmodel.AdminEntity `json:"list"`  // 当前页的管理员数据列表
+	Total int64       `json:"total"` // 符合条件的总记录数，用于前端分页组件
+	List  []AdminItem `json:"list"`  // 当前页的管理员数据列表
+}
+
+// AdminItem 列表项，只返回前端需要的字段，不暴露敏感/内部字段。
+type AdminItem struct {
+	ID         uint64     `json:"id"`
+	Username   string     `json:"username"`
+	Name       *string    `json:"name"`
+	Avatar     *string    `json:"avatar"`
+	Email      *string    `json:"email"`
+	Phone      *string    `json:"phone"`
+	Status     int        `json:"status"`      // 1启用 2禁用 3封禁
+	CreateTime *time.Time `json:"create_time"` // 创建时间
 }
 
 // CreateResp 管理员新增响应

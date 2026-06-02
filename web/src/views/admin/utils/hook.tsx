@@ -31,15 +31,12 @@ export function useAdmin() {
   });
 
   const columns: TableColumnList = [
-
     {
       label: "ID",
       prop: "id",
-      minWidth: 80,
+      width: 80,
       align: "center",
-      // 或固定在左侧
       fixed: "left",
-      //允许排序
       sortable: "custom",
     }, {
       label: "用户名",
@@ -68,11 +65,7 @@ export function useAdmin() {
       label: "状态",
       prop: "status",
       width: 120,
-      cellRenderer: ({ row, props }) => (
-        <el-tag size={props.size} type={getAdminStatusTagType(row.status)} effect="plain">
-          {getAdminStatusLabel(row.status)}
-        </el-tag>
-      )
+      slot: "status"
     },
     {
       label: "超管",
@@ -92,7 +85,6 @@ export function useAdmin() {
       width: 180,
       slot: "operation"
     }
-
   ];
   async function onSearch() {
     // 每次刷新加载动画
@@ -112,17 +104,17 @@ export function useAdmin() {
       //发起请求并且用res存储响应的值
       const res = await getAdminList(params);
       if (res.code === 200) {
-        // 类似ajax的sussces
         dataList.value = res.data.list || [];
         total.value = res.data.total || 0;
       } else {
-        message(res.message, { type: "error" })
-
+        message(res.message || "请求失败", { type: "error" })
       }
 
     } catch (error) {
-      //ajax的error
-      console.error("获取管理员列表失败", error)
+      const msg = error instanceof Error ? error.message : "请求异常";
+      message(msg, { type: "error" })
+    } finally {
+      loading.value = false;
     }
 
 
@@ -198,7 +190,9 @@ export function useAdmin() {
       resetForm,//重置
       handleSizeChange,//limit条数
       handleCurrentChange,//分页
-      handleSortChange//排序
+      handleSortChange,//排序
+      getAdminStatusTagType,
+      getAdminStatusLabel
     };
 
 

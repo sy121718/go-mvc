@@ -4,7 +4,6 @@ defineOptions({
 })
 import { useAdmin } from './utils/hook';
 
-//提前导出解构全局使用
 const {
     form,
     formRef,
@@ -16,21 +15,19 @@ const {
     resetForm,
     handleSizeChange,
     handleCurrentChange,
-    handleSortChange
+    handleSortChange,
+    getAdminStatusTagType,
+    getAdminStatusLabel
 } = useAdmin();
 </script>
-
-
 
 <template>
 
     <div class="main">
-        <!-- 把这个 el-form 组件实例赋给你在 <script setup> 里定义的 const formRef = ref()，之后就能在 JS 里调它的方法。 -->
         <el-form ref="formRef" :model="form" label-width="80px" @keyup.enter="onSearch">
             <el-row :gutter="20">
                 <el-col :span="6">
                     <el-form-item label="邮箱" prop="email">
-                        <!-- clearable 清空输入框 -->
                         <el-input v-model="form.email" placeholder="邮箱搜索" clearable maxlength="100"></el-input>
                     </el-form-item>
                 </el-col>
@@ -55,54 +52,63 @@ const {
                 </el-col>
 
                 <el-col :span="24" style="text-align: right;margin-bottom: 12px;">
-                    <el-button type="primary" @click="onSearch">
-                        搜索
-                    </el-button>
-                    <el-button @click="resetForm(formRef)">
-                        重置
-                    </el-button>
-
-
+                    <el-button type="primary" @click="onSearch">搜索</el-button>
+                    <el-button @click="resetForm(formRef)">重置</el-button>
                 </el-col>
             </el-row>
         </el-form>
-        <!-- 表格 -->
 
+        <el-table :data="dataList" v-loading="loading" row-key="id" stripe
+            @sort-change="handleSortChange" style="width: 100%">
 
-        <RePureTableBar title="管理员列表" :columns="columns">
-            <template #default="{ size, dynamicColumns }">
-                <el-table ref="tableRef" :data="dataList" :columns="dynamicColumns" :size="size" row-key="id" stripe
-                    @sort-change="handleSortChange">
+            <el-table-column type="selection" width="55" fixed="left" />
+            <el-table-column v-for="col in columns" 
+                :key="(col.prop as string) || col.label"
+                :prop="col.prop as string" 
+                :label="col.label" 
+                :width="col.width"
+                :min-width="col.minWidth" 
+                :fixed="col.fixed" 
+                :sortable="col.sortable"
+                :align="col.align" 
+                :formatter="col.formatter">
 
-                    <template v-for="col in dynamicColumns" :key="col.prop">
-                        <el-table-column v-if="col.slot === 'operation'" :label="col.label" :fixed="col.fixed"
-                            :width="col.width" v-bind="col">
-                            <template #default="{ row }">
-                                <el-button type="primary" link size="small">
-                                    编辑
-                                </el-button>
-                                <el-button type="danger" link size="small">
-                                    删除
-                                </el-button>
-                            </template>
+                <template #default="{ row }" v-if="col.slot === 'status'">
+                    <el-tag :type="getAdminStatusTagType(row.status)" effect="plain">
+                        {{ getAdminStatusLabel(row.status) }}
+                    </el-tag>
+                </template>
+                <template #default="{ row }" v-else-if="col.slot === 'operation'">
+                    <el-button type="primary" link size="small">编辑</el-button>
+                    <el-button type="danger" link size="small">删除</el-button>
+                </template>
 
+            </el-table-column>
 
-                        </el-table-column>
-                    </template>
+        </el-table>
 
-
-                </el-table>
-
-
-            </template>
-
-        </RePureTableBar>
-
-
-        <el-pagination />
+        <el-pagination
+            v-if="total > 0"
+            :page-size="form.limit"
+            :current-page="form.page"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="total"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            style="margin-top: 16px; justify-content: flex-end;"
+        />
 
     </div>
 
-
-
 </template>
+
+<style scoped>
+.main {
+    margin: 12px;
+    background: var(--el-bg-color);
+    padding: 16px;
+    border-radius: 8px;
+}
+</style>
