@@ -6,9 +6,9 @@
 
 项目采用**单 Token + 后端自动续期**方案：
 
-- **登录**：后端生成 `accessToken`，通过响应头 `X-New-Token` 下发，body 只返回 `{code:200, message:"success"}`
-- **请求**：前端从 cookie 读取 token，塞入 `Authorization: Bearer <token>` 请求头
-- **续期**：`JWTAuthMiddleware` 在每个请求处理完后检查 token 剩余时间，不足 10 分钟时自动生成新 token 通过 `X-New-Token` 响应头返回
+- **登录**：前端 POST `/api/admin/login`，后端验证密码后生成 `accessToken`，通过响应头 `X-New-Token` 下发，body 只返回 `{code:200, message:"success"}`。前端 Axios 拦截器捕获 `X-New-Token` 存入 cookie
+- **请求**：前端请求拦截器每次从 cookie 读取 token，放入 `Authorization: Bearer <token>` 请求头发送
+- **续期**：`JWTAuthMiddleware` 在每个请求处理完后检查 token 剩余时间，不足 10 分钟时自动生成新 token 通过 `X-New-Token` 响应头返回，前端拦截器静默更新 cookie
 - **过期**：token 过期后后端返回 401，前端清除存储跳转 `/login`
 - **记住我**：勾选后 token 有效期为 7 天（默认 24h），在 `config.yaml` 的 `jwt.expire_time` 配置
 - **安全**：所有请求经过 `SignatureMiddleware`（时间戳 + nonce + HMAC 签名）防重放防篡改
