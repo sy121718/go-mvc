@@ -17,14 +17,16 @@ const {
     handleCurrentChange,
     handleSortChange,
     getAdminStatusTagType,
-    getAdminStatusLabel
+    getAdminStatusLabel,
+    openAdd,
+    openBatchDelete
 } = useAdmin();
 </script>
 
 <template>
 
     <div class="main">
-        <el-form ref="formRef" :model="form" label-width="80px" @keyup.enter="onSearch">
+        <el-form ref="formRef" :model="form" label-position="top" class="filter-form" @keyup.enter="onSearch">
             <el-row :gutter="20">
                 <el-col :span="6">
                     <el-form-item label="邮箱" prop="email">
@@ -37,26 +39,27 @@ const {
                     </el-form-item>
                 </el-col>
                 <el-col :span="6">
-                    <el-form-item label="手机号" prop="phone">
-                        <el-input v-model="form.phone" placeholder="手机号搜索" clearable maxlength="100"></el-input>
-                    </el-form-item>
-                </el-col>
-                <el-col :span="6">
                     <el-form-item label="状态筛选" prop="status">
-                        <el-select v-model="form.status" placeholder="状态筛选">
+                        <el-select v-model="form.status" placeholder="状态筛选" clearable>
                             <el-option label="启用" :value="1" />
                             <el-option label="禁用" :value="2" />
                             <el-option label="密码错误封禁" :value="3" />
                         </el-select>
                     </el-form-item>
                 </el-col>
-
-                <el-col :span="24" style="text-align: right;margin-bottom: 12px;">
-                    <el-button type="primary" @click="onSearch">搜索</el-button>
-                    <el-button @click="resetForm(formRef)">重置</el-button>
+                <el-col :span="6" class="filter-actions-col">
+                    <div class="filter-actions">
+                        <el-button type="primary" @click="onSearch">搜索</el-button>
+                        <el-button @click="resetForm(formRef)">重置</el-button>
+                    </div>
                 </el-col>
             </el-row>
         </el-form>
+
+        <div class="toolbar">
+            <el-button type="primary" @click="openAdd">添加管理员</el-button>
+            <el-button type="danger" @click="openBatchDelete">批量删除</el-button>
+        </div>
 
         <el-table :data="dataList" v-loading="loading" row-key="id" stripe
             @sort-change="handleSortChange" style="width: 100%">
@@ -78,7 +81,7 @@ const {
                         {{ getAdminStatusLabel(row.status) }}
                     </el-tag>
                 </template>
-                <template #default="{ row }" v-else-if="col.slot === 'operation'">
+                <template #default v-else-if="col.slot === 'operation'">
                     <el-button type="primary" link size="small">编辑</el-button>
                     <el-button type="danger" link size="small">删除</el-button>
                 </template>
@@ -110,5 +113,33 @@ const {
     background: var(--el-bg-color);
     padding: 16px;
     border-radius: 8px;
+}
+
+.filter-form :deep(.el-form-item) {
+    margin-bottom: 16px;
+}
+
+.filter-form :deep(.el-form-item__label) {
+    padding-bottom: 8px;
+    line-height: 20px;
+}
+
+.filter-actions-col {
+    display: flex;
+    align-items: flex-end;
+}
+
+.filter-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-bottom: 16px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 </style>

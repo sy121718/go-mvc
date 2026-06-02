@@ -1,13 +1,12 @@
-import { reactive, ref, onMounted, computed } from "vue";
+import { ref, reactive, onMounted, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { isAllEmpty } from "@pureadmin/utils";
 import { message } from "@/utils/message";
-//提交请求
-import type { AdminListReq } from "@/api/admin";
-// 获取请求
-import { getAdminList } from "@/api/admin";
-//获取定义的枚举
+import type { AdminListReq, AdminCreateReq } from "@/api/admin";
+import { getAdminList, createAdmin } from "@/api/admin";
 import { getAdminStatusTagType, getAdminStatusLabel } from "./enums";
+import { addDialog, closeDialog } from "@/components/ReDialog";
+import CreateForm from "../components/createForm.vue";
 
 //export 用于导出到外部了，use开头表示导出，admin约定的list列表或者主数据
 export function useAdmin() {
@@ -24,7 +23,6 @@ export function useAdmin() {
     limit: 10,
     email: "",
     name: "",
-    phone: "",
     status: undefined,
     sort_field: undefined,
     sort_order: undefined
@@ -97,7 +95,6 @@ export function useAdmin() {
       // 如果form的值不是空的，那就赋值给params用于发起请求
       if (!isAllEmpty(form.email)) params.email = form.email;
       if (!isAllEmpty(form.name)) params.name = form.name;
-      if (!isAllEmpty(form.phone)) params.phone = form.phone;
       if (form.status !== undefined && form.status !== null) params.status = form.status;
       if (!isAllEmpty(form.sort_field)) params.sort_field = form.sort_field;
       if (!isAllEmpty(form.sort_order)) params.sort_order = form.sort_order;
@@ -132,7 +129,6 @@ export function useAdmin() {
     form.limit = 10;
     form.email = "";
     form.name = "";
-    form.phone = "";
     form.status = undefined;
     form.sort_field = undefined;
     form.sort_order = undefined;
@@ -171,6 +167,46 @@ export function useAdmin() {
       onSearch();
     }
   
+    // ────── 工具按钮 ──────
+    function openAdd() {
+      const formRef = ref()
+
+      addDialog({
+        title: "新增管理员",
+        contentRenderer: () => h(CreateForm, { ref: formRef }),
+        footerButtons: [
+          { label: "取消" },
+          {
+            label: "保存",
+            type: "primary",
+            btnClick: async ({ dialog: { options, index } }) => {
+              if (!formRef.value) return
+              const elForm = formRef.value.getRef()
+              if (!elForm) return
+              try {
+                await elForm.validate()
+                const formData = formRef.value.getForm()
+                const res = await createAdmin(formData as AdminCreateReq)
+                if (res.code === 200) {
+                  message("添加成功", { type: "success" })
+                  closeDialog(options, index)
+                  onSearch()
+                } else {
+                  message(res.message || "添加失败", { type: "error" })
+                }
+              } catch {
+                // 校验失败
+              }
+            }
+          }
+        ]
+      })
+    }
+  
+    function openBatchDelete() {
+      // TODO: 批量删除
+    }
+  
     // 页面加载时自动触发首次查询，vue框架自带的页面初始化
     onMounted(() => {
       onSearch();
@@ -192,7 +228,9 @@ export function useAdmin() {
       handleCurrentChange,//分页
       handleSortChange,//排序
       getAdminStatusTagType,
-      getAdminStatusLabel
+      getAdminStatusLabel,
+      openAdd,
+      openBatchDelete
     };
 
 

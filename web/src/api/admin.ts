@@ -9,7 +9,6 @@ export type AdminListReq = {
   limit?: number;
   email?: string;
   name?: string;
-  phone?: string;
   status?: number;
   sort_field?: string;
   sort_order?: string;

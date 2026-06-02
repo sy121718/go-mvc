@@ -230,16 +230,14 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 	page := req.GetPage()
 	limit := req.GetLimit()
 
-	query := s.am.Query(c).Where("is_admin = ?", 1)
+	//默认排除超管
+	query := s.am.Query(c).Where("is_admin != ?", 1)
 
 	if email := strings.TrimSpace(req.Email); email != "" {
 		query = query.Where("email LIKE ?", "%"+email+"%")
 	}
 	if name := strings.TrimSpace(req.Name); name != "" {
 		query = query.Where("name LIKE ?", "%"+name+"%")
-	}
-	if phone := strings.TrimSpace(req.Phone); phone != "" {
-		query = query.Where("phone LIKE ?", "%"+phone+"%")
 	}
 	if req.Status != nil {
 		query = query.Where("status = ?", *req.Status)
