@@ -33,6 +33,7 @@ export type AdminCreateReq = {
   username: string;
   phone?: string;
   password: string;
+  remark?: string;
 };
 
 //新增响应
@@ -53,9 +54,9 @@ export type AdminDetailResp = {
   message?: string;
   data: {
     id: number;
-    username: string;
-    nickname: string;
-    avatar: string;
+    username: string;//用户名
+    name:string;//昵称
+    avatar: string;//头像
     email: string;
     phone: string;
     status: number;
@@ -69,7 +70,52 @@ export type AdminDetailResp = {
     last_login_time: string;
     create_by: number;
     create_time: string;
+    remark:string;
   };
+};
+
+export type AdminEditReq = {
+  id: number;
+  username: string;
+  email: string;
+  phone?: string;
+  remark?: string;
+};
+
+export type AdminEditResp = {
+  code: number;
+  message?: string;
+  data: {
+    id: number;
+  };
+};
+
+
+// ──────── 登录/验证码/用户信息 ────────
+
+// 获取验证码
+export type CaptchaResult = {
+  code: number;
+  message?: string;
+  data: {
+    captcha_id: string;
+    captcha: string;
+  };
+};
+
+/** 登录 */
+export const getLogin = (data?: object) => {
+  return http.request<any>("post", "/api/admin/login", { data });
+};
+
+/** 获取验证码 */
+export const getCaptcha = () => {
+  return http.request<CaptchaResult>("get", "/api/captcha");
+};
+
+/** 获取当前用户信息 */
+export const getProfile = () => {
+  return http.request<any>("get", "/api/admin/profile");
 };
 
 // ──────── API 函数 ────────
@@ -87,3 +133,7 @@ export const getAdminDetail = (id: number) => {
     params: { id }
   });
 };
+
+export const getAdminEdit = (data: AdminEditReq) => {
+  return http.request<AdminEditResp>("post", "/api/admin/edit", { data });
+}

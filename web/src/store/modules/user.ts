@@ -1,3 +1,4 @@
+import Cookies from "js-cookie";
 import { defineStore } from "pinia";
 import {
   type userType,
@@ -7,9 +8,9 @@ import {
   routerArrays,
   storageLocal
 } from "../utils";
-import { getLogin } from "@/api/user";
+import { getLogin } from "@/api/admin";
 import { useMultiTagsStoreHook } from "./multiTags";
-import { removeToken } from "@/utils/auth";
+import { removeToken, userKey, multipleTabsKey } from "@/utils/auth";
 
 export const useUserStore = defineStore("pure-user", {
   state: (): userType => ({
@@ -77,6 +78,8 @@ export const useUserStore = defineStore("pure-user", {
       this.avatar = "";
       this.nickname = "";
       removeToken();
+      storageLocal().removeItem(userKey);
+      Cookies.remove(multipleTabsKey);
       useMultiTagsStoreHook().handleTags("equal", [...routerArrays]);
       resetRouter();
       router.push("/login");

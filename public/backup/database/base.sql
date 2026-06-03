@@ -285,6 +285,7 @@ CREATE TABLE `sys_admin` (
   `create_time` datetime(3) DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint unsigned NOT NULL COMMENT '更新人ID（0=系统更新）',
   `update_time` datetime(3) DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `uk_username` (`username`) USING BTREE COMMENT '用户名唯一索引',
   KEY `idx_email` (`email`) USING BTREE,
@@ -299,7 +300,7 @@ CREATE TABLE `sys_admin` (
 
 LOCK TABLES `sys_admin` WRITE;
 /*!40000 ALTER TABLE `sys_admin` DISABLE KEYS */;
-INSERT INTO `sys_admin` VALUES (1,'admin','$2a$10$Xk2cyVAGlTtfBtzTOiD5ae4FYHzLSz9lR1ggGx3r.I7CLCer.Hg4y','admin','https://avatars.githubusercontent.com/u/52823142','1217189608@qq.com',NULL,1,1,0,NULL,NULL,NULL,NULL,NULL,'::1',NULL,NULL,'2026-06-02 14:37:54.758',0,NULL,0,NULL);
+INSERT INTO `sys_admin` VALUES (1,'admin','$2a$10$Xk2cyVAGlTtfBtzTOiD5ae4FYHzLSz9lR1ggGx3r.I7CLCer.Hg4y','admin','https://avatars.githubusercontent.com/u/52823142','1217189608@qq.com',NULL,1,1,0,NULL,NULL,NULL,NULL,NULL,'::1',NULL,NULL,'2026-06-02 14:37:54.758',0,NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `sys_admin` ENABLE KEYS */;
 UNLOCK TABLES;
 

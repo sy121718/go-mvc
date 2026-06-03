@@ -15,8 +15,8 @@ import type { FormInstance } from "element-plus";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter } from "@/router/utils";
-import { getProfile } from "@/api/user";
-import { userKey, multipleTabsKey } from "@/utils/auth";
+import { getProfile } from "@/api/admin";
+import { userKey, multipleTabsKey, setToken } from "@/utils/auth";
 import { bg, avatar, illustration } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { useTranslationLang } from "@/layout/hooks/useTranslationLang";
@@ -101,6 +101,14 @@ const onLogin = async (formEl: FormInstance | undefined) => {
       return;
     }
 
+    const accessToken = res.data?.accessToken;
+    if (!accessToken) {
+      message("登录成功但未返回 token", { type: "error" });
+      captchaRef.value?.getImgCode?.();
+      return;
+    }
+    setToken(accessToken);
+
     // 获取当前用户信息，当前阶段只依赖个人信息完成静态路由登录态
     const profile = await getProfile();
     if (profile.code !== 200 || !profile.data) {
@@ -121,8 +129,11 @@ const onLogin = async (formEl: FormInstance | undefined) => {
     await router.push("/welcome");
     message(t("login.pureLoginSuccess"), { type: "success" });
   } catch (error) {
+    const responseMessage = (error as { response?: { data?: { message?: string } } })
+      .response?.data?.message;
     const errorMessage =
-      error instanceof Error ? error.message : t("login.pureLoginFail");
+      responseMessage ||
+      (error instanceof Error ? error.message : t("login.pureLoginFail"));
     message(errorMessage, { type: "error" });
     captchaRef.value?.getImgCode?.();
   } finally {
@@ -152,36 +163,20 @@ useEventListener(document, "keydown", ({ code }) => {
   <div class="select-none">
     <img :src="bg" class="wave" />
     <div class="flex-c absolute right-5 top-3">
-      <el-switch
-        v-model="dataTheme"
-        inline-prompt
-        :active-icon="dayIcon"
-        :inactive-icon="darkIcon"
-        @change="dataThemeChange"
-      />
+      <el-switch v-model="dataTheme" inline-prompt :active-icon="dayIcon" :inactive-icon="darkIcon"
+        @change="dataThemeChange" />
       <el-dropdown trigger="click">
         <globalization
-          class="hover:text-primary hover:bg-[transparent]! ml-1.5 h-[20px] w-[20px] cursor-pointer outline-hidden duration-300"
-        />
+          class="hover:text-primary hover:bg-[transparent]! ml-1.5 h-[20px] w-[20px] cursor-pointer outline-hidden duration-300" />
         <template #dropdown>
           <el-dropdown-menu class="translation">
-            <el-dropdown-item
-              :style="getDropdownItemStyle(locale, 'zh')"
-              :class="['dark:text-white!', getDropdownItemClass(locale, 'zh')]"
-              @click="translationCh"
-            >
-              <IconifyIconOffline
-                v-show="locale === 'zh'"
-                class="check-zh"
-                :icon="Check"
-              />
+            <el-dropdown-item :style="getDropdownItemStyle(locale, 'zh')"
+              :class="['dark:text-white!', getDropdownItemClass(locale, 'zh')]" @click="translationCh">
+              <IconifyIconOffline v-show="locale === 'zh'" class="check-zh" :icon="Check" />
               简体中文
             </el-dropdown-item>
-            <el-dropdown-item
-              :style="getDropdownItemStyle(locale, 'en')"
-              :class="['dark:text-white!', getDropdownItemClass(locale, 'en')]"
-              @click="translationEn"
-            >
+            <el-dropdown-item :style="getDropdownItemStyle(locale, 'en')"
+              :class="['dark:text-white!', getDropdownItemClass(locale, 'en')]" @click="translationEn">
               <span v-show="locale === 'en'" class="check-en">
                 <IconifyIconOffline :icon="Check" />
               </span>
@@ -206,46 +201,25 @@ useEventListener(document, "keydown", ({ code }) => {
             </h2>
           </Motion>
 
-          <el-form
-            ref="ruleFormRef"
-            :model="ruleForm"
-            :rules="loginRules"
-            size="large"
-          >
+          <el-form ref="ruleFormRef" :model="ruleForm" :rules="loginRules" size="large">
             <Motion :delay="100">
               <el-form-item prop="username">
-                <el-input
-                  v-model="ruleForm.username"
-                  clearable
-                  :placeholder="t('login.pureUsername')"
-                  :prefix-icon="useRenderIcon(User)"
-                  @blur="trimInput('username')"
-                />
+                <el-input v-model="ruleForm.username" clearable :placeholder="t('login.pureUsername')"
+                  :prefix-icon="useRenderIcon(User)" @blur="trimInput('username')" />
               </el-form-item>
             </Motion>
 
             <Motion :delay="150">
               <el-form-item prop="password">
-                <el-input
-                  v-model="ruleForm.password"
-                  clearable
-                  show-password
-                  :placeholder="t('login.purePassword')"
-                  :prefix-icon="useRenderIcon(Lock)"
-                  @blur="trimInput('password')"
-                />
+                <el-input v-model="ruleForm.password" clearable show-password :placeholder="t('login.purePassword')"
+                  :prefix-icon="useRenderIcon(Lock)" @blur="trimInput('password')" />
               </el-form-item>
             </Motion>
 
             <Motion :delay="200">
               <el-form-item prop="verifyCode">
-                <el-input
-                  v-model="ruleForm.verifyCode"
-                  clearable
-                  :placeholder="t('login.pureVerifyCode')"
-                  :prefix-icon="useRenderIcon(Keyhole)"
-                  @blur="trimInput('verifyCode')"
-                >
+                <el-input v-model="ruleForm.verifyCode" clearable :placeholder="t('login.pureVerifyCode')"
+                  :prefix-icon="useRenderIcon(Keyhole)" @blur="trimInput('verifyCode')">
                   <template #append>
                     <ReImageVerify ref="captchaRef" />
                   </template>
@@ -259,25 +233,15 @@ useEventListener(document, "keydown", ({ code }) => {
                   <el-checkbox v-model="checked">
                     <span class="flex items-center">
                       {{ rememberDays }}{{ t("login.pureRemember") }}
-                      <IconifyIconOffline
-                        v-tippy="{
-                          content: t('login.pureRememberInfo'),
-                          placement: 'top'
-                        }"
-                        :icon="Info"
-                        class="ml-1"
-                      />
+                      <IconifyIconOffline v-tippy="{
+                        content: t('login.pureRememberInfo'),
+                        placement: 'top'
+                      }" :icon="Info" class="ml-1" />
                     </span>
                   </el-checkbox>
                 </div>
-                <el-button
-                  class="mt-4! w-full"
-                  size="default"
-                  type="primary"
-                  :loading="loading"
-                  :disabled="disabled"
-                  @click="onLogin(ruleFormRef)"
-                >
+                <el-button class="mt-4! w-full" size="default" type="primary" :loading="loading" :disabled="disabled"
+                  @click="onLogin(ruleFormRef)">
                   {{ t("login.pureLogin") }}
                 </el-button>
               </el-form-item>

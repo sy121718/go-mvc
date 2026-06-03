@@ -58,6 +58,8 @@ type CreateReq struct {
 	Username string `json:"username" binding:"required,max=50" validate:"required,max=50"`                           // 用户名，必填
 	Phone    string `json:"phone" binding:"omitempty,max=20" validate:"omitempty,max=20"`                            // 手机号，可选
 	Password string `json:"password" binding:"required,min=6,max=100" validate:"required,min=6,max=100"`             // 密码，必填
+	Remark   string `from:"remark" json:"remark"`                                                                    //备注
+
 }
 
 // LoginReq 管理员登录请求参数
@@ -71,5 +73,13 @@ type LoginReq struct {
 
 // 查询管理员详情
 type DetailReq struct {
-	Id uint64 `json:"id" binding:"required" validate:"required"`
+	Id uint64 `json:"id" form:"id" binding:"required" validate:"required"`
+}
+
+type EditReq struct {
+	Id       uint64 `json:"id" binding:"required" validate:"required"`
+	Username string `json:"username"`                                                     // 登录账号
+	Phone    string `json:"phone" binding:"omitempty,max=20" validate:"omitempty,max=20"` // 手机号，可选
+	Email    string `form:"email" json:"email" binding:"omitempty,email_strict,max=100" validate:"omitempty,email_strict,max=100"`
+	Remark   string `from:"remark" json:"remark"` //备注
 }

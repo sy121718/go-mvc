@@ -37,7 +37,7 @@ type CreateResp struct {
 
 // LoginResp 管理员登录响应
 //
-// token 通过响应头 X-New-Token 下发，body 只返回成功状态。
+// token 同时通过响应头和响应体下发，避免跨域场景下前端读不到自定义响应头。
 type LoginResp struct {
 	AccessToken string `json:"accessToken"` // JWT token
 }
@@ -49,7 +49,7 @@ type LoginResp struct {
 type DetailResp struct {
 	ID                uint64     `json:"id"`
 	Username          string     `json:"username"`
-	Nickname          string     `json:"nickname"` // 对应 admin_entity.name
+	Name              string     `json:"name"`
 	Avatar            string     `json:"avatar"`
 	Email             string     `json:"email"`
 	Phone             string     `json:"phone"`
@@ -64,6 +64,7 @@ type DetailResp struct {
 	LastLoginTime     *time.Time `json:"last_login_time"`
 	CreateBy          uint64     `json:"create_by"`
 	CreateTime        *time.Time `json:"create_time"`
+	Remark            string     `json:"remark"`
 }
 
 // ProfileResp 当前登录用户信息响应（从 Redis 会话或数据库获取）。
@@ -75,5 +76,11 @@ type ProfileResp struct {
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
 	Status   int    `json:"status"`
+	Remark   string `json:"remark"` //备注
 	Menus    []any  `json:"menus"`
+}
+
+// CreateResp 管理员新增响应
+type EditResp struct {
+	ID uint64 `json:"id"` // 新增的管理员 ID，表示编辑成功
 }

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/spf13/viper"
 	internaltask "go-mvc/internal/task"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/cache"
@@ -13,6 +12,8 @@ import (
 	"go-mvc/pkg/queue"
 	"go-mvc/pkg/upload"
 	pkgvalidate "go-mvc/pkg/validate"
+
+	"github.com/spf13/viper"
 )
 
 type runtimeComponent struct {
@@ -103,8 +104,13 @@ var runtimeComponents = []runtimeComponent{
 	{
 		Name:     "captcha",
 		Critical: false,
-		Init: func(_ *viper.Viper) error {
-			captcha.Init(nil)
+		Init: func(cfg *viper.Viper) error {
+			captcha.Init(&captcha.Config{
+				Length:     cfg.GetInt("captcha.length"),
+				ExpireTime: cfg.GetDuration("captcha.expire_time"),
+				Width:      cfg.GetInt("captcha.width"),
+				Height:     cfg.GetInt("captcha.height"),
+			})
 			return nil
 		},
 		Close: captcha.Close,

@@ -301,7 +301,6 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *adm
 	} else if nameExists {
 		return nil, errors.New("用户名已存在，请修改")
 	}
-	//可以用下面这种，就是不方便阅读，但是更好调试
 	// emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email)
 	// if err != nil {
 	// 	fmt.Print("666")
@@ -328,6 +327,11 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *adm
 	}
 	// 只要有接收值并且可选字段的（omitempty）：有值才写，没值保持 nil → 数据库写 NULL，
 	if req.Phone != "" {
+		if phoneExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone); err != nil {
+			return nil, err
+		} else if phoneExists {
+			return nil, errors.New("手机号码重复，请修改")
+		}
 		entity.Phone = &req.Phone
 	}
 	if req.Avatar != "" {
@@ -345,10 +349,73 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *adm
 	return
 }
 
-// 查询管理员详情
-func (s *Service) Detail(ctx context.Context, req *admindto.DetailReq) (*admindto.DetailResp, error) {
+func (s *Service) Edit(ctx context.Context, req *admindto.EditReq) (res *admindto.EditResp, err error) {
 
-	return nil, nil
+	//判断邮箱唯一
+	if emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email, req.Id); err != nil {
+		return nil, err
+	} else if emailExists {
+		return nil, errors.New("该邮箱已存在，请修改")
+	}
+
+	// 判断用户名唯一
+	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "username", req.Username, req.Id); err != nil {
+		return nil, err
+	} else if nameExists {
+		return nil, errors.New("用户名已存在，请修改")
+	}
+
+	// 构造实体
+	// *string 类型的字段不能直接赋 string 值，需要用 & 取地址
+	entity := &adminmodel.AdminEntity{
+		Username: req.Username,
+		Email:    &req.Email,
+	}
+	if req.Phone != "" {
+		// 判断手机号码是否唯一
+		if phoneExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone, req.Id); err != nil {
+			return nil, err
+		} else if phoneExists {
+			return nil, errors.New("手机号码重复，请修改")
+		}
+		entity.Phone = &req.Phone
+	}
+
+	if req.Remark != "" {
+		entity.Remark = &req.Remark
+	}
+
+	// 执行更新
+	if err := s.am.Query(ctx).Where("id = ?", req.Id).Updates(entity).Error; err != nil {
+		return nil, err
+	}
+
+	res = &admindto.EditResp{
+		ID: req.Id,
+	}
+	return
+}
+
+// 查询管理员详情
+func (s *Service) Detail(ctx context.Context, req *admindto.DetailReq) (res *admindto.DetailResp, err error) {
+	res = &admindto.DetailResp{}
+
+	err = s.am.Query(ctx).
+		Select("id", "username", "avatar", "email", "phone", "status", "is_admin",
+			"register_ip", "register_location", "last_login_ip", "last_login_location",
+			"last_login_time", "create_by", "create_time", "remark").
+		Where("id = ?", req.Id).
+		Scan(res).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("管理员不存在")
+		}
+		return nil, err
+	}
+
+	res.Roles = []any{}
+	res.Menus = []any{}
+	return
 }
 
 // recordLoginFailure 记录登录失败：累加次数，连续 5 次封禁 30 分钟。

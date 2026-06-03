@@ -1,5 +1,5 @@
 import { ref, onMounted } from "vue";
-import { getCaptcha } from "@/api/user";
+import { getCaptcha } from "@/api/admin";
 import { message } from "@/utils/message";
 import { debounce } from "@pureadmin/utils";
 

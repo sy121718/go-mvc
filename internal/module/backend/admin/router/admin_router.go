@@ -17,12 +17,15 @@ func SetupAdminRoutes(rg *gin.RouterGroup) {
 	}
 	//绑定路由组
 	admin := rg.Group("/admin")
-	//管理员列表
-	admin.GET("/list", handle.List)
-	// 添加管理员
-	admin.POST("/create", handle.Create)
-	// 登录
 	admin.POST("/login", handle.Login)
-	// 获取当前用户信息（需登录）
-	admin.GET("/profile", builtin.JWTAuthMiddleware(), handle.Profile)
+
+	// 以下路由需要 JWT 鉴权
+	auth := admin.Group("").Use(builtin.JWTAuthMiddleware())
+	{
+		auth.GET("/list", handle.List)
+		auth.GET("/detail", handle.Detail)
+		auth.POST("/create", handle.Create)
+		auth.GET("/profile", handle.Profile)
+		auth.POST("/edit", handle.Edit)
+	}
 }

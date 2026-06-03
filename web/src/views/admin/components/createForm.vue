@@ -8,7 +8,8 @@ const form = reactive<AdminCreateReq>({
   username: "",
   email: "",
   phone: "",
-  password: ""
+  password: "",
+  remark:""
 })
 
 function getRef() {
@@ -35,6 +36,9 @@ defineExpose({ getRef, getForm })
     </el-form-item>
     <el-form-item label="密码" prop="password" required>
       <el-input v-model="form.password" type="password" placeholder="请输入密码" maxlength="50" show-password />
+    </el-form-item>
+    <el-form-item label="备注" prop="remark" required>
+      <el-input v-model="form.remark" type="textarea" placeholder="管理员备注" maxlength="500" />
     </el-form-item>
   </el-form>
 </template>

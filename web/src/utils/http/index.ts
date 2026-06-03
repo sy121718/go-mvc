@@ -11,6 +11,8 @@ import type {
 } from "./types.d";
 import { stringify } from "qs";
 import { getToken, formatToken, setToken } from "@/utils/auth";
+import { message } from "@/utils/message";
+import { useUserStoreHook } from "@/store/modules/user";
 
 // 相关配置请参考：www.axios-js.com/zh-cn/docs/#axios-request-config-1
 const defaultConfig: AxiosRequestConfig = {
@@ -93,7 +95,15 @@ class PureHttp {
       (error: PureHttpError) => {
         const $error = error;
         $error.isCancelRequest = Axios.isCancel($error);
-        // 所有的响应异常 区分来源为取消请求/非取消请求
+
+        if ($error.response?.status === 401) {
+          const responseData = $error.response.data as { message?: string } | undefined;
+          const msg = responseData?.message || "未登录或登录已过期";
+          useUserStoreHook().logOut();
+          message(msg, { type: "warning" });
+          return Promise.reject($error);
+        }
+
         return Promise.reject($error);
       }
     );

@@ -19,7 +19,8 @@ const {
     getAdminStatusTagType,
     getAdminStatusLabel,
     openAdd,
-    openBatchDelete
+    openBatchDelete,
+    openEdit
 } = useAdmin();
 </script>
 
@@ -81,8 +82,8 @@ const {
                         {{ getAdminStatusLabel(row.status) }}
                     </el-tag>
                 </template>
-                <template #default v-else-if="col.slot === 'operation'">
-                    <el-button type="primary" link size="small">编辑</el-button>
+                <template #default="{ row }" v-else-if="col.slot === 'operation'">
+                    <el-button type="primary" link size="small" @click="openEdit(row.id)">编辑</el-button>
                     <el-button type="danger" link size="small">删除</el-button>
                 </template>
 
