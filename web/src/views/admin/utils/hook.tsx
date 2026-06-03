@@ -45,48 +45,56 @@ export function useAdmin() {
     }, {
       label: "用户名",
       prop: "username",
-      minWidth: 120
+      minWidth: 120,
+      align: "center"
     },
     {
       label: "姓名",
       prop: "name",
       minWidth: 100,
+      align: "center",
       formatter: (_: any, __: any, value: string) => value || "-"
     },
     {
       label: "邮箱",
       prop: "email",
       minWidth: 120,
+      align: "center",
       formatter: (_: any, __: any, value: string) => value || "-"
     },
     {
       label: "手机号",
       prop: "phone",
       minWidth: 100,
+      align: "center",
       formatter: (_: any, __: any, value: string) => value || "-"
     },
     {
       label: "状态",
       prop: "status",
       width: 80,
+      align: "center",
       slot: "status"
     },
     {
       label: "超管",
       prop: "is_admin",
       width: 80,
+      align: "center",
       formatter: (_: any, __: any, value: number) => (value === 1 ? "是" : "否")
     },
     {
       label: "创建时间",
       prop: "create_time",
       minWidth: 150,
+      align: "center",
       sortable: "custom"
     },
     {
       label: "操作",
       fixed: "right",
       width: 180,
+      align: "center",
       slot: "operation"
     }
   ];
