@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.4.9, for Linux (x86_64)
 --
--- Host: localhost    Database: base
+-- Host: 127.0.0.1    Database: base
 -- ------------------------------------------------------
 -- Server version	8.4.9
 
@@ -285,13 +285,12 @@ CREATE TABLE `sys_admin` (
   `create_time` datetime(3) DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint unsigned NOT NULL COMMENT '更新人ID（0=系统更新）',
   `update_time` datetime(3) DEFAULT NULL COMMENT '更新时间',
-  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+  `remark` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `uk_username` (`username`) USING BTREE COMMENT '用户名唯一索引',
   KEY `idx_email` (`email`) USING BTREE,
-  KEY `idx_phone` (`phone`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统管理员表';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统管理员表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -300,7 +299,7 @@ CREATE TABLE `sys_admin` (
 
 LOCK TABLES `sys_admin` WRITE;
 /*!40000 ALTER TABLE `sys_admin` DISABLE KEYS */;
-INSERT INTO `sys_admin` VALUES (1,'admin','$2a$10$Xk2cyVAGlTtfBtzTOiD5ae4FYHzLSz9lR1ggGx3r.I7CLCer.Hg4y','admin','https://avatars.githubusercontent.com/u/52823142','1217189608@qq.com',NULL,1,1,0,NULL,NULL,NULL,NULL,NULL,'::1',NULL,NULL,'2026-06-02 14:37:54.758',0,NULL,0,NULL,NULL);
+INSERT INTO `sys_admin` VALUES (1,'admin','$2a$10$Xk2cyVAGlTtfBtzTOiD5ae4FYHzLSz9lR1ggGx3r.I7CLCer.Hg4y','admin','https://avatars.githubusercontent.com/u/52823142','1217189608@qq.com',NULL,1,1,0,NULL,NULL,NULL,NULL,NULL,'::1',NULL,NULL,'2026-06-03 17:31:19.796',0,NULL,0,NULL,NULL),(2,'sy1217','$2a$10$7AHvjD3bzQ7bAwq5GTYcNOQgc7BIIbHGqWsbLuH5MSDhNLCkxR9L6','sy1217',NULL,'3153756239@qq.com','15508432129',1,0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,'2026-06-03 11:43:34.626',0,'2026-06-03 11:43:34.626','666');
 /*!40000 ALTER TABLE `sys_admin` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -591,7 +590,7 @@ CREATE TABLE `sys_logs` (
  PARTITION p202604 VALUES LESS THAN ('2026-05-01 00:00:00') ENGINE = InnoDB,
  PARTITION p202605 VALUES LESS THAN ('2026-06-01 00:00:00') ENGINE = InnoDB,
  PARTITION p202606 VALUES LESS THAN ('2026-07-01 00:00:00') ENGINE = InnoDB,
- PARTITION `p%Y%m` VALUES LESS THAN ('2026-08-01') ENGINE = InnoDB,
+ PARTITION p202607 VALUES LESS THAN ('2026-08-01') ENGINE = InnoDB,
  PARTITION p_future VALUES LESS THAN (MAXVALUE) ENGINE = InnoDB) */;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -746,25 +745,25 @@ DELIMITER ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
 /*!50003 SET character_set_client  = utf8mb4 */ ;
 /*!50003 SET character_set_results = utf8mb4 */ ;
-/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+/*!50003 SET sql_mode              = 'IGNORE_SPACE,ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sys_logs_add_partition`()
 BEGIN
     DECLARE next_month_start VARCHAR(20);
     DECLARE next_next_month_start VARCHAR(20);
-    
+
     SET next_month_start = DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01');
     SET next_next_month_start = DATE_FORMAT(DATE_ADD(next_month_start, INTERVAL 1 MONTH), '%Y-%m-01');
-    
+
     SET @sql = CONCAT(
         'ALTER TABLE `sys_logs` REORGANIZE PARTITION `p_future` INTO (',
-        'PARTITION `p', DATE_FORMAT(next_month_start, '%%Y%%m'), '` VALUES LESS THAN (''', next_next_month_start, '''),',
+        'PARTITION `p', DATE_FORMAT(next_month_start, '%Y%m'), '` VALUES LESS THAN (''', next_next_month_start, '''),',
         'PARTITION `p_future` VALUES LESS THAN MAXVALUE',
         ')'
     );
-    
+
     PREPARE stmt FROM @sql;
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
@@ -784,4 +783,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-02 15:29:18
+-- Dump completed on 2026-06-16 16:32:04
