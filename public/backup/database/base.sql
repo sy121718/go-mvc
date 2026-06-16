@@ -649,6 +649,38 @@ LOCK TABLES `sys_menus` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `sys_role`
+--
+
+DROP TABLE IF EXISTS `sys_role`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sys_role` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `role_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色编码，与 Casbin sub 对应的关联键',
+  `role_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色名称（前端展示）',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态: 0=禁用 1=启用',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT '排序',
+  `remark` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+  `create_by` bigint unsigned DEFAULT NULL COMMENT '创建人ID',
+  `create_time` datetime(3) DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint unsigned DEFAULT NULL COMMENT '更新人ID',
+  `update_time` datetime(3) DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_role_code` (`role_code`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='角色表（仅存元信息，权限关系在 Casbin）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `sys_role`
+--
+
+LOCK TABLES `sys_role` WRITE;
+/*!40000 ALTER TABLE `sys_role` DISABLE KEYS */;
+/*!40000 ALTER TABLE `sys_role` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `sys_rule`
 --
 
@@ -783,4 +815,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-16 16:32:04
+-- Dump completed on 2026-06-16 17:08:45
