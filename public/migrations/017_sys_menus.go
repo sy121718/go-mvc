@@ -1,5 +1,7 @@
-// 系统菜单表：管理后台菜单树，支持目录/菜单/按钮/iframe/外链五种类型，
-// 含权限编码（关联 Casbin）、路由、组件路径、图标、排序、隐藏/公开/系统内置等属性，支持软删除。
+// 系统菜单表：管理后台菜单树，支持目录/菜单/按钮/iframe/外链五种类型。
+// 菜单即"权限的可视化"：type=2,3 的 permission_code 是权限编码（关联 Casbin，唯一），
+// type=1,4 不参与权限（permission_code 为 NULL），前端用 path/id 标识。
+// 含路由、组件路径、图标、排序、隐藏/公开/系统内置等属性，支持软删除。
 package migrations
 
 func init() {
@@ -8,8 +10,7 @@ func init() {
 		TableName: "sys_menus",
 		SQL: `CREATE TABLE sys_menus (
   id bigint NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
-  menu_code varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单编码，唯一标识',
-  permission_code varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '权限编码，对应 Casbin obj 字段',
+  permission_code varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '权限编码，对应 Casbin 关联键；type=2,3 必填且唯一',
   title varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '菜单标题',
   parent_id bigint DEFAULT '0' COMMENT '父级ID，0为顶级',
   type tinyint NOT NULL DEFAULT '2' COMMENT '类型：1=目录 2=菜单 3=按钮 4=iframe 5=外链',
@@ -29,7 +30,7 @@ func init() {
   update_time datetime(3) DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   deleted_time datetime(3) DEFAULT NULL COMMENT '软删除时间',
   PRIMARY KEY (id) USING BTREE,
-  UNIQUE KEY uk_menu_code (menu_code) USING BTREE,
+  UNIQUE KEY uk_permission_code (permission_code) USING BTREE,
   KEY idx_parent_id (parent_id) USING BTREE,
   KEY idx_status (status) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统菜单表'`,

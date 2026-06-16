@@ -612,7 +612,6 @@ DROP TABLE IF EXISTS `sys_menus`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_menus` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
-  `menu_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单编码，唯一标识',
   `permission_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '权限编码，对应 Casbin obj 字段',
   `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '菜单标题',
   `parent_id` bigint DEFAULT '0' COMMENT '父级ID，0为顶级',
@@ -633,7 +632,7 @@ CREATE TABLE `sys_menus` (
   `update_time` datetime(3) DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
   `deleted_time` datetime(3) DEFAULT NULL COMMENT '软删除时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `uk_menu_code` (`menu_code`) USING BTREE,
+  UNIQUE KEY `uk_permission_code` (`permission_code`) USING BTREE,
   KEY `idx_parent_id` (`parent_id`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='系统菜单表';
@@ -815,4 +814,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-16 17:08:45
+-- Dump completed on 2026-06-16 17:41:12
