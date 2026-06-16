@@ -22,10 +22,15 @@ func SetupAdminRoutes(rg *gin.RouterGroup) {
 	// 以下路由需要 JWT 鉴权
 	auth := admin.Group("").Use(builtin.JWTAuthMiddleware())
 	{
+		//列表
 		auth.GET("/list", handle.List)
+		//查询详情
 		auth.GET("/detail", handle.Detail)
+		//创建
 		auth.POST("/create", handle.Create)
-		auth.GET("/profile", handle.Profile)
+		// 管理员编辑
 		auth.POST("/edit", handle.Edit)
+		// 个人信息
+		auth.GET("/profile", handle.Profile)
 	}
 }
