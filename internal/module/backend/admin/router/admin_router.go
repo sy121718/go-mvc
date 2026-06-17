@@ -28,9 +28,10 @@ func SetupAdminRoutes(rg *gin.RouterGroup) {
 		auth.GET("/detail", handle.Detail)
 		//创建
 		auth.POST("/create", handle.Create)
-		// 管理员编辑
+		// 编辑管理员信息
 		auth.POST("/edit", handle.Edit)
 		// 个人信息
 		auth.GET("/profile", handle.Profile)
+		//删除管理员
 	}
 }

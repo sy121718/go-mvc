@@ -7,6 +7,7 @@ import (
 	"time"
 
 	admindto "go-mvc/internal/module/backend/admin/dto"
+	adminenums "go-mvc/internal/module/backend/admin/enums"
 	adminmodel "go-mvc/internal/module/backend/admin/model"
 	"go-mvc/pkg/auth"
 	"go-mvc/pkg/captcha"
@@ -30,7 +31,7 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 	var captchaSvc = captcha.Get()
 	// Verify-验证验证码是否正确
 	if !captchaSvc.Verify(req.CaptchaID, req.Captcha, true) {
-		return nil, errors.New("验证码错误或已过期")
+		return nil, errors.New(adminenums.ErrCaptchaExpired)
 	}
 
 	// 2) 按用户名查用户（区分大小写）
@@ -39,26 +40,26 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 	// 第一层错误是发牛的nil和系统报错，第二层是捕获gorm的报错然后替代默认的err
 	if err := s.am.Query(ctx).Where("(BINARY username = ? OR email = ?)", req.Username, req.Username).First(&entity).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("用户名或密码错误")
+			return nil, errors.New(adminenums.ErrBadCredentials)
 		}
 		return nil, err
 	}
 
 	// 3) 检查是否被锁定
 	if entity.IsLocked() {
-		return nil, fmt.Errorf("账号已被锁定，请 %s 后重试",
+		return nil, fmt.Errorf(adminenums.ErrAccountLocked,
 			time.Until(*entity.LockedUntilTime).Round(time.Minute).String())
 	}
 
 	// 4) 检查是否被禁用
 	if !entity.IsActive() {
-		return nil, errors.New("账号已被禁用")
+		return nil, errors.New(adminenums.ErrAccountDisabled)
 	}
 
 	// 5) 密码校验
 	if err := bcrypt.CompareHashAndPassword([]byte(entity.Password), []byte(req.Password)); err != nil {
 		recordLoginFailure(ctx, s.am, &entity)
-		return nil, errors.New("用户名或密码错误")
+		return nil, errors.New(adminenums.ErrBadCredentials)
 	}
 
 	// 6) 登录成功，清空失败状态，记录登录信息

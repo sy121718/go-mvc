@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	admindto "go-mvc/internal/module/backend/admin/dto"
+	adminenums "go-mvc/internal/module/backend/admin/enums"
 	"go-mvc/pkg/auth"
 )
 
@@ -31,7 +32,7 @@ func (s *Service) Profile(ctx context.Context, userID uint64) (*admindto.Profile
 		return nil, err
 	}
 	if entity == nil {
-		return nil, fmt.Errorf("用户不存在")
+		return nil, fmt.Errorf(adminenums.ErrUserNotFound)
 	}
 
 	name := ""

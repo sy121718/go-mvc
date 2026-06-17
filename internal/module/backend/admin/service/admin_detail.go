@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	admindto "go-mvc/internal/module/backend/admin/dto"
+	adminenums "go-mvc/internal/module/backend/admin/enums"
 
 	"gorm.io/gorm"
 )
@@ -21,7 +22,7 @@ func (s *Service) Detail(ctx context.Context, req *admindto.DetailReq) (res *adm
 		Scan(res).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("管理员不存在")
+			return nil, errors.New(adminenums.ErrAdminNotFound)
 		}
 		return nil, err
 	}

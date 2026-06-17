@@ -2,6 +2,7 @@ package adminhandle
 
 import (
 	admindto "go-mvc/internal/module/backend/admin/dto"
+	adminenums "go-mvc/internal/module/backend/admin/enums"
 	adminservice "go-mvc/internal/module/backend/admin/service"
 	r "go-mvc/pkg/response"
 
@@ -25,7 +26,7 @@ func NewHandle(deps Deps) *Handle {
 func (h *Handle) List(c *gin.Context) {
 	var req admindto.ListReq
 	if err := c.ShouldBindQuery(&req); err != nil {
-		r.ErrorWithMessage(c, 400, "请求参数错误:"+err.Error())
+		r.ErrorWithMessage(c, 400, adminenums.MsgBadRequest+":"+err.Error())
 		return
 	}
 
@@ -42,7 +43,7 @@ func (h *Handle) List(c *gin.Context) {
 func (h *Handle) Login(c *gin.Context) {
 	var req admindto.LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		r.ErrorWithMessage(c, 400, "请求参数错误："+err.Error())
+		r.ErrorWithMessage(c, 400, adminenums.MsgBadRequest+"："+err.Error())
 		return
 	}
 
@@ -53,20 +54,20 @@ func (h *Handle) Login(c *gin.Context) {
 	}
 
 	c.Header("X-New-Token", res.AccessToken)
-	r.SuccessWithMessage(c, "success", res)
+	r.SuccessWithMessage(c, adminenums.MsgSuccess, res)
 }
 
 // Profile 获取当前登录用户信息。
 func (h *Handle) Profile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		r.ErrorWithMessage(c, 401, "未登录或登录已过期")
+		r.ErrorWithMessage(c, 401, adminenums.MsgUnauthorized)
 		return
 	}
 
 	uid, ok := userID.(int64)
 	if !ok {
-		r.ErrorWithMessage(c, 500, "用户ID类型错误")
+		r.ErrorWithMessage(c, 500, adminenums.MsgWrongUserType)
 		return
 	}
 
@@ -86,7 +87,7 @@ func (h *Handle) Create(c *gin.Context) {
 	var req admindto.CreateReq
 	//绑定规则，进行校验
 	if err := c.ShouldBindJSON(&req); err != nil {
-		r.ErrorWithMessage(c, 400, "请求参数错误："+err.Error())
+		r.ErrorWithMessage(c, 400, adminenums.MsgBadRequest+"："+err.Error())
 		return
 	}
 	//h是控制器服务，as是adminService服务，Create是具体方法，然后传递具体参数
@@ -106,7 +107,7 @@ func (h *Handle) Edit(c *gin.Context) {
 	var req admindto.EditReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 
-		r.ErrorWithMessage(c, 400, "请求参数错误:"+err.Error())
+		r.ErrorWithMessage(c, 400, adminenums.MsgBadRequest+":"+err.Error())
 		return
 	}
 	res, err := h.as.Edit(c.Request.Context(), &req)
@@ -120,7 +121,7 @@ func (h *Handle) Edit(c *gin.Context) {
 func (h *Handle) Detail(c *gin.Context) {
 	var req admindto.DetailReq
 	if err := c.ShouldBindQuery(&req); err != nil {
-		r.ErrorWithMessage(c, 400, "请求参数错误："+err.Error())
+		r.ErrorWithMessage(c, 400, adminenums.MsgBadRequest+"："+err.Error())
 		return
 	}
 

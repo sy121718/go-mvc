@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	admindto "go-mvc/internal/module/backend/admin/dto"
+	adminenums "go-mvc/internal/module/backend/admin/enums"
 	adminmodel "go-mvc/internal/module/backend/admin/model"
 	"go-mvc/pkg/database"
 
@@ -23,12 +24,12 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *adm
 	if emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email); err != nil {
 		return nil, err
 	} else if emailExists {
-		return nil, errors.New("该邮箱已存在")
+		return nil, errors.New(adminenums.ErrEmailExists)
 	}
 	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "username", req.Username); err != nil {
 		return nil, err
 	} else if nameExists {
-		return nil, errors.New("用户名已存在，请修改")
+		return nil, errors.New(adminenums.ErrUsernameExists)
 	}
 	// emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email)
 	// if err != nil {
@@ -59,7 +60,7 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *adm
 		if phoneExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone); err != nil {
 			return nil, err
 		} else if phoneExists {
-			return nil, errors.New("手机号码重复，请修改")
+			return nil, errors.New(adminenums.ErrPhoneExists)
 		}
 		entity.Phone = &req.Phone
 	}
