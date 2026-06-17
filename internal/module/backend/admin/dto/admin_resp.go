@@ -84,3 +84,6 @@ type ProfileResp struct {
 type EditResp struct {
 	ID uint64 `json:"id"` // 新增的管理员 ID，表示编辑成功
 }
+type DeleteResp struct {
+	DeletedCount int64 `json:"deleted_count"`
+}

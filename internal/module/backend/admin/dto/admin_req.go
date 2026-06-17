@@ -83,3 +83,6 @@ type EditReq struct {
 	Email    string `form:"email" json:"email" binding:"omitempty,email_strict,max=100" validate:"omitempty,email_strict,max=100"`
 	Remark   string `from:"remark" json:"remark"` //备注
 }
+type DeleteReq struct {
+	Id []any `json:"id" binding:"required" validate:"required"`
+}
