@@ -46,6 +46,41 @@ module_name/
 - 组合 model / client / helper
 - 返回 `error`
 
+#### 文件组织（struct 集中 + 按用例拆文件）
+
+Go 同包多文件可直接互相调用，不需要 import。service 默认按"用例"拆文件，而不是把所有方法堆在一个文件里。规则：
+
+1. 基础文件 `xxx_service.go` 只放 `type Service struct` + `Deps` + `NewService()`，全包唯一一份 struct 定义。
+2. 每个业务用例（方法）拆到 `xxx_<动作>.go`，统一用 `func (s *Service) Xxx(...)` 绑定同一个 struct。
+3. 某个用例的私有辅助函数跟着主方法走，放同一个文件。
+4. 当一个用例内部膨胀到单方法明显影响阅读（经验值 150 行以上），再把该方法单独拎出来成文。
+
+以 user 模块为例（同一功能域的基础 CRUD）：
+
+```text
+service/
+├── user_service.go   ← type Service struct + Deps + NewService（全包唯一）
+├── user_list.go      ← func (s *Service) List
+├── user_create.go    ← func (s *Service) Create
+├── user_update.go    ← func (s *Service) Update
+└── user_delete.go    ← func (s *Service) Delete
+```
+
+当模块出现多个功能域（认证、资料、基础 CRUD 各自独立）时，按域拆文件：
+
+```text
+service/
+├── admin_service.go   ← struct + NewService
+├── admin_login.go     ← Login（认证域，含私有辅助 recordLoginFailure）
+├── admin_profile.go   ← Profile（资料域）
+├── admin_list.go      ← List
+├── admin_create.go    ← Create
+├── admin_edit.go      ← Edit
+└── admin_detail.go    ← Detail
+```
+
+判断"哪些方法放一起"的标准：改 A 方法的业务规则时大概率会连带改 B，则 A 和 B 放同一个文件。
+
 ### model
 
 - 只负责数据库访问

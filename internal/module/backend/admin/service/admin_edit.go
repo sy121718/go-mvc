@@ -1,0 +1,57 @@
+package adminservice
+
+import (
+	"context"
+	"errors"
+
+	admindto "go-mvc/internal/module/backend/admin/dto"
+	adminmodel "go-mvc/internal/module/backend/admin/model"
+	"go-mvc/pkg/database"
+)
+
+func (s *Service) Edit(ctx context.Context, req *admindto.EditReq) (res *admindto.EditResp, err error) {
+
+	//判断邮箱唯一
+	if emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email, req.Id); err != nil {
+		return nil, err
+	} else if emailExists {
+		return nil, errors.New("该邮箱已存在，请修改")
+	}
+
+	// 判断用户名唯一
+	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "username", req.Username, req.Id); err != nil {
+		return nil, err
+	} else if nameExists {
+		return nil, errors.New("用户名已存在，请修改")
+	}
+
+	// 构造实体
+	// *string 类型的字段不能直接赋 string 值，需要用 & 取地址
+	entity := &adminmodel.AdminEntity{
+		Username: req.Username,
+		Email:    &req.Email,
+	}
+	if req.Phone != "" {
+		// 判断手机号码是否唯一
+		if phoneExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone, req.Id); err != nil {
+			return nil, err
+		} else if phoneExists {
+			return nil, errors.New("手机号码重复，请修改")
+		}
+		entity.Phone = &req.Phone
+	}
+
+	if req.Remark != "" {
+		entity.Remark = &req.Remark
+	}
+
+	// 执行更新
+	if err := s.am.Query(ctx).Where("id = ?", req.Id).Updates(entity).Error; err != nil {
+		return nil, err
+	}
+
+	res = &admindto.EditResp{
+		ID: req.Id,
+	}
+	return
+}
