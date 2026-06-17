@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	adminrouter "go-mvc/internal/module/backend/admin/router"
-	userrouter "go-mvc/internal/module/backend/user/router"
 	captcharouter "go-mvc/internal/module/common/captcha/router"
 	"go-mvc/pkg/response"
 
@@ -52,7 +51,6 @@ func SetupRoutes(router *gin.Engine, ready func() error) {
 	api := router.Group("/api")
 	captcharouter.SetupCaptchaRoutes(api)
 	adminrouter.SetupAdminRoutes(api)
-	userrouter.SetupUserRoutes(api)
 
 	router.NoRoute(func(c *gin.Context) {
 		response.NotFound(c, "请求的资源不存在")
