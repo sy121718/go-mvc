@@ -1,4 +1,4 @@
-package adminclient
+package admincontract
 
 import (
 	"context"

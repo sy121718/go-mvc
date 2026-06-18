@@ -1,232 +1,112 @@
 # internal/module 开发规范
 
-`internal/module/` 存放业务模块代码。模块开发要遵循现有目录结构，并与当前响应/错误处理方式保持一致。
+`internal/module/` 存放业务模块代码。
 
 ## 目录结构
 
 ```text
 module_name/
-├── router/
-├── handle/
+├── contract/
+│   ├── <module>_service.go
+│   └── <dependency>_<role>.go
+├── inbound/
+│   ├── http/
+│   │   ├── <module>_handle.go
+│   │   ├── <module>_router.go
+│   │   └── <module>_provider.go
+│   ├── rpc/
+│   ├── mq/
+│   └── cron/
+├── outbound/
+│   ├── <dependency>/
+│   │   └── <dependency>_client.go
+│   ├── mq/
+│   ├── sdk/
+│   └── cache/
 ├── service/
+│   ├── <module>_service.go
+│   └── <module>_<action>.go
 ├── model/
-├── dto/      # 必须启用
-├── enums/    # 按需启用-错误码+响应的多语言-基于表sys_i18n
-└── client/   # 按需启用-用于内部通信如微服务
+│   └── <module>_model.go
+├── dto/
+│   ├── <module>_req.go
+│   └── <module>_resp.go
+└── enums/              # 必选目录，统一存放模块响应消息、业务错误消息、i18n key
+    └── <module>_enums.go
 ```
+
+## 核心关系
+
+- `inbound` 承接外部调用
+- `service` 实现本模块对外暴露契约，并调用本模块对外依赖契约
+- `outbound` 实现本模块对外依赖契约
+- `model` 只做本模块数据库访问
+- `contract` 只放抽象
+- `dto` 放请求 / 响应结构
+- `enums` 必须存在，统一管理模块响应内容
 
 ## 命名规则
 
-- 文件名统一使用"模块名 + 分层名"
-- 例如：
-  - `admin_router.go`
-  - `admin_handle.go`
-  - `admin_service.go`
-  - `admin_model.go`
-  - `admin_req.go`（请求 DTO）
-  - `admin_resp.go`（响应 DTO）
+- 对外暴露契约：`<module>_service.go`
+- 对外依赖契约：`<dependency>_<role>.go`
+- `role` 统一用：`provider` / `reader` / `writer` / `publisher`
+- `inbound/http/`：`<module>_handle.go`、`<module>_router.go`、`<module>_provider.go`
+- `service/`：`<module>_service.go` + `<module>_<action>.go`
+- `model/`：`<module>_model.go`
+- `dto/`：`<module>_req.go`、`<module>_resp.go`
+- `enums/`：`<module>_enums.go`
 
-## 分层职责
+## contract
 
-### router
+- 两类契约分文件写，不混在一个 `*_contract.go`
+- `service` 只依赖本模块 `contract/`
+- `contract/` 不用 `client` 后缀
+- 历史 `*_contract.go` 可兼容，新代码按新命名执行
 
-- 注册模块路由
-- 只负责路由组织
+## inbound/http
 
-### handle
+- `handle`：绑定参数、基础校验、调用 `service`、输出响应
+- `router`：只注册路由
+- `provider`：做依赖装配
+- 返回给前端的响应消息统一取 `enums`
 
-- 参数绑定
-- 基本参数校验
-- 调用 service
-- 输出统一响应
+## service
 
-### service
-
-- 处理业务逻辑
-- 组合 model / client / helper
+- `xxx_service.go` 只放 `Service` / `Deps` / `NewService()`
+- 业务用例拆到 `xxx_<action>.go`
 - 返回 `error`
+- 业务错误消息统一取 `enums`
+- 不直接承载 RPC / HTTP / MQ 实现细节
 
-#### 文件组织（struct 集中 + 按用例拆文件）
+## model
 
-Go 同包多文件可直接互相调用，不需要 import。service 默认按"用例"拆文件，而不是把所有方法堆在一个文件里。规则：
+- 只做数据库访问
+- 不放业务规则
 
-1. 基础文件 `xxx_service.go` 只放 `type Service struct` + `Deps` + `NewService()`，全包唯一一份 struct 定义。
-2. 每个业务用例（方法）拆到 `xxx_<动作>.go`，统一用 `func (s *Service) Xxx(...)` 绑定同一个 struct。
-3. 某个用例的私有辅助函数跟着主方法走，放同一个文件。
-4. 当一个用例内部膨胀到单方法明显影响阅读（经验值 150 行以上），再把该方法单独拎出来成文。
+## dto
 
-以 user 模块为例（同一功能域的基础 CRUD）：
+- `*_req.go` 给 `inbound` 绑定
+- `*_resp.go` 给 `service` 返回
+- 数据流：`inbound -> service -> inbound`
 
-```text
-service/
-├── user_service.go   ← type Service struct + Deps + NewService（全包唯一）
-├── user_list.go      ← func (s *Service) List
-├── user_create.go    ← func (s *Service) Create
-├── user_update.go    ← func (s *Service) Update
-└── user_delete.go    ← func (s *Service) Delete
-```
+## enums
 
-当模块出现多个功能域（认证、资料、基础 CRUD 各自独立）时，按域拆文件：
+- `enums/` 是必须目录
+- 所有响应内容都走模块 `enums`
+- 包括：成功消息、参数错误消息、未授权消息、业务错误消息
+- `handle` 和 `service` 不直接硬编码响应文案
+- 未接好 `i18n` 时，`ErrXxx` / `MsgXxx` 直接等于中文常量
+- 接好 `i18n` 后，再把枚举值切到 i18n key 或 i18n 取值
+- 对外调用方只认模块 `enums`，不要绕过 `enums` 直接取文案
 
-```text
-service/
-├── admin_service.go   ← struct + NewService
-├── admin_login.go     ← Login（认证域，含私有辅助 recordLoginFailure）
-├── admin_profile.go   ← Profile（资料域）
-├── admin_list.go      ← List
-├── admin_create.go    ← Create
-├── admin_edit.go      ← Edit
-└── admin_detail.go    ← Detail
-```
+## 响应
 
-判断"哪些方法放一起"的标准：改 A 方法的业务规则时大概率会连带改 B，则 A 和 B 放同一个文件。
+- 统一走 `pkg/response`
+- 优先使用：`response.Success`、`response.SuccessWithMessage`、`response.ErrorWithMessage`
+- 传给 `response` 的消息统一来自模块 `enums`
 
-### model
+## 路由
 
-- 只负责数据库访问
-- 不放业务逻辑
-
-## DTO 文件约定
-
-`dto/` 目录按输入输出拆分为两个文件：
-
-- `*_req.go` — 请求参数结构体（Req），由 **handler（控制器）** 绑定和校验
-- `*_resp.go` — 响应结构体（Resp），由 **service（业务层）** 返回
-
-数据流：
-
-```
-handler 接收请求 → 绑定到 Req → 调用 service(Req) → service 返回 (Resp, error) → handler 输出 Resp
-```
-
-```go
-// handler：只用 Req 接收参数，Resp 由 service 返回
-func (h *AdminHandle) List(c *gin.Context) {
-    var req dto.ListReq
-    if err := c.ShouldBindQuery(&req); err != nil {
-        response.ErrorWithMessage(c, 400, "请求参数错误")
-        return
-    }
-    res, err := h.as.List(c.Request.Context(), &req)
-    if err != nil {
-        response.ErrorWithMessage(c, 500, err.Error())
-        return
-    }
-    response.Success(c, res) // res 是 *dto.ListResp
-}
-
-// service：接收 Req，返回 Resp
-func (s *Service) List(ctx context.Context, req *dto.ListReq) (*dto.ListResp, error) {
-    // 业务逻辑...
-    return &dto.ListResp{Total: total, List: list}, nil
-}
-```
-
-## 响应约定
-
-当前项目不再推荐在 handler 里走统一错误码中转。
-
-推荐：
-
-```go
-response.Success(c, data)
-response.SuccessWithMessage(c, "保存成功", data)
-response.ErrorWithMessage(c, 400, "请求参数错误")
-response.ErrorWithMessage(c, 401, "未登录或登录已过期")
-response.ErrorWithMessage(c, 403, "无权限访问")
-response.ErrorWithMessage(c, 404, "数据不存在")
-```
-
-不再推荐：
-
-```go
-response.Error(c, enums.ErrInvalidBody)
-response.SuccessWithMessage(c, enums.MsgSaveSuccess, data)
-```
-
-## handler 示例
-
-```go
-func (h *AdminHandle) Create(c *gin.Context) {
-    var req dto.SaveReq
-    if err := c.ShouldBindJSON(&req); err != nil {
-        response.ErrorWithMessage(c, 400, "请求体格式错误")
-        return
-    }
-
-    if err := h.service.Create(&req); err != nil {
-        response.ErrorWithMessage(c, 500, err.Error())
-        return
-    }
-
-    response.SuccessWithMessage(c, "保存成功", nil)
-}
-```
-
-## service 约定
-
-service 直接返回错误，不要求统一返回错误码字符串。
-
-推荐：
-
-```go
-func (s *AdminService) Create(req *dto.SaveReq) error {
-    exists, err := s.model.ExistsByUsername(req.Username)
-    if err != nil {
-        return err
-    }
-    if exists {
-        return fmt.Errorf("用户名已存在")
-    }
-
-    if err := s.model.Insert(req); err != nil {
-        return err
-    }
-
-    return nil
-}
-```
-
-## i18n 约定
-
-业务模块如果明确需要读取字典、UI 文案或业务文案，可以直接调用 `pkg/i18n`。
-
-例如：
-
-```go
-text := i18n.GetText("ui_button_submit", "zh-CN")
-httpCode := i18n.GetHttpCode("ErrAdminNotFound")
-```
-
-但默认响应不依赖 i18n：
-
-- 默认错误返回直接写中文提示
-- 默认状态码直接写数字码
-
-## 路由约定
-
-- 只用 `GET` 和 `POST`
-- `GET` 用于查询
+- 只用 `GET` / `POST`
+- `GET` 查询
 - `POST` 用于新增、修改、删除、状态变化
-
-示例：
-
-```go
-func SetupAdminRoutes(rg *gin.RouterGroup) {
-    admin := rg.Group("/admin")
-    {
-        admin.GET("/list", handle.List)
-        admin.GET("/detail", handle.Detail)
-        admin.POST("/create", handle.Create)
-        admin.POST("/update", handle.Update)
-        admin.POST("/delete", handle.Delete)
-    }
-}
-```
-
-## 错误处理原则
-
-- 参数错误：直接返回明确中文提示
-- 业务规则错误：直接返回明确中文提示
-- 底层系统错误：优先直接返回原始 `err`
-- 不要为了统一格式再多包一层复杂文案

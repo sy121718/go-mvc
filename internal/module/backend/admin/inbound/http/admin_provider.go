@@ -1,13 +1,12 @@
-package adminrouter
+package adminhttp
 
 import (
-	adminhandle "go-mvc/internal/module/backend/admin/handle"
 	adminmodel "go-mvc/internal/module/backend/admin/model"
 	adminservice "go-mvc/internal/module/backend/admin/service"
 	"go-mvc/pkg/database"
 )
 
-func newAdminHandle() (*adminhandle.Handle, error) {
+func newAdminHandle() (*Handle, error) {
 	db, err := database.GetDB()
 	if err != nil {
 		return nil, err
@@ -17,7 +16,7 @@ func newAdminHandle() (*adminhandle.Handle, error) {
 	service := adminservice.NewService(adminservice.Deps{
 		AdminModel: model,
 	})
-	handle := adminhandle.NewHandle(adminhandle.Deps{
+	handle := NewHandle(Deps{
 		AdminService: service,
 	})
 	return handle, nil

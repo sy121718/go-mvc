@@ -1,4 +1,4 @@
-package adminrouter
+package adminhttp
 
 import (
 	"go-mvc/internal/middleware/builtin"

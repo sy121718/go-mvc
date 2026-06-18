@@ -1,7 +1,7 @@
-package adminhandle
+package adminhttp
 
 import (
-	adminclient "go-mvc/internal/module/backend/admin/client"
+	admincontract "go-mvc/internal/module/backend/admin/contract"
 	admindto "go-mvc/internal/module/backend/admin/dto"
 	adminenums "go-mvc/internal/module/backend/admin/enums"
 	r "go-mvc/pkg/response"
@@ -10,11 +10,11 @@ import (
 )
 
 type Handle struct {
-	as adminclient.AdminService
+	as admincontract.AdminService
 }
 
 type Deps struct {
-	AdminService adminclient.AdminService
+	AdminService admincontract.AdminService
 }
 
 func NewHandle(deps Deps) *Handle {
