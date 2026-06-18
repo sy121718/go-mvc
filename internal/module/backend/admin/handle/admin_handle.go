@@ -1,20 +1,20 @@
 package adminhandle
 
 import (
+	adminclient "go-mvc/internal/module/backend/admin/client"
 	admindto "go-mvc/internal/module/backend/admin/dto"
 	adminenums "go-mvc/internal/module/backend/admin/enums"
-	adminservice "go-mvc/internal/module/backend/admin/service"
 	r "go-mvc/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Handle struct {
-	as *adminservice.Service
+	as adminclient.AdminService
 }
 
 type Deps struct {
-	AdminService *adminservice.Service
+	AdminService adminclient.AdminService
 }
 
 func NewHandle(deps Deps) *Handle {

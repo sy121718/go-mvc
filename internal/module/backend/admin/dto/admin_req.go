@@ -84,5 +84,5 @@ type EditReq struct {
 	Remark   string `from:"remark" json:"remark"` //备注
 }
 type DeleteReq struct {
-	Id []any `json:"id" binding:"required" validate:"required"`
+	Id []uint64 `json:"ids" binding:"required" validate:"required"`
 }
