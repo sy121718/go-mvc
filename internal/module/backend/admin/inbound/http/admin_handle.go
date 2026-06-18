@@ -13,13 +13,9 @@ type Handle struct {
 	as admincontract.AdminService
 }
 
-type Deps struct {
-	AdminService admincontract.AdminService
-}
-
-func NewHandle(deps Deps) *Handle {
+func NewHandle(as admincontract.AdminService) *Handle {
 	return &Handle{
-		as: deps.AdminService,
+		as: as,
 	}
 }
 

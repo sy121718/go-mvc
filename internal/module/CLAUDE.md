@@ -12,8 +12,7 @@ module_name/
 ├── inbound/
 │   ├── http/
 │   │   ├── <module>_handle.go
-│   │   ├── <module>_router.go
-│   │   └── <module>_provider.go
+│   │   └── <module>_router.go
 │   ├── rpc/
 │   ├── mq/
 │   └── cron/
@@ -50,7 +49,7 @@ module_name/
 - 对外暴露契约：`<module>_service.go`
 - 对外依赖契约：`<dependency>_<role>.go`
 - `role` 统一用：`provider` / `reader` / `writer` / `publisher`
-- `inbound/http/`：`<module>_handle.go`、`<module>_router.go`、`<module>_provider.go`
+- `inbound/http/`：`<module>_handle.go`、`<module>_router.go`
 - `service/`：`<module>_service.go` + `<module>_<action>.go`
 - `model/`：`<module>_model.go`
 - `dto/`：`<module>_req.go`、`<module>_resp.go`
@@ -66,13 +65,14 @@ module_name/
 ## inbound/http
 
 - `handle`：绑定参数、基础校验、调用 `service`、输出响应
-- `router`：只注册路由
-- `provider`：做依赖装配
+- `router`：依赖装配 + 路由注册
 - 返回给前端的响应消息统一取 `enums`
 
 ## service
 
-- `xxx_service.go` 只放 `Service` / `Deps` / `NewService()`
+- `xxx_service.go` 只放 `Service` / `NewService()`
+- 构造函数直接传参，不使用 `Deps` 结构体（模型数 ≤4 时直传更清晰；超过 4 个再考虑引入 Deps）
+- 必须加编译期断言：`var _ <contract>.XXXService = (*Service)(nil)`
 - 业务用例拆到 `xxx_<action>.go`
 - 返回 `error`
 - 业务错误消息统一取 `enums`
