@@ -77,6 +77,12 @@ module_name/
 - 返回 `error`
 - 业务错误消息统一取 `enums`
 - 不直接承载 RPC / HTTP / MQ 实现细节
+- 使用命名返回值：`func (s *Service) Xxx(ctx, req) (res *XxxResp, err error)`
+
+## 编码风格
+
+- import 别名统一用 `<package_dir><模块缩写>`：`permissiondto`、`adminmodel`、`permissioncontract`
+- 函数签名使用命名返回值，返回 `error` 放最后
 
 ## model
 
