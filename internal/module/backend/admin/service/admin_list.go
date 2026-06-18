@@ -15,7 +15,7 @@ func (s *Service) List(c context.Context, req *admindto.ListReq) (res *admindto.
 	limit := req.GetLimit()
 
 	//默认排除超管
-	query := s.am.Query(c).Where("is_admin != ?", 1)
+	query := s.am.DB(c).Where("is_admin != ?", 1)
 
 	if email := strings.TrimSpace(req.Email); email != "" {
 		query = query.Where("email LIKE ?", "%"+email+"%")

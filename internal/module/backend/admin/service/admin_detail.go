@@ -14,7 +14,7 @@ import (
 func (s *Service) Detail(ctx context.Context, req *admindto.DetailReq) (res *admindto.DetailResp, err error) {
 	res = &admindto.DetailResp{}
 
-	err = s.am.Query(ctx).
+	err = s.am.DB(ctx).
 		Select("id", "username", "avatar", "email", "phone", "status", "is_admin",
 			"register_ip", "register_location", "last_login_ip", "last_login_location",
 			"last_login_time", "create_by", "create_time", "remark").

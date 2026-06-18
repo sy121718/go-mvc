@@ -89,15 +89,15 @@ func NewAdminModel(db *gorm.DB) *AdminModel {
 	return &AdminModel{db: db}
 }
 
-// Query 返回基础查询入口。
-func (m *AdminModel) Query(ctx context.Context) *gorm.DB {
+// DB 返回绑定当前实体的数据库入口，支持链式调用增删改查。
+func (m *AdminModel) DB(ctx context.Context) *gorm.DB {
 	return m.db.WithContext(ctx).Model(&AdminEntity{})
 }
 
 // GetByID 根据 ID 查询管理员，不存在返回 nil。
 func (m *AdminModel) GetByID(ctx context.Context, id uint64) (*AdminEntity, error) {
 	var entity AdminEntity
-	err := m.Query(ctx).Where("id = ?", id).First(&entity).Error
+	err := m.DB(ctx).Where("id = ?", id).First(&entity).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

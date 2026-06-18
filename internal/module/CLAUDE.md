@@ -80,8 +80,10 @@ module_name/
 
 ## model
 
-- 只做数据库访问
-- 不放业务规则
+- 放 Entity + `NewXxxModel(db)` + `DB(ctx)` + 通用简单查询方法（如 GetByID、基本查询）
+- `DB(ctx)` 返回 `m.db.WithContext(ctx).Model(&Entity{})`，增删改查都通过它实现（Create / Updates / Delete / Find / First 等均由 service 层组合调用）
+- 禁止在 model 层写：按条件组合筛选、分页、排序、聚合、多表关联（这些是 service 层的事）
+- 不放业务规则（如"能否登录"、"是否有权限"）
 
 ## dto
 

@@ -13,14 +13,14 @@ import (
 func (s *Service) Edit(ctx context.Context, req *admindto.EditReq) (res *admindto.EditResp, err error) {
 
 	//判断邮箱唯一
-	if emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email, req.Id); err != nil {
+	if emailExists, err := database.IsFieldExists(s.am.DB(ctx), &adminmodel.AdminEntity{}, "email", req.Email, req.Id); err != nil {
 		return nil, err
 	} else if emailExists {
 		return nil, errors.New(adminenums.ErrEmailExists)
 	}
 
 	// 判断用户名唯一
-	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "username", req.Username, req.Id); err != nil {
+	if nameExists, err := database.IsFieldExists(s.am.DB(ctx), &adminmodel.AdminEntity{}, "username", req.Username, req.Id); err != nil {
 		return nil, err
 	} else if nameExists {
 		return nil, errors.New(adminenums.ErrUsernameExists)
@@ -34,7 +34,7 @@ func (s *Service) Edit(ctx context.Context, req *admindto.EditReq) (res *admindt
 	}
 	if req.Phone != "" {
 		// 判断手机号码是否唯一
-		if phoneExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone, req.Id); err != nil {
+		if phoneExists, err := database.IsFieldExists(s.am.DB(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone, req.Id); err != nil {
 			return nil, err
 		} else if phoneExists {
 			return nil, errors.New(adminenums.ErrPhoneExists)
@@ -47,7 +47,7 @@ func (s *Service) Edit(ctx context.Context, req *admindto.EditReq) (res *admindt
 	}
 
 	// 执行更新
-	if err := s.am.Query(ctx).Where("id = ?", req.Id).Updates(entity).Error; err != nil {
+	if err := s.am.DB(ctx).Where("id = ?", req.Id).Updates(entity).Error; err != nil {
 		return nil, err
 	}
 

@@ -15,23 +15,23 @@ import (
 func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *admindto.CreateResp, err error) {
 	// // 检查邮箱是否已存在
 	// var existCount int64
-	// if err := s.am.Query(ctx).Where("email = ? AND deleted_time IS NULL", req.Email).Count(&existCount).Error; err != nil {
+	// if err := s.am.DB(ctx).Where("email = ? AND deleted_time IS NULL", req.Email).Count(&existCount).Error; err != nil {
 	// 	return nil, err
 	// }
 	// if existCount > 0 {
 	// 	return nil, errors.New("该邮箱已被占用")
 	// }
-	if emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email); err != nil {
+	if emailExists, err := database.IsFieldExists(s.am.DB(ctx), &adminmodel.AdminEntity{}, "email", req.Email); err != nil {
 		return nil, err
 	} else if emailExists {
 		return nil, errors.New(adminenums.ErrEmailExists)
 	}
-	if nameExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "username", req.Username); err != nil {
+	if nameExists, err := database.IsFieldExists(s.am.DB(ctx), &adminmodel.AdminEntity{}, "username", req.Username); err != nil {
 		return nil, err
 	} else if nameExists {
 		return nil, errors.New(adminenums.ErrUsernameExists)
 	}
-	// emailExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "email", req.Email)
+	// emailExists, err := database.IsFieldExists(s.am.DB(ctx), &adminmodel.AdminEntity{}, "email", req.Email)
 	// if err != nil {
 	// 	fmt.Print("666")
 	// 	return nil, err
@@ -57,7 +57,7 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *adm
 	}
 	// 只要有接收值并且可选字段的（omitempty）：有值才写，没值保持 nil → 数据库写 NULL，
 	if req.Phone != "" {
-		if phoneExists, err := database.IsFieldExists(s.am.Query(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone); err != nil {
+		if phoneExists, err := database.IsFieldExists(s.am.DB(ctx), &adminmodel.AdminEntity{}, "phone", req.Phone); err != nil {
 			return nil, err
 		} else if phoneExists {
 			return nil, errors.New(adminenums.ErrPhoneExists)
@@ -68,7 +68,7 @@ func (s *Service) Create(ctx context.Context, req *admindto.CreateReq) (res *adm
 		entity.Avatar = &req.Avatar
 	}
 
-	if err := s.am.Query(ctx).Create(entity).Error; err != nil {
+	if err := s.am.DB(ctx).Create(entity).Error; err != nil {
 		return nil, err
 	}
 	res = &admindto.CreateResp{

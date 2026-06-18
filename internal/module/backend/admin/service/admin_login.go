@@ -38,7 +38,7 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 	var entity adminmodel.AdminEntity
 	//go特色，if先写短函数，然后再定义条件，当前是捕获err，如果err不为空，那就找错误，
 	// 第一层错误是发牛的nil和系统报错，第二层是捕获gorm的报错然后替代默认的err
-	if err := s.am.Query(ctx).Where("(BINARY username = ? OR email = ?)", req.Username, req.Username).First(&entity).Error; err != nil {
+	if err := s.am.DB(ctx).Where("(BINARY username = ? OR email = ?)", req.Username, req.Username).First(&entity).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New(adminenums.ErrBadCredentials)
 		}
@@ -71,7 +71,7 @@ func (s *Service) Login(ctx context.Context, req *admindto.LoginReq, clientIP st
 	if clientIP != "" {
 		entity.LastLoginIP = &clientIP
 	}
-	if err := s.am.Query(ctx).Where("id = ?", entity.ID).Select(
+	if err := s.am.DB(ctx).Where("id = ?", entity.ID).Select(
 		"login_failure_count", "locked_until_time", "last_failure_time",
 		"last_login_time", "last_login_ip").
 		Updates(&entity).Error; err != nil {
@@ -150,7 +150,7 @@ func recordLoginFailure(ctx context.Context, am *adminmodel.AdminModel, entity *
 		entity.LockedUntilTime = &lockedUntil
 	}
 
-	am.Query(ctx).Where("id = ?", entity.ID).
+	am.DB(ctx).Where("id = ?", entity.ID).
 		Select("login_failure_count", "last_failure_time", "status", "locked_until_time").
 		Updates(entity)
 }
